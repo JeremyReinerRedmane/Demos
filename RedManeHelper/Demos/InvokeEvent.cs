@@ -13,7 +13,7 @@ public class InvokeEvent
 
     private const int TimeOut = 10000;
 
-    public async Task Run()
+    public void Run()
     {
         $"Operating Thread: {CurrentThread.ManagedThreadId}\n".Print();
 
@@ -37,7 +37,7 @@ public class InvokeEvent
 
         while (true)
         {
-            if (await MainLoop(i))
+            if (MainLoop(i).Result)
                 break;
             
             i ++;
@@ -103,10 +103,6 @@ public class InvokeEvent
         {
             while (true)
             {
-                await Task.Delay(delay);
-
-                $"{x}: Operating Thread: {CurrentThread.ManagedThreadId}\nCurrent iteration: {i}\n".Print();
-
                 // Check for cancellation periodically
                 if (_cts.Token.IsCancellationRequested)
                 {
@@ -114,12 +110,16 @@ public class InvokeEvent
                     break;
                 }
 
+                await Task.Delay(delay);
+
+                $"{x}: Operating Thread: {CurrentThread.ManagedThreadId}\nCurrent iteration: {i}\n".Print();
+
                 i += 2;
             }
         }
         catch (ObjectDisposedException ex)
         {
-            "ObjectDisposedException: Cancellation token disposed. From invoked method".PrintAlert();
+            $"ObjectDisposedException: Cancellation token disposed. From '{x}' invoked method".PrintAlert();
         }
     }
 

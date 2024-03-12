@@ -18,5 +18,5 @@ using DemoKatan.Demos;
 
 var x = new InvokeEvent();
 
-await x.Run();
+x.Run();
 
