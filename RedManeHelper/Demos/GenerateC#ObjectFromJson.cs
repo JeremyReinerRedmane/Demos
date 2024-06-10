@@ -199,7 +199,7 @@ namespace DemoKatan.Demos
 
         private string CleanString(string str)
         {
-            // Define a set of allowed characters (A-Z, a-z, and 0-9)
+            // Define a set of allowed characters (A-Z, a-z)
             var allowedChars = new HashSet<char>("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz");
 
             // Use LINQ to filter characters based on the allowed set
@@ -238,7 +238,7 @@ namespace DemoKatan.Demos
 
         /// <summary>
         /// Generate factory for entering into mCase db. This process should feel as simple as updating an object. The getters and setters
-        /// Use mCase OOTB genearations for CRUD operations. Find the similarities for CRUD and update the properties here
+        /// Use mCase OOTB generations for CRUD operations. Find the similarities for CRUD and update the properties here
         /// </summary>
         /// <param name="jObject"></param>
         /// <returns></returns>
@@ -248,8 +248,8 @@ namespace DemoKatan.Demos
 
             string privateSysName;
 
-            if (IsStringReadonly(jObject))
-            {//string is readonly, only use getter
+            if (IsStringReadonly(jObject)) // Readonly = Mirrored
+            {//string is readonly / a mirror field, only use getter
                 privateSysName = $"_{sysName}Readonly";
 
                 property =
@@ -266,7 +266,7 @@ namespace DemoKatan.Demos
                     "        }\n";
             }
             else
-            {//string is not readonly, only use getter and setter
+            {//string is not readonly, use getter and setter
                 privateSysName = $"_{sysName}";
 
                 property =
