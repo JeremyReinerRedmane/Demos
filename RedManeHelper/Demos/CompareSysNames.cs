@@ -73,16 +73,6 @@ namespace DemoKatan.Demos
                 }
             }
 
-            //var exportedSet = new HashSet<string>(exported);
-
-            //var configSet = new HashSet<string>(configRepo);
-
-            //var x = exportedSet.Intersect(configSet);
-
-            //var y = exportedSet.Union(configSet);
-
-            //var z = y.Except(x).ToList();
-
             FindLastUnknownFiles(exported, configRepo);
         }
 

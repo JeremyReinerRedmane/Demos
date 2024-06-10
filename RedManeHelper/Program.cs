@@ -1,5 +1,6 @@
 ﻿
 using DemoKatan.Demos;
+using DemoKatan.Entities;
 
 //var localConfigs = @"C:\Users\jreiner\Downloads\77c4e6a9-3bf1-497d-a916-00e12ccad110";
 
@@ -16,7 +17,11 @@ using DemoKatan.Demos;
 //await t.ThrowIfCancelled();
 
 
-var x = new InvokeEvent();
+//var x = new InvokeEvent();
 
-x.Run();
+//x.Run();
 
+
+var factory = new GenerateC_ObjectFromJson();
+
+factory.EntityFactory();
