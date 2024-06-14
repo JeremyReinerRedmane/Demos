@@ -20,13 +20,12 @@ namespace DemoKatan.mCase
 
         public SyncDlConfigs()
         {
-            _connectionString = "data source=localhost;initial catalog=mCASE_ADMIN;integrated security=True";
-            _sqlCommand = "SELECT [DataListID] FROM [mCASE_ADMIN].[dbo].[DataList]";
-            _outputDirectory = @"C:\Users\jreiner\Desktop\FactoryEntities";
-            _exceptionDirectory = @"C:\Users\jreiner\Desktop\FactoryEntities\Exceptions";
+            _connectionString = ";
+            _sqlCommand = "";
+            _outputDirectory = "";
+            _exceptionDirectory = "";
             _credentials = "";//TODO add credentials username:password
-            //_mCaseUrl = "http://auusmc-arccwis-app-mcs-qa-r2.redmane-cloud.us/Resource/Export/DataList/Configuration/";
-            _mCaseUrl = "http://localhost:64762/Resource/Export/DataList/Configuration/";
+            _mCaseUrl = "";
         }
         public SyncDlConfigs(string[] commandLineArgs)
         {
