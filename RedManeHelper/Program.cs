@@ -1,5 +1,4 @@
-﻿
-using DemoKatan.mCase;
+﻿using DemoKatan.mCase;
 
 var commandLineArgs = Environment.GetCommandLineArgs();
 
@@ -15,7 +14,5 @@ else
     var local = new SyncDlConfigs();
 
     await local.RemoteSync();
-    //await local.LocalSync();
-
 }
 

@@ -10,7 +10,7 @@ namespace DemoKatan.mCase.Static
         {
             var propertyValue = jObject[property]?.Parent?.FirstOrDefault()?.Value<string>();
 
-            if (string.Equals("SystemName", property) && !string.IsNullOrEmpty(propertyValue)) 
+            if (string.Equals("SystemName", property, StringComparison.OrdinalIgnoreCase) && !string.IsNullOrEmpty(propertyValue)) 
                 return propertyValue;
             
             return string.IsNullOrEmpty(propertyValue)
@@ -58,7 +58,7 @@ namespace DemoKatan.mCase.Static
             return property2 ?? string.Empty;
         }
 
-        private static bool IsNum(this char c) => int.TryParse(c.ToString(), out var num);
+        private static bool IsNum(this char c) => int.TryParse(c.ToString(), out _);
 
         private static bool IsLetter(this char c)
         {
@@ -94,5 +94,27 @@ namespace DemoKatan.mCase.Static
 
             return name + num;
         }
+
+        public static bool IsStringReadonlyOrMirrored(this JToken jToken)
+        {
+            var defaultValue = jToken.ParseToken(ListTransferFields.DefaultValue.GetDescription());
+
+            var isCoalesce = !string.IsNullOrEmpty(defaultValue) && defaultValue.Contains("COALESCE", StringComparison.OrdinalIgnoreCase);
+
+            return isCoalesce;
+        }
+
+        public static string Indent(this int level)
+        {
+            var dict = new Dictionary<int, string>()
+            {
+                { 0, "   " },
+                { 1, "       " },
+                { 2, "           " },
+                { 3, "               " },
+            };
+            return dict[level];
+        }
+
     }
 }
