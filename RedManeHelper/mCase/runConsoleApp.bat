@@ -2,7 +2,7 @@ echo Begining Class Sync
 
 cd C:\Users\jreiner\source\repos\RedManeHelper\RedManeHelper
 
-dotnet run program.cs "data source=localhost;initial catalog=mCASE_ADMIN;integrated security=True" "SELECT [DataListID] FROM [mCASE_ADMIN].[dbo].[DataList]" "admin:Password123!" "http://localhost:64762/Resource/Export/DataList/Configuration/" "C:\Users\jreiner\Desktop\FactoryEntities" "C:\Users\jreiner\Desktop\Exceptions"
+dotnet run program.cs "connection string" "sql query" "credentials" "target url" "output directory" "output exception directory"
 
 echo process completed
 pause
