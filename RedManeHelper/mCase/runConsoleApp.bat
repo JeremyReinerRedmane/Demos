@@ -1,6 +1,6 @@
 echo Begining Class Sync
 
-cd C:\Users\jreiner\source\repos\RedManeHelper\RedManeHelper
+cd application location
 
 dotnet run program.cs "connection string" "sql query" "credentials" "target url" "output directory" "output exception directory"
 
