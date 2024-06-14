@@ -37,6 +37,27 @@ namespace DemoKatan.Static
             Console.ForegroundColor = ConsoleColor.DarkGray;
         }
 
+        public static void PrintHeavy(this string st)
+        {
+            Console.ForegroundColor = ConsoleColor.DarkRed;
+            Console.WriteLine(st);
+            Console.ForegroundColor = ConsoleColor.DarkGray;
+        }
+
+        public static void PrintMedium(this string st)
+        {
+            Console.ForegroundColor = ConsoleColor.DarkYellow;
+            Console.WriteLine(st);
+            Console.ForegroundColor = ConsoleColor.DarkGray;
+        }
+
+        public static void PrintLight(this string st)
+        {
+            Console.ForegroundColor = ConsoleColor.DarkGreen;
+            Console.WriteLine(st);
+            Console.ForegroundColor = ConsoleColor.DarkGray;
+        }
+
         public static string GetEnumDescription(this Enum value)
         {
             DescriptionAttribute[] customAttributes = (DescriptionAttribute[])value.GetType().GetField(value.ToString()).GetCustomAttributes(typeof(DescriptionAttribute), false);

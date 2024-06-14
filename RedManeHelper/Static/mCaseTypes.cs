@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace DemoKatan.Static
+namespace DemoKatan.Static.Ignore
 {
     public enum mCaseTypes
     {

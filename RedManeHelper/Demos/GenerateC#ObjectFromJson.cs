@@ -1,5 +1,6 @@
 ﻿using System.Text;
 using DemoKatan.Static;
+using DemoKatan.Static.Ignore;
 using Newtonsoft.Json.Linq;
 
 namespace DemoKatan.Demos
@@ -7,11 +8,11 @@ namespace DemoKatan.Demos
     public class GenerateC_ObjectFromJson
     {
         private string _exceptionsDir = @"C:\Users\jreiner\source\repos\RedManeHelper\RedManeHelper\FactoryExceptions";
-        private string _factoryEntitiesDir = @"C:\Users\jreiner\source\repos\RedManeHelper\RedManeHelper\FactoryEntities";
+        private string _factoryEntitiesDir = @"C:\Users\jreiner\Desktop\FactoryEntities\" + DateTime.Now.ToString("yyyyMMdd_HH_mm_ss");
         //private string _mCaseFactoryDir = @"C:\Users\jreiner\source\repos\AR-mCase-CustomEvents\MCaseCustomEvents\ARFocus\FactoryEntities";
-        private HashSet<string> ClassSet = new();
         private HashSet<string> FieldSet = new();
-        
+        private HashSet<string> Types = new();
+
         public void EntityFactory()
         {
             var dirPath = @"C:\Users\jreiner\source\repos\AR-mCase-Config\Datalists";
@@ -30,11 +31,11 @@ namespace DemoKatan.Demos
                 GenerateClass(filePath);
             }
 
-            Console.WriteLine();
+            Console.WriteLine(string.Join('\n', Types));
         }
         private void GenerateClass(string jsonPath)
         {
-            ClassSet.Clear();
+            FieldSet.Clear();
 
             var file = File.ReadAllText(jsonPath);
 
@@ -45,12 +46,14 @@ namespace DemoKatan.Demos
             var result = cleanedClose.Remove(0, 1);
 
             var jsonObject = JObject.Parse(result);
-            
+
             var fields = jsonObject["Fields"];
 
             var sb = new StringBuilder();
-            var className = GetName(jsonObject) + "Entity";
-            var sysName = jsonObject["SystemName"].Parent.FirstOrDefault().Value<string>();
+
+            var sysName = GetSystemName(jsonObject);
+
+            var className = sysName + "Entity";
 
             sb.AppendLine(
                 "using System.Collections.Generic;\nusing System.Linq;\nusing MCaseCustomEvents.ARFocus.DataAccess;\nusing MCaseEventsSDK;\nusing MCaseEventsSDK.Util;\nusing MCaseEventsSDK.Util.Data;");
@@ -66,21 +69,25 @@ namespace DemoKatan.Demos
             sb.AppendLine("             _eventHelper = eventHelper;");
             sb.AppendLine("        }");
             sb.AppendLine($"        public string SystemName => \"{sysName}\";");
-            sb.AppendLine($"        public void SaveRecord()");
+            sb.AppendLine("        public void SaveRecord()");
             sb.AppendLine("        {");
             sb.AppendLine("             _eventHelper.SaveRecord(_recordInsData);");
             sb.AppendLine("        }");
 
+
             foreach (var field in fields)
             {
-                var embeddedJsonstring = field.ToString();
+                var embeddedJsonString = field.ToString();
 
-                var jObject = JObject.Parse(embeddedJsonstring);
+                var jObject = JObject.Parse(embeddedJsonString);
 
                 var fieldSysName = GetSystemName(jObject);
 
+                if (string.Equals(fieldSysName, "role", StringComparison.OrdinalIgnoreCase))
+                    Console.WriteLine();
+
                 if (string.IsNullOrEmpty(fieldSysName) || FieldSet.Contains(fieldSysName))
-                    continue;
+                    continue;//if property is already in field list then continue, no need to duplicate property in class
 
                 var property = AddProperties(jObject, fieldSysName);
 
@@ -95,6 +102,14 @@ namespace DemoKatan.Demos
             sb.AppendLine("    }");//close class
             sb.AppendLine("}");//close namespace
 
+            var log = $"{sysName} class created with {FieldSet.Count} properties";
+
+            if (FieldSet.Count >= 100)
+                log.PrintHeavy();
+            else if (100 > FieldSet.Count && FieldSet.Count >= 50)
+                log.PrintMedium();
+            else
+                log.PrintLight();
 
             var filePath = Path.Combine(_factoryEntitiesDir, $"{className}.cs");
 
@@ -105,18 +120,21 @@ namespace DemoKatan.Demos
         {
             var type = GetType(jObject);
 
+            Types.Add(jObject["Type"].Parent.FirstOrDefault().Value<string>());
+
             var typeEnum = type.GetEnumValue<mCaseTypes>();
+
 
             string property;
 
             switch (typeEnum)
             {
                 //case mCaseTypes.EmbeddedList:
-                //case mCaseTypes.CascadingDropDown:
+                case mCaseTypes.CascadingDropDown:
                 case mCaseTypes.DropDownList:
                 case mCaseTypes.DynamicDropDown:
                 case mCaseTypes.CascadingDynamicDropDown:
-                    property = EnumerableFactory(sysName);
+                    property = EnumerableFactory(sysName, typeEnum);
                     break;
                 case mCaseTypes.Header:
                 case mCaseTypes.String:
@@ -126,50 +144,34 @@ namespace DemoKatan.Demos
                 case mCaseTypes.Narrative:
                 case mCaseTypes.URL:
                 case mCaseTypes.Section:
-                case mCaseTypes.Address:
                 case mCaseTypes.Number:
                 case mCaseTypes.Money:
                 case mCaseTypes.Date:
                 case mCaseTypes.DateTime:
                 case mCaseTypes.Time:
                 case mCaseTypes.Boolean:
-                    property = StringFactory(jObject, sysName);
-                    break;
-                case mCaseTypes.UserRoleSecurityRestrict:
-
-                case mCaseTypes.DynamicCalculatedField:
-                case mCaseTypes.CalculatedField:
-                case mCaseTypes.UniqueIdentifier:
-                case mCaseTypes.User:
-                case mCaseTypes.Attachment:
-                case mCaseTypes.EmbeddedDocument:
-                case mCaseTypes.Score:
-                case mCaseTypes.HiddenField:
                 case mCaseTypes.ReadonlyField:
-                case mCaseTypes.LineBreak:
+                case mCaseTypes.User:
+                    property = StringFactory(jObject, sysName, type);
+                    break;
+                case mCaseTypes.UserRoleSecurityRestrict://not required in CE's
+                case mCaseTypes.DynamicCalculatedField://not required in CE's
+                case mCaseTypes.CalculatedField:// not required in CE's calculated in front end
+                case mCaseTypes.UniqueIdentifier://not required in CE's
+                case mCaseTypes.Address://key value
+                case mCaseTypes.Attachment://key value 
+                case mCaseTypes.EmbeddedDocument:// Not required in ce? blob?
+                case mCaseTypes.Score://not required in CE's
+                case mCaseTypes.HiddenField://not required in CE's
+                case mCaseTypes.LineBreak://not required in CE's
                 default:
                     property = string.Empty;
                     break;
             }
 
-            if (string.IsNullOrEmpty(property) || ClassSet.Contains(property))
-                return string.Empty;
-
-            ClassSet.Add(property);
-
-            return property;
-
-        }
-
-        private string GetName(JObject? jsonObject)
-        {
-            var classNameToken = jsonObject["Name"].Parent.FirstOrDefault();
-
-            var propertyValue = classNameToken.Last["Value"].Value<string>();
-
-            return string.IsNullOrEmpty(propertyValue)
+            return string.IsNullOrEmpty(property)
                 ? string.Empty
-                : CleanString(propertyValue);
+                : property;
         }
 
         private string GetType(JObject? jsonObject)
@@ -213,27 +215,70 @@ namespace DemoKatan.Demos
         /// </summary>
         /// <param name="sysName"></param>
         /// <returns></returns>
-        private string EnumerableFactory(string sysName)
+        private static string EnumerableFactory(string sysName, mCaseTypes type)
         {
-            var property =
-                $"        private List<string> _{sysName} = new List<string>();\n" +
-                $"        public List<string> {sysName}\n" +
-                "        {\n" +
-                "           get\n" +
-                "           {\n" +
-                $"              if(_{sysName}.Any())\n" +
-                $"                  return _{sysName};\n" +
-                $"              _{sysName} = _recordInsData.GetGenericDropDownValues(_eventHelper, \"{sysName}\");\n" +
-                $"              return _{sysName};\n" +
-                "           }\n" +
-                "           set\n" +
-                "           {\n" +
-                $"              _{sysName} = value;\n" +
-                $"              _recordInsData.SetValue(\"{sysName}\", _{sysName}.Last());\n" +
-                "           }\n" +
-                "        }\n";
+            string cascading;
+            switch (type)
+            {
+                case mCaseTypes.CascadingDropDown:
+                case mCaseTypes.DropDownList:
+                    cascading = type == mCaseTypes.CascadingDropDown
+                        ? "Cascading "
+                        : string.Empty;
 
-            return property;
+                    return
+                        $"        private List<string> _{sysName} = new List<string>();\n" +
+                        $"        /// <summary>\n" +
+                        $"        /// mCase data type: {cascading}Drop down list.\n" +
+                        $"        /// It can take in named values such as 'no', 'yes' and any other strings and save it in the db\n" +
+                        $"        /// </summary>\n" +
+                        $"        public List<string> {sysName}\n" +
+                        "        {\n" +
+                        "           get\n" +
+                        "           {\n" +
+                        $"              if(_{sysName}.Any())\n" +
+                        $"                  return _{sysName};\n" +
+                        $"              _{sysName} = _recordInsData.GetMultiSelectFieldValue(\"{sysName}\");\n" +
+                        $"              return _{sysName};\n" +
+                        "           }\n" +
+                        "           set\n" +
+                        "           {\n" +
+                        $"              _{sysName} = value;\n" +
+                        $"              _recordInsData.SetValue(\"{sysName}\", _{sysName}.Last());\n" +
+                        "           }\n" +
+                        "        }\n";
+                case mCaseTypes.CascadingDynamicDropDown:
+                case mCaseTypes.DynamicDropDown:
+                    {
+                        cascading = type == mCaseTypes.CascadingDynamicDropDown
+                            ? "Cascading "
+                            : string.Empty;
+
+                        return
+                            $"        private List<string> _{sysName} = new List<string>();\n" +
+                            $"        /// <summary>\n" +
+                            $"        /// mCase data type: {cascading}Dynamic Drop down.\n" +
+                            $"        /// Requires the Field ID as the parameter entered in the list.\n" +
+                            $"        /// </summary>\n" +
+                            $"        public List<string> {sysName}\n" +
+                            "        {\n" +
+                            "           get\n" +
+                            "           {\n" +
+                            $"              if(_{sysName}.Any())\n" +
+                            $"                  return _{sysName};\n" +
+                            $"              _{sysName} = _eventHelper.GetDynamicDropdownRecords(_recordInsData.RecordInstanceID, \"{sysName}\").Select(x => x.Label).ToList();\n" +
+                            $"              return _{sysName};\n" +
+                            "           }\n" +
+                            "           set\n" +
+                            "           {\n" +
+                            $"              _{sysName} = value;\n" +
+                            $"              _recordInsData.SetValue(\"{sysName}\", _{sysName}.Last());\n" +
+                            "           }\n" +
+                            "        }\n";
+                    }
+                default:
+                    return string.Empty;
+            }
         }
 
         /// <summary>
@@ -242,18 +287,20 @@ namespace DemoKatan.Demos
         /// </summary>
         /// <param name="jObject"></param>
         /// <returns></returns>
-        private string StringFactory(JObject jObject, string sysName)
+        private string StringFactory(JObject jObject, string sysName, string dataType)
         {
-            string property;
-
-            string privateSysName;
+            var privateSysName = $"_{sysName}";
 
             if (IsStringReadonly(jObject)) // Readonly = Mirrored
             {//string is readonly / a mirror field, only use getter
-                privateSysName = $"_{sysName}Readonly";
+                privateSysName += "Readonly";
 
-                property =
+                return
                     $"        private string {privateSysName} = string.Empty;\n" +
+                    "        /// <summary>\n" +
+                    $"        /// mCase data type: {dataType}\n" +
+                    "        /// This is a Readonly Mirrored field. No setting / updating allowed\n" +
+                    "        /// </summary>\n" +
                     $"        public string {sysName}Readonly\n" +
                     "        {\n" +
                     "           get\n" +
@@ -265,31 +312,29 @@ namespace DemoKatan.Demos
                     "           }\n" +
                     "        }\n";
             }
-            else
-            {//string is not readonly, use getter and setter
-                privateSysName = $"_{sysName}";
 
-                property =
-                    $"        private string {privateSysName} = string.Empty;\n" +
-                    $"        public string {sysName}\n" +
-                    "        {\n" +
-                    "           get\n" +
-                    "           {\n" +
-                    $"              if(!string.IsNullOrEmpty({privateSysName}))\n" +
-                    $"                  return {privateSysName};\n" +
-                    $"              {privateSysName} = _recordInsData.GetFieldValue(\"{sysName}\");\n" +
-                    $"              return {privateSysName};\n" +
-                    "           }\n" +
-                    "           set\n" +
-                    "           {\n" +
-                    $"              {privateSysName} = value;\n" +
-                    $"              _recordInsData.SetValue(\"{sysName}\", {privateSysName});\n" +
-                    "           }\n" +
-                    "        }\n";
+            //string is not readonly, use getter and setter
 
-            }
-
-            return property;
+            return
+                $"        private string {privateSysName} = string.Empty;\n" +
+                "        /// <summary>\n" +
+                $"        /// mCase data type: {dataType}\n" +
+                "        /// </summary>\n" +
+                $"        public string {sysName}\n" +
+                "        {\n" +
+                "           get\n" +
+                "           {\n" +
+                $"              if(!string.IsNullOrEmpty({privateSysName}))\n" +
+                $"                  return {privateSysName};\n" +
+                $"              {privateSysName} = _recordInsData.GetFieldValue(\"{sysName}\");\n" +
+                $"              return {privateSysName};\n" +
+                "           }\n" +
+                "           set\n" +
+                "           {\n" +
+                $"              {privateSysName} = value;\n" +
+                $"              _recordInsData.SetValue(\"{sysName}\", {privateSysName});\n" +
+                "           }\n" +
+                "        }\n";
         }
     }
 }
