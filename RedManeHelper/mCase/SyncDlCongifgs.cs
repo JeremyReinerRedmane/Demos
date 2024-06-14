@@ -24,7 +24,7 @@ namespace DemoKatan.mCase
             _sqlCommand = "SELECT [DataListID] FROM [mCASE_ADMIN].[dbo].[DataList]";
             _outputDirectory = @"C:\Users\jreiner\Desktop\FactoryEntities";
             _exceptionDirectory = @"C:\Users\jreiner\Desktop\FactoryEntities\Exceptions";
-            _credentials = "admin:Password123!";
+            _credentials = "";
             //_mCaseUrl = "http://auusmc-arccwis-app-mcs-qa-r2.redmane-cloud.us/Resource/Export/DataList/Configuration/";
             _mCaseUrl = "http://localhost:64762/Resource/Export/DataList/Configuration/";
         }
