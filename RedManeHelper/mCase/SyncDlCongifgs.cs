@@ -1,7 +1,9 @@
-﻿using System.IO;
+﻿using System;
+using System.Data.SqlClient;
+using System.Net;
+using System.Net.Http.Headers;
 using System.Text;
 using DemoKatan.mCase.Static;
-using DemoKatan.Static;
 using Newtonsoft.Json.Linq;
 using Extensions = DemoKatan.mCase.Static.Extensions;
 
@@ -10,75 +12,157 @@ namespace DemoKatan.mCase
     public class SyncDlConfigs
     {
         private string _connectionString = string.Empty;
+        private string _sqlCommand = string.Empty;
         private string _outputDirectory = string.Empty;
         private string _exceptionDirectory = string.Empty;
         private string _credentials = string.Empty;
+        private string _mCaseUrl = string.Empty;
 
+        public SyncDlConfigs()
+        {
+            _connectionString = "data source=localhost;initial catalog=mCASE_ADMIN;integrated security=True";
+            _sqlCommand = "SELECT [DataListID] FROM [mCASE_ADMIN].[dbo].[DataList]";
+            _outputDirectory = @"C:\Users\jreiner\Desktop\FactoryEntities";
+            _exceptionDirectory = @"C:\Users\jreiner\Desktop\FactoryEntities\Exceptions";
+            _credentials = "admin:Password123!";
+            //_mCaseUrl = "http://auusmc-arccwis-app-mcs-qa-r2.redmane-cloud.us/Resource/Export/DataList/Configuration/";
+            _mCaseUrl = "http://localhost:64762/Resource/Export/DataList/Configuration/";
+        }
         public SyncDlConfigs(string[] commandLineArgs)
         {
-            if (commandLineArgs.Length != 6)
+            if (commandLineArgs.Length != 8)
             {
-                Console.WriteLine($"Entered params = {commandLineArgs.Length }");
-                throw new ArgumentException("Invalid params. 1: Connection string, 2: Credentials, 3: Output directory, 4: Exception directory");
+                Console.WriteLine($"Entered params = {commandLineArgs.Length}");
+                throw new ArgumentException("Invalid params. 1: Connection string, 2: Sql command 3: Credentials, 4: MCase Url 5: Output directory, 6: Exception directory");
             }
-            // [0] dotnet [1] run program.cs
-            _connectionString = commandLineArgs[2];
+            // [0] dll exe path [1] run program.cs
+            _connectionString = commandLineArgs[2];//1
             Console.WriteLine("Connection string: " + _connectionString);
-            _credentials = commandLineArgs[3];
+
+            _sqlCommand = commandLineArgs[3];//2
+            Console.WriteLine("Sql Command: " + _sqlCommand);
+
+            _credentials = commandLineArgs[4];//3
             Console.WriteLine("Credentials: " + _credentials);
-            _outputDirectory = commandLineArgs[4];
+
+            _mCaseUrl = commandLineArgs[5];//4
+            Console.WriteLine("Mcase Url: " + _mCaseUrl);
+
+            _outputDirectory = commandLineArgs[6];//5
             Console.WriteLine("Output Dir: " + _outputDirectory);
-            _exceptionDirectory = commandLineArgs[5];
+
+            _exceptionDirectory = commandLineArgs[7];//6
             Console.WriteLine("Exception Dir: " + _exceptionDirectory);
         }
 
-        public async Task BeginSync()
+        public async Task LocalSync()
         {
-            //only when connection string is a directory
-            //_connectionString = @"C:\Users\jreiner\Downloads\jsons\jsons";
-
             var dirInfo = new DirectoryInfo(_connectionString);
 
             var files = dirInfo.GetFiles();
 
             if (!Directory.Exists(_outputDirectory))
                 Directory.CreateDirectory(_outputDirectory);
-            
+
             foreach (var file in files)
             {
-                var path = Sync(file.FullName);
+                //points to file for data
+                var data = await File.ReadAllTextAsync(file.FullName);
 
-                if(!string.IsNullOrEmpty(path))
+                var path = Sync(data);
+
+                if (!string.IsNullOrEmpty(path))
                     Console.WriteLine(path);
             }
+        }
 
-            //only when connection string is directory
-
-            //TODO 
-
-
+        public async Task RemoteSync()
+        {
             // 1: query db with connection string and retrieve list of Datalist Id's
+
+            var sqlResult = DataAccess();//return from sql
+
             // 2: foreach over each id, and use http client to retrieve json using endpoint 'Export/DataList/Configuration/{listIDsString}'
-            // 3: update Sync method to take in json string as param in place of file path
-            // 4: continue as normally intended
+
+            // Convert the string to byte array using UTF-8 encoding
+            var byteArray = Encoding.ASCII.GetBytes(_credentials);
+
+            // Base64 encode the byte array
+            var base64String = Convert.ToBase64String(byteArray);
+
+            // Create the Authorization header with Basic scheme
+            var authorizationHeader = new AuthenticationHeaderValue("Basic", base64String);
+
+            var client = new HttpClient();
+
+            client.DefaultRequestHeaders.Authorization = authorizationHeader;
+
+            foreach (var id in sqlResult)
+            {
+                if (id == "545") 
+                    continue;
+                var url = _mCaseUrl + id;
+
+                try
+                {
+                    var clientResult = await client.GetAsync(new Uri(url));
+
+                    var content = await clientResult.Content.ReadAsStringAsync();
+
+                    if (!string.IsNullOrEmpty(content))
+                    {
+                        var path = Sync(content);
+
+                        if (!string.IsNullOrEmpty(path))
+                            Console.WriteLine(path);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    //Console.WriteLine(ex);
+                }
+            }
+        }
+
+        private IEnumerable<string> DataAccess()
+        {
+            using (SqlConnection connection = new SqlConnection(_connectionString))
+            {
+                connection.Open();
+
+                // Execute the query and process results
+                var command = new SqlCommand(_sqlCommand, connection);
+
+                using (SqlDataReader reader = command.ExecuteReader())
+                {
+                    while (reader.Read())
+                    {
+                        var values = new object[1];
+
+                        // Access data from each row
+                        reader.GetValues(values);
+
+                        var value = int.TryParse(values[0].ToString(), out var listId);
+
+                        if (value && listId > 0)
+                            yield return listId.ToString();
+                    }
+                }
+            }
         }
 
 
         /// <summary>
         /// Using List transfer we can catch the structure of our DL's from the db, and reconstruct a C# object. used for custom events
         /// </summary>
-        /// <param name="json"></param>
-        private string Sync(string json)
+        /// <param name="data"></param>
+        private string Sync(string data)
         {
-            //While using files
-            var file = File.ReadAllText(json);
+            var closing = data.LastIndexOf(']');
 
-            var closing = file.LastIndexOf(']');
-
-            var cleanedClose = file.Remove(closing);
+            var cleanedClose = data.Remove(closing);
 
             var result = cleanedClose.Remove(0, 1);
-            //only while using files
 
             var jsonObject = JObject.Parse(result);
 
@@ -91,7 +175,7 @@ namespace DemoKatan.mCase
                 var path = Path.Combine(_outputDirectory, $"{className}Entity.cs");
 
                 File.WriteAllText(path, sb.ToString());
-                
+
                 return path;
             }
             catch (Exception ex)
@@ -194,7 +278,7 @@ namespace DemoKatan.mCase
         }
         private string AddProperties(JToken jToken)
         {
-            var type= jToken.ParseToken(ListTransferFields.Type.GetDescription());
+            var type = jToken.ParseToken(ListTransferFields.Type.GetDescription());
 
             var typeEnum = MCaseStringExtensions.GetEnumValue<MCaseTypes>(type);
 
@@ -262,7 +346,7 @@ namespace DemoKatan.mCase
         {
             var defaultValue = jToken.ParseToken(ListTransferFields.DefaultValue.GetDescription());
 
-            var isCoalesce = !string.IsNullOrEmpty(defaultValue) && defaultValue.Contains("COALESCE");
+            var isCoalesce = !string.IsNullOrEmpty(defaultValue) && defaultValue.Contains("COALESCE", StringComparison.OrdinalIgnoreCase);
 
             return isCoalesce;
         }
@@ -270,8 +354,8 @@ namespace DemoKatan.mCase
         private static StringBuilder ClassInitializer(JObject jObject, string className)
         {
             var id = jObject.ParseJson(ListTransferFields.Id.GetDescription());
-            
-            var sysName= jObject.ParseJson(ListTransferFields.SystemName.GetDescription());
+
+            var sysName = jObject.ParseJson(ListTransferFields.SystemName.GetDescription());
 
             var relationships = jObject[ListTransferFields.Relationships.GetDescription()];//??
 
@@ -305,12 +389,12 @@ namespace DemoKatan.mCase
             sb.AppendLine(Indent(3) + "return _dataListId;");
             sb.AppendLine(Indent(2) + "}"); //close Getter
             sb.AppendLine(Indent(1) + "}"); //close Property
-            if (relationships.Any())
+            if (relationships != null && relationships.Any())
             {
                 //var parentRelationships = transfer.Relationships.Where(x => !string.IsNullOrEmpty(x.ParentSystemName)).Select(x => x.ParentSystemName).ToList();
                 var parentRelationships =
                     relationships.ParseChildren(ListTransferFields.ParentSystemName.GetDescription());
-                
+
                 if (parentRelationships.Any())
                 {
                     var parentList = parentRelationships.Aggregate(
@@ -382,7 +466,7 @@ namespace DemoKatan.mCase
             var sb = new StringBuilder();
 
             var sysName = jToken.ParseToken(ListTransferFields.SystemName.GetDescription());
-            var type= jToken.ParseToken(ListTransferFields.Type.GetDescription());
+            var type = jToken.ParseToken(ListTransferFields.Type.GetDescription());
 
             var privateSysName = $"_{sysName.ToLower()}";
 
@@ -456,7 +540,6 @@ namespace DemoKatan.mCase
         /// <summary>
         /// Factory generator for enumerable mCase data structures.
         /// </summary>
-        /// <param name="field"></param>
         /// <param name="type"></param>
         /// <returns></returns>
         private static string EnumerableFactory(JToken jToken, MCaseTypes type)
@@ -470,7 +553,7 @@ namespace DemoKatan.mCase
                 ListTransferFields.DynamicSourceSystemName.GetDescription());
 
             var privateName = $"_{sysName.ToLower()}";
-            var notAbleToSelectManyValues = fieldOptions.Contains("\"Able to Select Multiple values\"" + ":" + "\"No\"");
+            var notAbleToSelectManyValues = fieldOptions.Contains("\"Able to Select Multiple values\"" + ":" + "\"No\"", StringComparison.OrdinalIgnoreCase);
 
             var multiSelect = notAbleToSelectManyValues ? "False" : "True";
             switch (type)

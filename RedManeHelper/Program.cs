@@ -1,8 +1,21 @@
 ﻿
 using DemoKatan.mCase;
 
-string[] commandLineArgs = Environment.GetCommandLineArgs();
+var commandLineArgs = Environment.GetCommandLineArgs();
 
-var config = new SyncDlConfigs(commandLineArgs);
+if (commandLineArgs.Length > 1)
+{
+    var cmd = new SyncDlConfigs(commandLineArgs);
 
-await config.BeginSync();
+    await cmd.RemoteSync();
+    
+}
+else
+{
+    var local = new SyncDlConfigs();
+
+    await local.RemoteSync();
+    //await local.LocalSync();
+
+}
+

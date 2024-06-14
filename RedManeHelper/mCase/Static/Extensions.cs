@@ -22,7 +22,7 @@ namespace DemoKatan.mCase.Static
         {
             var fieldValue = token[property]?.Parent?.FirstOrDefault()?.Value<string>();
 
-            if (string.Equals("SystemName", property) && !string.IsNullOrEmpty(fieldValue))
+            if (string.Equals("SystemName", property, StringComparison.OrdinalIgnoreCase) || string.Equals("FieldOptions", property, StringComparison.OrdinalIgnoreCase) && !string.IsNullOrEmpty(fieldValue))
                 return fieldValue;
 
             return string.IsNullOrEmpty(fieldValue)
