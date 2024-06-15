@@ -32,8 +32,8 @@ namespace DemoKatan.mCase
             if (commandLineArgs.Length != 8)
             {
                 Console.WriteLine(commandLineArgs.Length > 8
-                    ? $"Too many parameters [{commandLineArgs.Length - 8}]"
-                    : $"Missing parameters [{8 - commandLineArgs.Length}]");
+                    ? $"Too many arguments [{commandLineArgs.Length - 8}]"
+                    : $"Missing arguments [{8 - commandLineArgs.Length}]");
 
                 throw new ArgumentException("Invalid params. 1: Connection string, 2: Sql command 3: Credentials, 4: Enviroment Url 5: Output directory, 6: Exception directory");
             }
@@ -168,6 +168,7 @@ namespace DemoKatan.mCase
         private StringBuilder GenerateFileData(JObject jsonObject, string className)
         {
             var fieldSet = new HashSet<string>(); //used to track properties being set
+            var enumerableFieldSet = new HashSet<string>(); //used to enum properties being set
 
             var fields = jsonObject[ListTransferFields.Fields.GetDescription()];
 
@@ -200,11 +201,16 @@ namespace DemoKatan.mCase
                 if (string.IsNullOrEmpty(systemName) || fieldSet.Contains(systemName))
                     continue; //if property is already in field list then continue, no need to duplicate
 
-                if (string.Equals(requiresEnumerationValues[0], type, StringComparison.OrdinalIgnoreCase))
+                if (requiresEnumerationValues.Any(x => string.Equals(x,type, StringComparison.OrdinalIgnoreCase)))
                 {
-                    embeddedRelatedFields.Add(systemName);
-                    fieldSet.Add(systemName);
-                    continue;
+                    enumerableFieldSet.Add(systemName);
+
+                    if (string.Equals(requiresEnumerationValues[0], type, StringComparison.OrdinalIgnoreCase))
+                    {
+                        embeddedRelatedFields.Add(systemName);
+                        fieldSet.Add(systemName);
+                        continue;
+                    }
                 }
 
                 if (requiresEnumerationValues.Contains(type))
@@ -228,7 +234,7 @@ namespace DemoKatan.mCase
 
             sb.AppendLine(0.Indent() + "}"); //close class
 
-            sb.AppendLine(Factory.GeneratePropertyEnums(fieldSet, className));
+            sb.AppendLine(Factory.GeneratePropertyEnums(enumerableFieldSet, className));
 
             sb.AppendLine("}"); //close namespace
             return sb;
