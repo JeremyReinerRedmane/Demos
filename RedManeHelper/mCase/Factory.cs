@@ -6,6 +6,7 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
+using Bogus.DataSets;
 using Extensions = DemoKatan.mCase.Static.Extensions;
 
 namespace DemoKatan.mCase
@@ -102,20 +103,23 @@ namespace DemoKatan.mCase
             return sb.ToString();
         }
 
+        private static List<MCaseTypes> _stringCheck => new() { MCaseTypes.Date, MCaseTypes.Boolean, MCaseTypes.DateTime, MCaseTypes.EmailAddress, MCaseTypes.Number, MCaseTypes.Phone, MCaseTypes.Time, MCaseTypes.URL };
+
         public static string StringFactory(JToken jToken)
         {
             var sb = new StringBuilder();
             var sysName = jToken.ParseToken(ListTransferFields.SystemName.GetDescription()); //title case
             var type = jToken.ParseToken(ListTransferFields.Type.GetDescription()); //title case
-            var privateSysName = $"_{sysName.ToLower()}";
+            var enumType = type.GetEnumValue<MCaseTypes>();
 
-            var readonlyOrMirrored = jToken.IsStringReadonlyOrMirrored();
+            var privateSysName = $"_{sysName.ToLower()}";
+            var mirroredField = jToken.IsMirrorField();
 
             sb.AppendLine(1.Indent() + $"private string {privateSysName} = string.Empty;");
             sb.AppendLine(1.Indent() + "/// <summary>");
             sb.AppendLine(1.Indent() + $"/// [mCase data type: {type}]");
-            if (readonlyOrMirrored)
-                sb.AppendLine(1.Indent() + "/// This is a Readonly / Mirrored field. No setting / updating allowed.");
+            if (mirroredField)
+                sb.AppendLine(1.Indent() + "/// This is a Mirrored field. No setting / updating allowed.");
             sb.AppendLine(1.Indent() + "/// </summary>");
             sb.AppendLine(1.Indent() + $"public string {sysName.CleanString()}");
             sb.AppendLine(1.Indent() + "{"); //open Property
@@ -126,11 +130,14 @@ namespace DemoKatan.mCase
             sb.AppendLine(3.Indent() + $"return {privateSysName};");
             sb.AppendLine(2.Indent() + "}"); //close Getter
 
-            if (!readonlyOrMirrored)
+            if (!mirroredField)
             {
                 //string is not readonly, add setter
+                //TODO need additional validation against types. IE if type datetime, that it is truly a datetime. boolean truly of type boolean.
                 sb.AppendLine(2.Indent() + "set");
                 sb.AppendLine(2.Indent() + "{"); //open Setter
+                if (_stringCheck.Contains(enumType))
+                    sb.Append(AddStringValidations(enumType));
                 sb.AppendLine(3.Indent() + $"{privateSysName} = value;");
                 sb.AppendLine(3.Indent() + $"_recordInsData.SetValue(\"{sysName}\", {privateSysName});");
                 sb.AppendLine(2.Indent() + "}"); //close Setter
@@ -139,6 +146,52 @@ namespace DemoKatan.mCase
             sb.AppendLine(1.Indent() + "}"); //close Property
 
             return sb.ToString();
+        }
+
+        private static string AddStringValidations(MCaseTypes type)
+        {
+            var sb = new StringBuilder();
+
+            switch (type)
+            {
+                case MCaseTypes.DateTime:
+                    sb.AppendLine(3.Indent() + "var result = DateTime.TryParse(value, out var dt);");
+                    sb.AppendLine(3.Indent() + "if(!result) throw new Exception(\"Unable to parse string to Datetime\");");
+                    sb.AppendLine(3.Indent() + "value = dt.ToString(MCaseEventConstants.DateStorageFormat);");
+                    break;
+                case MCaseTypes.Boolean:
+                    sb.AppendLine(3.Indent() + "if(MCaseEventConstants.TrueValues.Contains(value?.Trim().ToLowerInvariant())) value = \"1\";");
+                    sb.AppendLine(3.Indent() + "else value = \"0\";");
+                    break;
+                case MCaseTypes.Date:
+                    sb.AppendLine(3.Indent() + "var result = DateTime.TryParse(value, out var dt);");
+                    sb.AppendLine(3.Indent() + "if(!result) throw new Exception(\"Unable to parse string to Date\");");
+                    sb.AppendLine(3.Indent() + "value = dt.ToString(MCaseEventConstants.DateStorageFormat);");
+                    break;
+                case MCaseTypes.EmailAddress:
+                    sb.AppendLine(3.Indent() + "if(!value.Contains(\"@\")) throw new Exception(\"Invalid Email. String could not be parsed to email\");");
+                    break;
+                case MCaseTypes.Number:
+                    sb.AppendLine(3.Indent() + "var nan = value.Any(c => !char.IsDigit(c));");
+                    sb.AppendLine(3.Indent() + "if(nan) throw new Exception(\"Unable to parse string to number\");");
+
+                    break;
+                case MCaseTypes.Phone:
+                    sb.AppendLine(3.Indent() + "value = new string(value.Where(c => char.IsDigit(c)).ToArray());");
+                    break;
+                case MCaseTypes.Time:
+                    sb.AppendLine(3.Indent() + "var result = DateTime.TryParse(value, out var dt);");
+                    sb.AppendLine(3.Indent() + "if(!result) throw new Exception(\"Unable to parse string to Time\");");
+                    sb.AppendLine(3.Indent() + "value = dt.ToString(\"HH:mm\");");
+                    break;
+                case MCaseTypes.URL:
+                    sb.AppendLine(3.Indent() + "if(!value.Contains(\".com\") || !value.Contains(\"https://\")) throw new Exception(\"Invalid URL. String could not be parsed to email\");");
+                    break;
+                default:
+                    return string.Empty;
+            }
+            return sb.ToString();
+
         }
 
         public static StringBuilder ClassInitializer(JObject jObject, string className)
@@ -325,6 +378,16 @@ namespace DemoKatan.mCase
         }
 
 
+        /// <summary>
+        /// Required because c# has getters and setters  but no updaters. If you add something to a list, it is required to update the internal state
+        /// This method allows us to update the internal state property on updation. Essentially, creating an updater. Since we do not
+        /// operate directly on the property itself, we aquire the property name using autogenerated enums. Using this we must fetch the class property using
+        /// this.GetType() and GetProperty(). Verify that the property was succesfully returned and then we must verify that the return type of the property is the
+        /// same as the type passed into the method. This is done by fetching the methodinfo using GetGetMethod().Return type and then comparing that to the incoming
+        /// value. If both the property return type, and the argument type are the same we can begin checks for setting the value.
+        /// </summary>
+        /// <param name="className"></param>
+        /// <returns></returns>
         public static string AddEnumerableExtensions(string className)
         {
             var sb = new StringBuilder();

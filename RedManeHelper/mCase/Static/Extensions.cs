@@ -95,7 +95,7 @@ namespace DemoKatan.mCase.Static
             return name + num;
         }
 
-        public static bool IsStringReadonlyOrMirrored(this JToken jToken)
+        public static bool IsMirrorField(this JToken jToken)
         {
             var defaultValue = jToken.ParseToken(ListTransferFields.DefaultValue.GetDescription());
 

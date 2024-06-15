@@ -20,7 +20,7 @@ namespace DemoKatan.mCase
 
         public SyncDlConfigs()
         {
-            _connectionString = ";
+            _connectionString = "";
             _sqlCommand = "";
             _outputDirectory = "";
             _exceptionDirectory = "";
