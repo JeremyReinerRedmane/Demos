@@ -160,11 +160,18 @@ namespace DemoKatan.mCase
                     sb.AppendLine(2.Indent() + "}"); //close Getter
                     sb.AppendLine(2.Indent() + "set");
                     sb.AppendLine(2.Indent() + "{"); //open Setter
+                    sb.AppendLine(3.Indent() +
+                                  $"if({privateName} == null || value == null || !value.Any()) {privateName} = new List<string>();");
+                    sb.AppendLine(3.Indent() +
+                                  "if (value != null && value.Any(string.IsNullOrEmpty)) value.RemoveAll(string.IsNullOrEmpty);");
+                    sb.AppendLine(3.Indent() +
+                                  $"if(value == null || !value.Any()) {privateName} = new List<string>();");
                     if (notAbleToSelectManyValues)
                         sb.AppendLine(3.Indent() +
                                       $"if (value != null && value.Count > 1) throw new Exception(\"[Multi Select is Disabled] {sysName} only accepts a list length of 1.\");");
+                    sb.AppendLine(3.Indent() + $"else {privateName} = value;");
                     sb.AppendLine(3.Indent() +
-                                  $"_recordInsData.SetValue(\"{sysName}\", string.Join(MCaseEventConstants.MultiDropDownDelimiter, value));");
+                                  $"_recordInsData.SetValue(\"{sysName}\", string.Join(MCaseEventConstants.MultiDropDownDelimiter, {privateName}));");
                     sb.AppendLine(2.Indent() + "}"); //close Setter
                     sb.AppendLine(1.Indent() + "}"); //close Property
                     break;
