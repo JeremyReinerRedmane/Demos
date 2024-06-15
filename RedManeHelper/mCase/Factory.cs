@@ -13,186 +13,7 @@ namespace DemoKatan.mCase
 {
     public static class Factory
     {
-        public static string EnumerableFactory(JToken jToken, MCaseTypes type)
-        {
-            var sb = new StringBuilder();
-
-            var sysName = jToken.ParseToken(ListTransferFields.SystemName.GetDescription());
-            var fieldOptions = jToken.ParseToken(ListTransferFields.FieldOptions.GetDescription());
-            var fieldType = jToken.ParseToken(ListTransferFields.Type.GetDescription());
-            var dynamicData = jToken.ParseDynamicData(ListTransferFields.DynamicData.GetDescription(),
-                ListTransferFields.DynamicSourceSystemName.GetDescription());
-
-            var privateName = $"_{sysName.ToLower()}";
-            var notAbleToSelectManyValues = fieldOptions.Contains("\"Able to Select Multiple values\"" + ":" + "\"No\"", StringComparison.OrdinalIgnoreCase);
-
-            var multiSelect = notAbleToSelectManyValues ? "False" : "True";
-            switch (type)
-            {
-                case MCaseTypes.CascadingDropDown:
-                case MCaseTypes.DropDownList:
-                    sb.AppendLine(1.Indent() + $"private List<string> {privateName} = null;");
-                    sb.AppendLine(1.Indent() + "/// <summary>");
-                    sb.AppendLine(1.Indent() + $"/// [mCase data type: {fieldType}]");
-                    sb.AppendLine(1.Indent() + $"/// [Multi Select: {multiSelect}]");
-                    sb.AppendLine(1.Indent() +
-                                  "/// [Setting: Accepts a list of strings such as 'yes' or 'no' added to the original value]");
-                    sb.AppendLine(1.Indent() + "/// [Getting: Returns the list of field labels]");
-                    sb.AppendLine(1.Indent() + "/// [Updating: Requires use of either AddTo(), or RemoveFrom()]");
-                    sb.AppendLine(1.Indent() + "/// </summary>");
-                    sb.AppendLine(1.Indent() + $"public List<string> {sysName.CleanString()}");
-                    sb.AppendLine(1.Indent() + "{"); //open Property
-                    sb.AppendLine(2.Indent() + "get");
-                    sb.AppendLine(2.Indent() + "{"); //open Getter
-                    sb.AppendLine(3.Indent() + $"if({privateName} != null) return {privateName};");
-                    sb.AppendLine(3.Indent() +
-                                  $"{privateName} = _recordInsData.GetMultiSelectFieldValue(\"{sysName}\");");
-                    sb.AppendLine(3.Indent() + $"return {privateName};");
-                    sb.AppendLine(2.Indent() + "}"); //close Getter
-                    sb.AppendLine(2.Indent() + "set");
-                    sb.AppendLine(2.Indent() + "{"); //open Setter
-                    if (notAbleToSelectManyValues)
-                        sb.AppendLine(3.Indent() +
-                                      $"if (value != null && value.Count > 1) throw new Exception(\"[Multi Select is Disabled] {sysName} only accepts a list length of 1.\");");
-                    sb.AppendLine(3.Indent() +
-                                  $"_recordInsData.SetValue(\"{sysName}\", string.Join(MCaseEventConstants.MultiDropDownDelimiter, value));");
-                    sb.AppendLine(2.Indent() + "}"); //close Setter
-                    sb.AppendLine(1.Indent() + "}"); //close Property
-                    break;
-                case MCaseTypes.CascadingDynamicDropDown:
-                case MCaseTypes.DynamicDropDown:
-                    sb.AppendLine(1.Indent() + $"private List<RecordInstanceData> {privateName} = null;");
-                    sb.AppendLine(1.Indent() + "/// <summary>");
-                    sb.AppendLine(1.Indent() + $"/// [mCase data type: {fieldType}]");
-                    sb.AppendLine(1.Indent() + $"/// [Multi Select: {multiSelect}]");
-                    sb.AppendLine(1.Indent() + $"/// [Dynamic Source: {dynamicData}]");
-                    sb.AppendLine(1.Indent() + "/// [Setting: Requires a RecordInstancesData]");
-                    sb.AppendLine(1.Indent() + "/// [Getting: Returns the list of RecordInstancesData's]");
-                    sb.AppendLine(1.Indent() + "/// [Updating: Requires use of either AddTo(), or RemoveFrom()]");
-                    sb.AppendLine(1.Indent() + "/// </summary>");
-                    sb.AppendLine(1.Indent() + $"public List<RecordInstanceData> {sysName.CleanString()}");
-                    sb.AppendLine(1.Indent() + "{"); //open Property
-                    sb.AppendLine(2.Indent() + "get");
-                    sb.AppendLine(2.Indent() + "{"); //open Getter
-                    sb.AppendLine(3.Indent() + $"if({privateName}!=null) return {privateName};");
-                    sb.AppendLine(3.Indent() +
-                                  $"{privateName}=_eventHelper.GetDynamicDropdownRecords(_recordInsData.RecordInstanceID, \"{sysName}\").ToList();");
-                    sb.AppendLine(3.Indent() + $"return {privateName};");
-                    sb.AppendLine(2.Indent() + "}"); //close Getter
-                    sb.AppendLine(2.Indent() + "set");
-                    sb.AppendLine(2.Indent() + "{"); //open Setter
-                    sb.AppendLine(3.Indent() +
-                                  $"if({privateName} == null || value == null || !value.Any()) {privateName} = new List<RecordInstanceData>();");
-                    sb.AppendLine(3.Indent() +
-                                  "if (value != null && value.Any(x => x == null)) value.RemoveAll(x => x == null);");
-                    sb.AppendLine(3.Indent() +
-                                  $"if(value == null || !value.Any()) {privateName} = new List<RecordInstanceData>();");
-                    if (notAbleToSelectManyValues)
-                        sb.AppendLine(3.Indent() +
-                                      $"if (value != null && value.Count > 1) throw new Exception(\"[Multi Select is Disabled] {sysName} only accepts a list length of 1.\");");
-                    sb.AppendLine(3.Indent() + $"else {privateName} = value;");
-                    sb.AppendLine(3.Indent() +
-                                  $"_recordInsData.SetValue(\"{sysName}\", string.Join(MCaseEventConstants.MultiDropDownDelimiter, {privateName}.Select(x => x.RecordInstanceID)));");
-                    sb.AppendLine(2.Indent() + "}"); //close Setter
-                    sb.AppendLine(1.Indent() + "}"); //close Property
-                    break;
-                default:
-                    return string.Empty;
-            }
-
-            return sb.ToString();
-        }
-
         private static List<MCaseTypes> _stringCheck => new() { MCaseTypes.Date, MCaseTypes.Boolean, MCaseTypes.DateTime, MCaseTypes.EmailAddress, MCaseTypes.Number, MCaseTypes.Phone, MCaseTypes.Time, MCaseTypes.URL };
-
-        public static string StringFactory(JToken jToken)
-        {
-            var sb = new StringBuilder();
-            var sysName = jToken.ParseToken(ListTransferFields.SystemName.GetDescription()); //title case
-            var type = jToken.ParseToken(ListTransferFields.Type.GetDescription()); //title case
-            var enumType = type.GetEnumValue<MCaseTypes>();
-
-            var privateSysName = $"_{sysName.ToLower()}";
-            var mirroredField = jToken.IsMirrorField();
-
-            sb.AppendLine(1.Indent() + $"private string {privateSysName} = string.Empty;");
-            sb.AppendLine(1.Indent() + "/// <summary>");
-            sb.AppendLine(1.Indent() + $"/// [mCase data type: {type}]");
-            if (mirroredField)
-                sb.AppendLine(1.Indent() + "/// This is a Mirrored field. No setting / updating allowed.");
-            sb.AppendLine(1.Indent() + "/// </summary>");
-            sb.AppendLine(1.Indent() + $"public string {sysName.CleanString()}");
-            sb.AppendLine(1.Indent() + "{"); //open Property
-            sb.AppendLine(2.Indent() + "get");
-            sb.AppendLine(2.Indent() + "{"); //open Getter
-            sb.AppendLine(3.Indent() + $"if(!string.IsNullOrEmpty({privateSysName})) return {privateSysName};");
-            sb.AppendLine(3.Indent() + $"{privateSysName} = _recordInsData.GetFieldValue(\"{sysName}\");");
-            sb.AppendLine(3.Indent() + $"return {privateSysName};");
-            sb.AppendLine(2.Indent() + "}"); //close Getter
-
-            if (!mirroredField)
-            {
-                //string is not readonly, add setter
-                //TODO need additional validation against types. IE if type datetime, that it is truly a datetime. boolean truly of type boolean.
-                sb.AppendLine(2.Indent() + "set");
-                sb.AppendLine(2.Indent() + "{"); //open Setter
-                if (_stringCheck.Contains(enumType))
-                    sb.Append(AddStringValidations(enumType));
-                sb.AppendLine(3.Indent() + $"{privateSysName} = value;");
-                sb.AppendLine(3.Indent() + $"_recordInsData.SetValue(\"{sysName}\", {privateSysName});");
-                sb.AppendLine(2.Indent() + "}"); //close Setter
-            }
-
-            sb.AppendLine(1.Indent() + "}"); //close Property
-
-            return sb.ToString();
-        }
-
-        private static string AddStringValidations(MCaseTypes type)
-        {
-            var sb = new StringBuilder();
-
-            switch (type)
-            {
-                case MCaseTypes.DateTime:
-                    sb.AppendLine(3.Indent() + "var result = DateTime.TryParse(value, out var dt);");
-                    sb.AppendLine(3.Indent() + "if(!result) throw new Exception(\"Unable to parse string to Datetime\");");
-                    sb.AppendLine(3.Indent() + "value = dt.ToString(MCaseEventConstants.DateStorageFormat);");
-                    break;
-                case MCaseTypes.Boolean:
-                    sb.AppendLine(3.Indent() + "if(MCaseEventConstants.TrueValues.Contains(value?.Trim().ToLowerInvariant())) value = \"1\";");
-                    sb.AppendLine(3.Indent() + "else value = \"0\";");
-                    break;
-                case MCaseTypes.Date:
-                    sb.AppendLine(3.Indent() + "var result = DateTime.TryParse(value, out var dt);");
-                    sb.AppendLine(3.Indent() + "if(!result) throw new Exception(\"Unable to parse string to Date\");");
-                    sb.AppendLine(3.Indent() + "value = dt.ToString(MCaseEventConstants.DateStorageFormat);");
-                    break;
-                case MCaseTypes.EmailAddress:
-                    sb.AppendLine(3.Indent() + "if(!value.Contains(\"@\")) throw new Exception(\"Invalid Email. String could not be parsed to email\");");
-                    break;
-                case MCaseTypes.Number:
-                    sb.AppendLine(3.Indent() + "var nan = value.Any(c => !char.IsDigit(c));");
-                    sb.AppendLine(3.Indent() + "if(nan) throw new Exception(\"Unable to parse string to number\");");
-
-                    break;
-                case MCaseTypes.Phone:
-                    sb.AppendLine(3.Indent() + "value = new string(value.Where(c => char.IsDigit(c)).ToArray());");
-                    break;
-                case MCaseTypes.Time:
-                    sb.AppendLine(3.Indent() + "var result = DateTime.TryParse(value, out var dt);");
-                    sb.AppendLine(3.Indent() + "if(!result) throw new Exception(\"Unable to parse string to Time\");");
-                    sb.AppendLine(3.Indent() + "value = dt.ToString(\"HH:mm\");");
-                    break;
-                case MCaseTypes.URL:
-                    sb.AppendLine(3.Indent() + "if(!value.Contains(\".com\") || !value.Contains(\"https://\")) throw new Exception(\"Invalid URL. String could not be parsed to email\");");
-                    break;
-                default:
-                    return string.Empty;
-            }
-            return sb.ToString();
-
-        }
 
         public static StringBuilder ClassInitializer(JObject jObject, string className)
         {
@@ -203,7 +24,7 @@ namespace DemoKatan.mCase
             var relationships = jObject[ListTransferFields.Relationships.GetDescription()];//??
             var dtNow = DateTime.Now.ToString(Extensions.MCaseDateTimeStorageFormat);
 
-            sb.AppendLine(
+            sb.AppendLine(//TODO continue to add usings, as more and more validations are made
                 "using System;\nusing System.Collections.Generic;\nusing System.Linq;\nusing MCaseCustomEvents.ARFocus.DataAccess;\nusing MCaseEventsSDK;\nusing MCaseEventsSDK.Util;\nusing MCaseEventsSDK.Util.Data;\nusing System.ComponentModel;\nusing System.Reflection;");
             sb.AppendLine("namespace MCaseCustomEvents.ARFocus.FactoryEntities"); //TODO: project specific namespace
             sb.AppendLine("{"); //open namespace
@@ -301,6 +122,179 @@ namespace DemoKatan.mCase
             return sb;
         }
 
+        public static string EnumerableFactory(JToken jToken, MCaseTypes type)
+        {
+            var sb = new StringBuilder();
+
+            var sysName = jToken.ParseToken(ListTransferFields.SystemName.GetDescription());
+            var fieldOptions = jToken.ParseToken(ListTransferFields.FieldOptions.GetDescription());
+            var fieldType = jToken.ParseToken(ListTransferFields.Type.GetDescription());
+            var dynamicData = jToken.ParseDynamicData(ListTransferFields.DynamicData.GetDescription(),
+                ListTransferFields.DynamicSourceSystemName.GetDescription());
+
+            var privateName = $"_{sysName.ToLower()}";
+            var notAbleToSelectManyValues = fieldOptions.Contains("\"Able to Select Multiple values\"" + ":" + "\"No\"", StringComparison.OrdinalIgnoreCase);
+
+            var multiSelect = notAbleToSelectManyValues ? "False" : "True";
+            switch (type)
+            {
+                case MCaseTypes.CascadingDropDown:
+                case MCaseTypes.DropDownList:
+                    sb.AppendLine(1.Indent() + $"private List<string> {privateName} = null;");
+                    sb.AppendLine(1.Indent() + "/// <summary>");
+                    sb.AppendLine(1.Indent() + $"/// [mCase data type: {fieldType}]");
+                    sb.AppendLine(1.Indent() + $"/// [Multi Select: {multiSelect}]");
+                    sb.AppendLine(1.Indent() +
+                                  "/// [Setting: Accepts a list of strings such as 'yes' or 'no' added to the original value]");
+                    sb.AppendLine(1.Indent() + "/// [Getting: Returns the list of field labels]");
+                    sb.AppendLine(1.Indent() + "/// [Updating: Requires use of either AddTo(), or RemoveFrom()]");
+                    sb.AppendLine(1.Indent() + "/// </summary>");
+                    sb.AppendLine(1.Indent() + $"public List<string> {sysName.CleanString()}");
+                    sb.AppendLine(1.Indent() + "{"); //open Property
+                    sb.AppendLine(2.Indent() + "get");
+                    sb.AppendLine(2.Indent() + "{"); //open Getter
+                    sb.AppendLine(3.Indent() + $"if({privateName} != null) return {privateName};");
+                    sb.AppendLine(3.Indent() +
+                                  $"{privateName} = _recordInsData.GetMultiSelectFieldValue(\"{sysName}\");");
+                    sb.AppendLine(3.Indent() + $"return {privateName};");
+                    sb.AppendLine(2.Indent() + "}"); //close Getter
+                    sb.AppendLine(2.Indent() + "set");
+                    sb.AppendLine(2.Indent() + "{"); //open Setter
+                    if (notAbleToSelectManyValues)
+                        sb.AppendLine(3.Indent() +
+                                      $"if (value != null && value.Count > 1) throw new Exception(\"[Multi Select is Disabled] {sysName} only accepts a list length of 1.\");");
+                    sb.AppendLine(3.Indent() +
+                                  $"_recordInsData.SetValue(\"{sysName}\", string.Join(MCaseEventConstants.MultiDropDownDelimiter, value));");
+                    sb.AppendLine(2.Indent() + "}"); //close Setter
+                    sb.AppendLine(1.Indent() + "}"); //close Property
+                    break;
+                case MCaseTypes.CascadingDynamicDropDown:
+                case MCaseTypes.DynamicDropDown:
+                    sb.AppendLine(1.Indent() + $"private List<RecordInstanceData> {privateName} = null;");
+                    sb.AppendLine(1.Indent() + "/// <summary>");
+                    sb.AppendLine(1.Indent() + $"/// [mCase data type: {fieldType}]");
+                    sb.AppendLine(1.Indent() + $"/// [Multi Select: {multiSelect}]");
+                    sb.AppendLine(1.Indent() + $"/// [Dynamic Source: {dynamicData}]");
+                    sb.AppendLine(1.Indent() + "/// [Setting: Requires a RecordInstancesData]");
+                    sb.AppendLine(1.Indent() + "/// [Getting: Returns the list of RecordInstancesData's]");
+                    sb.AppendLine(1.Indent() + "/// [Updating: Requires use of either AddTo(), or RemoveFrom()]");
+                    sb.AppendLine(1.Indent() + "/// </summary>");
+                    sb.AppendLine(1.Indent() + $"public List<RecordInstanceData> {sysName.CleanString()}");
+                    sb.AppendLine(1.Indent() + "{"); //open Property
+                    sb.AppendLine(2.Indent() + "get");
+                    sb.AppendLine(2.Indent() + "{"); //open Getter
+                    sb.AppendLine(3.Indent() + $"if({privateName}!=null) return {privateName};");
+                    sb.AppendLine(3.Indent() +
+                                  $"{privateName}=_eventHelper.GetDynamicDropdownRecords(_recordInsData.RecordInstanceID, \"{sysName}\").ToList();");
+                    sb.AppendLine(3.Indent() + $"return {privateName};");
+                    sb.AppendLine(2.Indent() + "}"); //close Getter
+                    sb.AppendLine(2.Indent() + "set");
+                    sb.AppendLine(2.Indent() + "{"); //open Setter
+                    sb.AppendLine(3.Indent() +
+                                  $"if({privateName} == null || value == null || !value.Any()) {privateName} = new List<RecordInstanceData>();");
+                    sb.AppendLine(3.Indent() +
+                                  "if (value != null && value.Any(x => x == null)) value.RemoveAll(x => x == null);");
+                    sb.AppendLine(3.Indent() +
+                                  $"if(value == null || !value.Any()) {privateName} = new List<RecordInstanceData>();");
+                    if (notAbleToSelectManyValues)
+                        sb.AppendLine(3.Indent() +
+                                      $"if (value != null && value.Count > 1) throw new Exception(\"[Multi Select is Disabled] {sysName} only accepts a list length of 1.\");");
+                    sb.AppendLine(3.Indent() + $"else {privateName} = value;");
+                    sb.AppendLine(3.Indent() +
+                                  $"_recordInsData.SetValue(\"{sysName}\", string.Join(MCaseEventConstants.MultiDropDownDelimiter, {privateName}.Select(x => x.RecordInstanceID)));");
+                    sb.AppendLine(2.Indent() + "}"); //close Setter
+                    sb.AppendLine(1.Indent() + "}"); //close Property
+                    break;
+                default:
+                    return string.Empty;
+            }
+
+            return sb.ToString();
+        }
+
+        public static string StringFactory(JToken jToken)
+        {
+            var sb = new StringBuilder();
+            var sysName = jToken.ParseToken(ListTransferFields.SystemName.GetDescription()); //title case
+            var type = jToken.ParseToken(ListTransferFields.Type.GetDescription()); //title case
+            var enumType = type.GetEnumValue<MCaseTypes>();
+
+            var privateSysName = $"_{sysName.ToLower()}";
+            var mirroredField = jToken.IsMirrorField();
+
+            sb.AppendLine(1.Indent() + $"private string {privateSysName} = string.Empty;");
+            sb.AppendLine(1.Indent() + "/// <summary>");
+            sb.AppendLine(1.Indent() + $"/// [mCase data type: {type}]");
+            if (mirroredField)
+                sb.AppendLine(1.Indent() + "/// This is a Mirrored field. No setting / updating allowed.");
+            sb.AppendLine(1.Indent() + "/// </summary>");
+            sb.AppendLine(1.Indent() + $"public string {sysName.CleanString()}");
+            sb.AppendLine(1.Indent() + "{"); //open Property
+            sb.AppendLine(2.Indent() + "get");
+            sb.AppendLine(2.Indent() + "{"); //open Getter
+            sb.AppendLine(3.Indent() + $"if(!string.IsNullOrEmpty({privateSysName})) return {privateSysName};");
+            sb.AppendLine(3.Indent() + $"{privateSysName} = _recordInsData.GetFieldValue(\"{sysName}\");");
+            sb.AppendLine(3.Indent() + $"return {privateSysName};");
+            sb.AppendLine(2.Indent() + "}"); //close Getter
+
+            if (!mirroredField)
+            {
+                //string is not readonly, add setter
+                sb.AppendLine(2.Indent() + "set");
+                sb.AppendLine(2.Indent() + "{"); //open Setter
+                if (_stringCheck.Contains(enumType))
+                    sb.Append(AddStringValidations(enumType));
+                sb.AppendLine(3.Indent() + $"{privateSysName} = value;");
+                sb.AppendLine(3.Indent() + $"_recordInsData.SetValue(\"{sysName}\", {privateSysName});");
+                sb.AppendLine(2.Indent() + "}"); //close Setter
+            }
+
+            sb.AppendLine(1.Indent() + "}"); //close Property
+
+            return sb.ToString();
+        }
+
+        private static string AddStringValidations(MCaseTypes type)
+        {
+            var sb = new StringBuilder();
+
+            switch (type)
+            {
+                case MCaseTypes.Date:
+                case MCaseTypes.DateTime:
+                    var dt = type.GetDescription();
+                    sb.AppendLine(3.Indent() + "var result = DateTime.TryParse(value, out var dt);");
+                    sb.AppendLine(3.Indent() + $"if(!result) throw new Exception(\"Unable to parse string to {dt}\");");
+                    sb.AppendLine(3.Indent() + "value = dt.ToString(MCaseEventConstants.DateStorageFormat);");
+                    break;
+                case MCaseTypes.Boolean:
+                    sb.AppendLine(3.Indent() + "if(MCaseEventConstants.TrueValues.Contains(value?.Trim().ToLowerInvariant())) value = \"1\";");
+                    sb.AppendLine(3.Indent() + "else value = \"0\";");
+                    break;
+                case MCaseTypes.EmailAddress:
+                    sb.AppendLine(3.Indent() + "if(!value.Contains(\"@\")) throw new Exception(\"Invalid Email. String could not be parsed to email\");");
+                    break;
+                case MCaseTypes.Number:
+                    sb.AppendLine(3.Indent() + "var nan = value.Any(c => !char.IsDigit(c));");
+                    sb.AppendLine(3.Indent() + "if(nan) throw new Exception(\"Unable to parse string to number\");");
+                    break;
+                case MCaseTypes.Phone:
+                    sb.AppendLine(3.Indent() + "value = new string(value.Where(c => char.IsDigit(c)).ToArray());");
+                    break;
+                case MCaseTypes.Time:
+                    sb.AppendLine(3.Indent() + "var result = DateTime.TryParse(value, out var dt);");
+                    sb.AppendLine(3.Indent() + "if(!result) throw new Exception(\"Unable to parse string to Time\");");
+                    sb.AppendLine(3.Indent() + "value = dt.ToString(\"HH:mm\");");
+                    break;
+                case MCaseTypes.URL:
+                    sb.AppendLine(3.Indent() + "if(!value.Contains(\".com\") || !value.Contains(\"https://\")) throw new Exception(\"Invalid URL. String could not be parsed to email\");");
+                    break;
+                default:
+                    return string.Empty;
+            }
+            return sb.ToString();
+        }
+
         public static string LongFactory(JToken jToken)
         {
             var sb = new StringBuilder();
@@ -333,30 +327,6 @@ namespace DemoKatan.mCase
             return sb.ToString();
         }
 
-        public static string GeneratePropertyEnums(HashSet<string> fieldSet, string className)
-        {
-            var sb = new StringBuilder();
-
-            sb.AppendLine(0.Indent() + $"public enum {className}Enum");
-            sb.AppendLine(0.Indent() + "{");
-
-            foreach (var field in fieldSet)
-            {
-                sb.AppendLine(1.Indent() + $"[Description(\"{field.CleanString()}\")]");
-                sb.AppendLine(1.Indent() + $"{field},");
-
-            }
-
-            sb.AppendLine(0.Indent() + "}");
-
-            return sb.ToString();
-        }
-
-        /// <summary>
-        /// Handles processing for Embedded lists
-        /// </summary>
-        /// <param name="data"></param>
-        /// <returns></returns>
         public static string GetEmbeddedOptions(List<string> data)
         {
             var sb = new StringBuilder();
@@ -376,7 +346,6 @@ namespace DemoKatan.mCase
 
             return sb.ToString();
         }
-
 
         /// <summary>
         /// Required because c# has getters and setters  but no updaters. If you add something to a list, it is required to update the internal state
@@ -488,7 +457,7 @@ namespace DemoKatan.mCase
             sb.AppendLine(1.Indent() + "/// <param name=\"propertyEnum\">Class public property name</param>");
             sb.AppendLine(1.Indent() + "/// <param name=\"recordInstanceDataPredicate\">Default null value</param>");
             sb.AppendLine(1.Indent() + "/// <param name=\"stringPredicate\">Default null value</param>");
-            sb.AppendLine(1.Indent() + "/// <returns>Amount of values removed. Type errors: -1. null errors: -2. Invalid Arguments: -3</returns></returns>");
+            sb.AppendLine(1.Indent() + "/// <returns>Amount of values removed. Type errors: -1. null errors: -2. Invalid Arguments: -3</returns>");
             sb.AppendLine(1.Indent() +
                           $"public int RemoveFrom({className}Enum propertyEnum, Func<RecordInstanceData, bool> recordInstanceDataPredicate = null, Func<string, bool> stringPredicate = null)");
             sb.AppendLine(1.Indent() + "{"); //open method
@@ -524,5 +493,25 @@ namespace DemoKatan.mCase
 
             return sb.ToString();
         }
+        
+        public static string GeneratePropertyEnums(HashSet<string> fieldSet, string className)
+        {
+            var sb = new StringBuilder();
+
+            sb.AppendLine(0.Indent() + $"public enum {className}Enum");
+            sb.AppendLine(0.Indent() + "{");
+
+            foreach (var field in fieldSet)
+            {
+                sb.AppendLine(1.Indent() + $"[Description(\"{field.CleanString()}\")]");
+                sb.AppendLine(1.Indent() + $"{field},");
+
+            }
+
+            sb.AppendLine(0.Indent() + "}");
+
+            return sb.ToString();
+        }
+
     }
 }

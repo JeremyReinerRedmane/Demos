@@ -1,11 +1,8 @@
-﻿using System;
-using System.Data.SqlClient;
-using System.Net;
+﻿using System.Data.SqlClient;
 using System.Net.Http.Headers;
 using System.Text;
 using DemoKatan.mCase.Static;
 using Newtonsoft.Json.Linq;
-using Extensions = DemoKatan.mCase.Static.Extensions;
 
 namespace DemoKatan.mCase
 {
@@ -27,6 +24,7 @@ namespace DemoKatan.mCase
             _credentials = "";//TODO add credentials username:password
             _mCaseUrl = "";
         }
+        
         public SyncDlConfigs(string[] commandLineArgs)
         {
             if (commandLineArgs.Length != 8)
@@ -108,7 +106,7 @@ namespace DemoKatan.mCase
                 // Execute the query and process results
                 var command = new SqlCommand(_sqlCommand, connection);
 
-                using (SqlDataReader reader = command.ExecuteReader())
+                using (var reader = command.ExecuteReader())
                 {
                     while (reader.Read())
                     {
@@ -125,7 +123,6 @@ namespace DemoKatan.mCase
                 }
             }
         }
-
 
         /// <summary>
         /// Using List transfer we can catch the structure of our DL's from the db, and reconstruct a C# object. used for custom events
@@ -240,12 +237,11 @@ namespace DemoKatan.mCase
             return sb;
         }
 
-        
         private string AddProperties(JToken jToken)
         {
             var type = jToken.ParseToken(ListTransferFields.Type.GetDescription());
 
-            var typeEnum = MCaseStringExtensions.GetEnumValue<MCaseTypes>(type);
+            var typeEnum = type.GetEnumValue<MCaseTypes>();
 
             switch (typeEnum)
             {

@@ -34,17 +34,10 @@ namespace DemoKatan.mCase.Static
         {
             var containers = token.Children();
 
-            var relationships = new List<string>();
-            
-            foreach (var child in containers)
-            {
-                var result = child.ParseToken(property);
-
-                if(!string.IsNullOrEmpty(result))
-                    relationships.Add(result);
-            }
-
-            return relationships;
+            return containers
+                .Select(child => child.ParseToken(property))
+                .Where(result => !string.IsNullOrEmpty(result))
+                .ToList();
         }
 
         public static string ParseDynamicData(this JToken token, string prop1, string prop2)
@@ -58,15 +51,6 @@ namespace DemoKatan.mCase.Static
             return property2 ?? string.Empty;
         }
 
-        private static bool IsNum(this char c) => int.TryParse(c.ToString(), out _);
-
-        private static bool IsLetter(this char c)
-        {
-            var letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
-
-            return letters.Contains(c);
-        }
-
         public static string CleanString(this string input)
         {
             var name = string.Empty;
@@ -74,13 +58,13 @@ namespace DemoKatan.mCase.Static
             var firstChar = true;
             foreach (var c in input)
             {
-                if (c.IsNum())
+                if (char.IsDigit(c))
                 {
                     num += c;
                     continue;
                 }
 
-                if (!c.IsLetter())
+                if (!char.IsLetter(c))
                     continue;
 
                 if (firstChar)
