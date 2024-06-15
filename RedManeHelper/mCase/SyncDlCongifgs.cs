@@ -11,12 +11,12 @@ namespace DemoKatan.mCase
 {
     public class SyncDlConfigs
     {
-        private string _connectionString = string.Empty;
-        private string _sqlCommand = string.Empty;
-        private string _outputDirectory = string.Empty;
-        private string _exceptionDirectory = string.Empty;
-        private string _credentials = string.Empty;
-        private string _mCaseUrl = string.Empty;
+        private readonly string _connectionString;
+        private readonly string _sqlCommand;
+        private readonly string _outputDirectory;
+        private readonly string _exceptionDirectory;
+        private readonly string _credentials;
+        private readonly string _mCaseUrl;
 
         public SyncDlConfigs()
         {
