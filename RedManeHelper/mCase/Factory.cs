@@ -28,7 +28,9 @@ namespace DemoKatan.mCase
                 "using System;\nusing System.Collections.Generic;\nusing System.Linq;\nusing MCaseCustomEvents.ARFocus.DataAccess;\nusing MCaseEventsSDK;\nusing MCaseEventsSDK.Util;\nusing MCaseEventsSDK.Util.Data;\nusing System.ComponentModel;\nusing System.Reflection;");
             sb.AppendLine("namespace MCaseCustomEvents.ARFocus.FactoryEntities"); //TODO: project specific namespace
             sb.AppendLine("{"); //open namespace
+            
             #region Dl Info Class
+            
             sb.AppendLine(0.Indent() + "/// <summary>");
             sb.AppendLine(0.Indent() + $"/// Synchronized data list [{id}][{sysName}] on {dtNow}");
             sb.AppendLine(0.Indent() + "/// </summary>");
@@ -40,47 +42,10 @@ namespace DemoKatan.mCase
             sb.AppendLine(2.Indent() + "_eventHelper = eventHelper;");
             sb.AppendLine(1.Indent() + "}"); //close constructor
             sb.AppendLine(1.Indent() + $"public string SystemName => \"{sysName}\";");
-            sb.AppendLine(1.Indent() + "private int _dataListId = -1;");
-            sb.AppendLine(1.Indent() + "public int DataListId");
-            sb.AppendLine(1.Indent() + "{"); //open Property
-            sb.AppendLine(2.Indent() + "get");
-            sb.AppendLine(2.Indent() + "{"); //open Getter
-            sb.AppendLine(3.Indent() + "if(_dataListId != -1) return _dataListId;");
-            sb.AppendLine(3.Indent() + "var id = _eventHelper.GetDataListID(SystemName);");
-            sb.AppendLine(3.Indent() + "if(id.HasValue && id.Value > 0) _dataListId = id.Value;");
-            sb.AppendLine(3.Indent() + "return _dataListId;");
-            sb.AppendLine(2.Indent() + "}"); //close Getter
-            sb.AppendLine(1.Indent() + "}"); //close Property
-            if (relationships != null && relationships.Any())
-            {
-                var parentRelationships =
-                    relationships.ParseChildren(ListTransferFields.ParentSystemName.GetDescription());
-
-                if (parentRelationships.Any())
-                {
-                    var parentList = parentRelationships.Aggregate(
-                        "public List<string> ParentRelationShips => new List<string>() {", (current, child) => current + $"\"{child}\",");
-                    parentList += "};";
-                    sb.AppendLine(1.Indent() + parentList);
-                }
-
-                var childRelationships =
-                    relationships.ParseChildren(ListTransferFields.ChildSystemName.GetDescription());
-
-                if (childRelationships.Any())
-                {
-                    var childList = childRelationships.Aggregate(
-                        "public List<string> ChildRelationShips => new List<string>() {",
-                        (current, child) => current + $"\"{child}\",");
-                    childList += "};";
-                    sb.AppendLine(1.Indent() + childList);
-                }
-            }
-
+            sb.Append(GenerateRelationships(relationships));
             sb.AppendLine(0.Indent() + "}"); //close class
 
             #endregion
-
             #region Entity
 
             sb.AppendLine(0.Indent() + "/// <summary>");
@@ -91,17 +56,29 @@ namespace DemoKatan.mCase
             sb.AppendLine(1.Indent() + "private RecordInstanceData _recordInsData;");
             sb.AppendLine(1.Indent() + "private AEventHelper _eventHelper;");
             sb.AppendLine(1.Indent() +
-                          $"public {className}Entity(RecordInstanceData recordInsData, AEventHelper eventHelper)");
+                          $"public partial {className}Entity(RecordInstanceData recordInsData, AEventHelper eventHelper)");
             sb.AppendLine(1.Indent() + "{"); //open constructor
             sb.AppendLine(2.Indent() + "_recordInsData = recordInsData;");
             sb.AppendLine(2.Indent() + "_eventHelper = eventHelper;");
             sb.AppendLine(1.Indent() + "}"); //close constructor
-            sb.AppendLine(1.Indent() + $"public string SystemName => \"{sysName}\";");
             sb.AppendLine(1.Indent() + "public long RecordInstanceId => _recordInsData.RecordInstanceID;");
             sb.AppendLine(1.Indent() + "public void SaveRecord()");
             sb.AppendLine(1.Indent() + "{"); //open Method
             sb.AppendLine(2.Indent() + "_eventHelper.SaveRecord(_recordInsData);");
             sb.AppendLine(1.Indent() + "}"); //close Method
+            sb.AppendLine(1.Indent() + $"public string SystemName => \"{sysName}\";");
+            sb.Append(GenerateRelationships(relationships));
+
+            #endregion
+
+            return sb;
+        }
+
+        private static string GenerateRelationships(JToken? relationships)
+        {
+            //TODO validate new extension does not throw errors
+            var sb = new StringBuilder();
+
             sb.AppendLine(1.Indent() + "private int _dataListId = -1;");
             sb.AppendLine(1.Indent() + "/// <summary>");
             sb.AppendLine(1.Indent() + "/// Data list identifier is -1 if not found");
@@ -114,12 +91,39 @@ namespace DemoKatan.mCase
             sb.AppendLine(3.Indent() + "var id = _eventHelper.GetDataListID(SystemName);");
             sb.AppendLine(3.Indent() + "if(id.HasValue && id.Value > 0) _dataListId = id.Value;");
             sb.AppendLine(3.Indent() + "return _dataListId;");
-            sb.AppendLine(2.Indent() + "}"); //close Setter
+            sb.AppendLine(2.Indent() + "}"); //close Getter
             sb.AppendLine(1.Indent() + "}"); //close Property
 
-            #endregion
+            if (relationships == null || !relationships.Any()) 
+                return sb.ToString();
+            
+            var parentRelationships =
+                relationships.ParseChildren(ListTransferFields.ParentSystemName.GetDescription());
 
-            return sb;
+            if (parentRelationships.Any())
+            {
+                var parentList = parentRelationships.Aggregate(
+                    "public List<string> ParentRelationShips => new List<string>() {", (current, child) => current + $"\"{child}\",");
+                parentList += "};";
+                sb.AppendLine(1.Indent() + parentList);
+            }
+            else
+                sb.AppendLine(1.Indent() + "public List<string> ParentRelationShips => new List<string>();");
+
+            var childRelationships =
+                relationships.ParseChildren(ListTransferFields.ChildSystemName.GetDescription());
+
+            if (childRelationships.Any())
+            {
+                var childList = childRelationships.Aggregate(
+                    "public List<string> ChildRelationShips => new List<string>() {", (current, child) => current + $"\"{child}\",");
+                childList += "};";
+                sb.AppendLine(1.Indent() + childList);
+            }
+            else
+                sb.AppendLine(1.Indent() + "public List<string> ChildRelationShips => new List<string>();");
+
+            return sb.ToString();
         }
 
         public static string EnumerableFactory(JToken jToken, MCaseTypes type)
@@ -235,6 +239,8 @@ namespace DemoKatan.mCase
             if (mirroredField)
                 sb.AppendLine(1.Indent() + "/// This is a Mirrored field. No setting / updating allowed.");
             sb.AppendLine(1.Indent() + "/// </summary>");
+            if(_stringCheck.Contains(enumType) && !mirroredField)
+                sb.AppendLine(1.Indent() + "/// <returns>\"-1 if string does not pass mCase data type validation.\"</returns>");
             sb.AppendLine(1.Indent() + $"public string {sysName.CleanString()}");
             sb.AppendLine(1.Indent() + "{"); //open Property
             sb.AppendLine(2.Indent() + "get");
@@ -268,33 +274,37 @@ namespace DemoKatan.mCase
             switch (type)
             {
                 case MCaseTypes.Date:
-                case MCaseTypes.DateTime:
-                    var dt = type.GetDescription();
                     sb.AppendLine(3.Indent() + "var result = DateTime.TryParse(value, out var dt);");
-                    sb.AppendLine(3.Indent() + $"if(!result) throw new Exception(\"Unable to parse string to {dt}\");");
-                    sb.AppendLine(3.Indent() + "value = dt.ToString(MCaseEventConstants.DateStorageFormat);");
+                    sb.AppendLine(3.Indent() + "if(!result) value = \"-1\";");
+                    sb.AppendLine(3.Indent() + "else value = dt.ToString(MCaseEventConstants.DateStorageFormat);");
+                    break;
+                case MCaseTypes.DateTime:
+                    sb.AppendLine(3.Indent() + "var result = DateTime.TryParse(value, out var dt);");
+                    sb.AppendLine(3.Indent() + "if(!result) value = \"-1\";");
+                    sb.AppendLine(3.Indent() + "else value = dt.ToString(MCaseEventConstants.DateTimeStorageFormat);");
                     break;
                 case MCaseTypes.Boolean:
                     sb.AppendLine(3.Indent() + "if(MCaseEventConstants.TrueValues.Contains(value?.Trim().ToLowerInvariant())) value = \"1\";");
                     sb.AppendLine(3.Indent() + "else value = \"0\";");
                     break;
                 case MCaseTypes.EmailAddress:
-                    sb.AppendLine(3.Indent() + "if(!value.Contains(\"@\")) throw new Exception(\"Invalid Email. String could not be parsed to email\");");
+                    sb.AppendLine(3.Indent() + "if(!value.Contains(\"@\")) value = \"-1\";");
                     break;
                 case MCaseTypes.Number:
-                    sb.AppendLine(3.Indent() + "var nan = value.Any(c => !char.IsDigit(c));");
-                    sb.AppendLine(3.Indent() + "if(nan) throw new Exception(\"Unable to parse string to number\");");
+                    sb.AppendLine(3.Indent() + "var isNumeric = long.TryParse(value, out _) || int.TryParse(value, out _) || double.TryParse(value, out _);");
+                    sb.AppendLine(3.Indent() + "if(!isNumeric) value = \"-1\";");
                     break;
                 case MCaseTypes.Phone:
-                    sb.AppendLine(3.Indent() + "value = new string(value.Where(c => char.IsDigit(c)).ToArray());");
+                    sb.AppendLine(3.Indent() + "var isNumeric = int.TryParse(value, out _);");
+                    sb.AppendLine(3.Indent() + "if(!isNumeric) value = \"-1\";");
                     break;
                 case MCaseTypes.Time:
                     sb.AppendLine(3.Indent() + "var result = DateTime.TryParse(value, out var dt);");
-                    sb.AppendLine(3.Indent() + "if(!result) throw new Exception(\"Unable to parse string to Time\");");
-                    sb.AppendLine(3.Indent() + "value = dt.ToString(\"HH:mm\");");
+                    sb.AppendLine(3.Indent() + "if(!result) value = \"-1\";");
+                    sb.AppendLine(3.Indent() + "else value = dt.ToString(\"HH:mm\");");
                     break;
                 case MCaseTypes.URL:
-                    sb.AppendLine(3.Indent() + "if(!value.Contains(\".com\") || !value.Contains(\"https://\")) throw new Exception(\"Invalid URL. String could not be parsed to email\");");
+                    sb.AppendLine(3.Indent() + "if(!value.Contains(\".com\") || !value.Contains(\"https://\")) value = \"-1\";");
                     break;
                 default:
                     return string.Empty;
@@ -368,131 +378,199 @@ namespace DemoKatan.mCase
         {
             var sb = new StringBuilder();
 
-            #region Add
+            sb.Append(BuildAddMethods(className));
+
+            sb.Append(BuildAddRangeMethods(className));
+
+            sb.Append(BuildRemoveFromMethods(className));
+
+            return sb.ToString();
+        }
+
+        private static string BuildAddMethods(string className)
+        {
+            var sb = new StringBuilder();
+
+            #region Add RecordInstance
 
             sb.AppendLine(1.Indent() + "/// <summary>");
             sb.AppendLine(1.Indent() + "/// Add data onto enumerable class property.");
-            sb.AppendLine(1.Indent() + "/// Either 'String' OR 'RecordInstanceData'");
             sb.AppendLine(1.Indent() + "/// </summary>");
             sb.AppendLine(1.Indent() + "/// <param name=\"propertyEnum\">Class public property name</param>");
             sb.AppendLine(1.Indent() + "/// <param name=\"value\">Default null value</param>");
-            sb.AppendLine(1.Indent() + "/// <param name=\"stringValue\">Default null value</param>");
-            sb.AppendLine(1.Indent() + "/// <returns>Amount of values removed. Type errors: -1. null errors: -2. Invalid Arguments: -3</returns>");
+            sb.AppendLine(1.Indent() + "/// <returns>Amount of values removed. Type errors: -1. Null errors: -2. RecordInstance not Created: -5.</returns>");
             sb.AppendLine(1.Indent() +
-                          $"public int AddTo({className}Enum propertyEnum, RecordInstanceData value = null, string stringValue = null)");
+                          $"public int AddTo({className}Enum propertyEnum, RecordInstanceData value)");
             sb.AppendLine(1.Indent() + "{"); //open method
-            sb.AppendLine(2.Indent() + "if (value != null && !string.IsNullOrEmpty(stringValue)) return -3;");
+            sb.AppendLine(2.Indent() + "if (value == null) return -2;");
+            sb.AppendLine(2.Indent() + "if (value.RecordInstanceID == 0) return -5;");
             sb.AppendLine(2.Indent() + "var property = propertyEnum.GetEnumDescription();");
             sb.AppendLine(2.Indent() + "var objectType = this.GetType();");
             sb.AppendLine(2.Indent() + "var propertyInfo = objectType.GetProperty(property);");
             sb.AppendLine(2.Indent() + "if (propertyInfo == null) return -2;");
-            sb.AppendLine(2.Indent() + "var propertyType = propertyInfo.GetGetMethod();");
-            sb.AppendLine(2.Indent() + "if (value != null)");
-            sb.AppendLine(2.Indent() + "{"); //open if
-            sb.AppendLine(3.Indent() + "if (value.RecordInstanceID == 0) return -2;");
-            sb.AppendLine(3.Indent() + "if (propertyType.ReturnType != typeof(List<RecordInstanceData>)) return -1;");
-            sb.AppendLine(3.Indent() + "var getter = (List<RecordInstanceData>)propertyInfo.GetValue(this);");
-            sb.AppendLine(3.Indent() + "if(getter == null) return -2;");
-            sb.AppendLine(3.Indent() + "if(getter.Any(r => r.RecordInstanceID == value.RecordInstanceID)) return 0;");
-            sb.AppendLine(3.Indent() + "getter.Add(value);");
-            sb.AppendLine(3.Indent() + "propertyInfo.SetValue(this, getter);");
-            sb.AppendLine(3.Indent() + "return 1;");
-            sb.AppendLine(2.Indent() + "}"); //close if
-            sb.AppendLine(2.Indent() + "if(stringValue == null) return -2;");
-            sb.AppendLine(2.Indent() + "if(stringValue == string.Empty) return 0;");
-            sb.AppendLine(2.Indent() + "if (propertyType.ReturnType != typeof(List<string>)) return -1;");
-            sb.AppendLine(2.Indent() + "var stringGetter = (List<string>)propertyInfo.GetValue(this);");
-            sb.AppendLine(2.Indent() + "if (stringGetter == null) return -2;");
-            sb.AppendLine(2.Indent() + "if(stringGetter.Any(r => string.Equals(r, stringValue, StringComparison.OrdinalIgnoreCase))) return 0;");
-            sb.AppendLine(2.Indent() + "stringGetter.Add(stringValue);");
-            sb.AppendLine(2.Indent() + "propertyInfo.SetValue(this, stringGetter);");
+            sb.AppendLine(2.Indent() + "var getMethod = propertyInfo.GetGetMethod();");
+            sb.AppendLine(2.Indent() + "if (getMethod.ReturnType != typeof(List<RecordInstanceData>)) return -1;//Verify that the argument can be added to the property type");
+            sb.AppendLine(2.Indent() + "var getter = (List<RecordInstanceData>)propertyInfo.GetValue(this);");
+            sb.AppendLine(2.Indent() + "if(getter == null) return -2;");
+            sb.AppendLine(2.Indent() + "getter.Add(value);");
+            sb.AppendLine(2.Indent() + "propertyInfo.SetValue(this, getter);");
             sb.AppendLine(2.Indent() + "return 1;");
             sb.AppendLine(1.Indent() + "}"); //close method
 
             #endregion
-            #region AddRange
+            #region Add String
 
             sb.AppendLine(1.Indent() + "/// <summary>");
             sb.AppendLine(1.Indent() + "/// Add data onto enumerable class property.");
-            sb.AppendLine(1.Indent() + "/// Either 'List of strings' OR 'List of RecordInstanceData's'.");
             sb.AppendLine(1.Indent() + "/// </summary>");
             sb.AppendLine(1.Indent() + "/// <param name=\"propertyEnum\">Class public property name</param>");
-            sb.AppendLine(1.Indent() + "/// <param name=\"value\">Default null value</param>");
-            sb.AppendLine(1.Indent() + "/// <param name=\"stringValue\">Default null value</param>");
-            sb.AppendLine(1.Indent() + "/// <returns>Amount of values removed. Type errors: -1. null errors: -2. Invalid Arguments: -3</returns>");
+            sb.AppendLine(1.Indent() + "/// <param name=\"value\"></param>");
+            sb.AppendLine(1.Indent() + "/// <returns>Amount of values removed. Type errors: -1. Null errors: -2.</returns>");
             sb.AppendLine(1.Indent() +
-                          $"public int AddTo({className}Enum propertyEnum, List<RecordInstanceData> value = null, List<string> stringValue = null)");
+                          $"public int AddTo({className}Enum propertyEnum, string value)");
             sb.AppendLine(1.Indent() + "{"); //open method
-            sb.AppendLine(2.Indent() + "if (value != null && stringValue != null) return -3;");
+            sb.AppendLine(2.Indent() + "if (value == null) return -2;");
             sb.AppendLine(2.Indent() + "var property = propertyEnum.GetEnumDescription();");
             sb.AppendLine(2.Indent() + "var objectType = this.GetType();");
             sb.AppendLine(2.Indent() + "var propertyInfo = objectType.GetProperty(property);");
             sb.AppendLine(2.Indent() + "if (propertyInfo == null) return -2;");
-            sb.AppendLine(2.Indent() + "var propertyType = propertyInfo.GetGetMethod();");
-            sb.AppendLine(2.Indent() + "if (value != null)");
-            sb.AppendLine(2.Indent() + "{"); //open if
-            sb.AppendLine(3.Indent() + "if (!value.Any()) return 0;");
-            sb.AppendLine(3.Indent() + "if (propertyType.ReturnType != typeof(List<RecordInstanceData>)) return -1;");
-            sb.AppendLine(3.Indent() + "var getter = (List<RecordInstanceData>)propertyInfo.GetValue(this);");
-            sb.AppendLine(3.Indent() + "if(getter == null) return -2;");
-            sb.AppendLine(3.Indent() + "var adding = value.Except(getter).ToList();");
-            sb.AppendLine(3.Indent() + "adding.RemoveAll(x => x == null);");
-            sb.AppendLine(3.Indent() + "if(adding.Count < 1) return 0;");
-            sb.AppendLine(3.Indent() + "getter.AddRange(adding);");
-            sb.AppendLine(3.Indent() + "propertyInfo.SetValue(this, getter);");
-            sb.AppendLine(3.Indent() + "return adding.Count;");
-            sb.AppendLine(2.Indent() + "}"); //close if
-            sb.AppendLine(2.Indent() + "if(stringValue == null) return -2;");
-            sb.AppendLine(2.Indent() + "if(!stringValue.Any()) return 0;");
-            sb.AppendLine(2.Indent() + "if (propertyType.ReturnType != typeof(List<string>)) return -1;");
-            sb.AppendLine(2.Indent() + "var stringGetter = (List<string>)propertyInfo.GetValue(this);");
-            sb.AppendLine(2.Indent() + "if (stringGetter == null) return -2;");
-            sb.AppendLine(2.Indent() + "var addStrings = stringValue.Except(stringGetter, StringComparer.OrdinalIgnoreCase).ToList();");
-            sb.AppendLine(2.Indent() + "addStrings.RemoveAll(string.IsNullOrEmpty);");
-            sb.AppendLine(2.Indent() + "if(addStrings.Count < 1) return 0;");
-            sb.AppendLine(2.Indent() + "stringGetter.AddRange(addStrings);");
-            sb.AppendLine(2.Indent() + "propertyInfo.SetValue(this, stringGetter);");
-            sb.AppendLine(2.Indent() + "return addStrings.Count;");
+            sb.AppendLine(2.Indent() + "var getMethod = propertyInfo.GetGetMethod();");
+            sb.AppendLine(2.Indent() + "if (getMethod.ReturnType != typeof(List<string>)) return -1;//Verify that the argument can be added to the property type");
+            sb.AppendLine(2.Indent() + "var getter = (List<string>)propertyInfo.GetValue(this);");
+            sb.AppendLine(2.Indent() + "if (getter == null) return -2;");
+            sb.AppendLine(2.Indent() + "getter.Add(value);");
+            sb.AppendLine(2.Indent() + "propertyInfo.SetValue(this, getter);");
+            sb.AppendLine(2.Indent() + "return 1;");
             sb.AppendLine(1.Indent() + "}"); //close method
+
             #endregion
 
-            #region Remove
+            return sb.ToString();
+        }
+
+        private static string BuildAddRangeMethods(string className)
+        {
+            var sb = new StringBuilder();
+            #region AddRange RecordInstance
+
+            sb.AppendLine(1.Indent() + "/// <summary>");
+            sb.AppendLine(1.Indent() + "/// Add data onto enumerable class property.");
+            sb.AppendLine(1.Indent() + "/// List of RecordInstanceData's");
+            sb.AppendLine(1.Indent() + "/// </summary>");
+            sb.AppendLine(1.Indent() + "/// <param name=\"propertyEnum\">Class public property name</param>");
+            sb.AppendLine(1.Indent() + "/// <param name=\"value\">list of Record Instance Data</param>");
+            sb.AppendLine(1.Indent() + "/// <returns>Amount of values added. Type errors: -1. null errors: -2. RecordInstance not Created: -5</returns>");
+            sb.AppendLine(1.Indent() +
+                          $"public int AddTo({className}Enum propertyEnum, List<RecordInstanceData> value)");
+            sb.AppendLine(1.Indent() + "{"); //open method
+            sb.AppendLine(2.Indent() + "if (value == null) return -2;");
+            sb.AppendLine(2.Indent() + "if (!value.Any()) return 0;");
+            sb.AppendLine(2.Indent() + "if (value.Any(x => x.RecordInstanceID == 0)) return -5;");
+            sb.AppendLine(2.Indent() + "var property = propertyEnum.GetEnumDescription();");
+            sb.AppendLine(2.Indent() + "var objectType = this.GetType();");
+            sb.AppendLine(2.Indent() + "var propertyInfo = objectType.GetProperty(property);");
+            sb.AppendLine(2.Indent() + "if (propertyInfo == null) return -2;");
+            sb.AppendLine(2.Indent() + "var getMethod = propertyInfo.GetGetMethod();");
+            sb.AppendLine(2.Indent() + "if (getMethod.ReturnType != typeof(List<RecordInstanceData>)) return -1;//Verify that the argument can be added to the property type");
+            sb.AppendLine(2.Indent() + "var getter = (List<RecordInstanceData>)propertyInfo.GetValue(this);");
+            sb.AppendLine(2.Indent() + "if(getter == null) return -2;");
+            sb.AppendLine(2.Indent() + "value.RemoveAll(x => x == null);");
+            sb.AppendLine(2.Indent() + "if(value.Count < 1) return 0;");
+            sb.AppendLine(2.Indent() + "getter.AddRange(value);");
+            sb.AppendLine(2.Indent() + "propertyInfo.SetValue(this, getter);");
+            sb.AppendLine(2.Indent() + "return getter.Count;");
+            sb.AppendLine(1.Indent() + "}"); //close method
+
+            #endregion
+            #region AddRange RecordInstance
+
+            sb.AppendLine(1.Indent() + "/// <summary>");
+            sb.AppendLine(1.Indent() + "/// Add data onto enumerable class property.");
+            sb.AppendLine(1.Indent() + "/// 'List of strings'.");
+            sb.AppendLine(1.Indent() + "/// </summary>");
+            sb.AppendLine(1.Indent() + "/// <param name=\"propertyEnum\">Class public property name</param>");
+            sb.AppendLine(1.Indent() + "/// <param name=\"value\">List of strings</param>");
+            sb.AppendLine(1.Indent() + "/// <returns>Amount of values added. Type errors: -1. null errors: -2.</returns>");
+            sb.AppendLine(1.Indent() +
+                          $"public int AddTo({className}Enum propertyEnum, List<string> value)");
+            sb.AppendLine(1.Indent() + "{"); //open method
+            sb.AppendLine(2.Indent() + "if (value == null) return -2;");
+            sb.AppendLine(2.Indent() + "if(!value.Any()) return 0;");
+            sb.AppendLine(2.Indent() + "var property = propertyEnum.GetEnumDescription();");
+            sb.AppendLine(2.Indent() + "var objectType = this.GetType();");
+            sb.AppendLine(2.Indent() + "var propertyInfo = objectType.GetProperty(property);");
+            sb.AppendLine(2.Indent() + "if (propertyInfo == null) return -2;");
+            sb.AppendLine(2.Indent() + "var getMethod = propertyInfo.GetGetMethod();");
+            sb.AppendLine(2.Indent() + "if (getMethod.ReturnType != typeof(List<string>)) return -1;//Verify that the argument can be added to the property type");
+            sb.AppendLine(2.Indent() + "var getter = (List<string>)propertyInfo.GetValue(this);");
+            sb.AppendLine(2.Indent() + "if (getter == null) return -2;");
+            sb.AppendLine(2.Indent() + "value.RemoveAll(x => x == null);");
+            sb.AppendLine(2.Indent() + "if(value.Count < 1) return 0;");
+            sb.AppendLine(2.Indent() + "getter.AddRange(value);");
+            sb.AppendLine(2.Indent() + "propertyInfo.SetValue(this, getter);");
+            sb.AppendLine(2.Indent() + "return value.Count;");
+            sb.AppendLine(1.Indent() + "}"); //close method
+
+            #endregion
+
+            return sb.ToString();
+        }
+
+        private static string BuildRemoveFromMethods(string className)
+        {
+            var sb = new StringBuilder();
+            #region Remove RecordInstance
 
             sb.AppendLine(1.Indent() + "/// <summary>");
             sb.AppendLine(1.Indent() + "/// Remove all data from enumerable class property that matches predicate");
             sb.AppendLine(1.Indent() + "/// </summary>");
             sb.AppendLine(1.Indent() + "/// <param name=\"propertyEnum\">Class public property name</param>");
-            sb.AppendLine(1.Indent() + "/// <param name=\"recordInstanceDataPredicate\">Default null value</param>");
-            sb.AppendLine(1.Indent() + "/// <param name=\"stringPredicate\">Default null value</param>");
-            sb.AppendLine(1.Indent() + "/// <returns>Amount of values removed. Type errors: -1. null errors: -2. Invalid Arguments: -3</returns>");
+            sb.AppendLine(1.Indent() + "/// <param name=\"predicate\"></param>");
+            sb.AppendLine(1.Indent() + "/// <returns>Amount of values removed. Type errors: -1. null errors: -2</returns>");
             sb.AppendLine(1.Indent() +
-                          $"public int RemoveFrom({className}Enum propertyEnum, Func<RecordInstanceData, bool> recordInstanceDataPredicate = null, Func<string, bool> stringPredicate = null)");
+                          $"public int RemoveFrom({className}Enum propertyEnum, Func<RecordInstanceData, bool> predicate)");
             sb.AppendLine(1.Indent() + "{"); //open method
-            sb.AppendLine(2.Indent() + "if (recordInstanceDataPredicate != null && stringPredicate != null) return -3;");
+            sb.AppendLine(2.Indent() + "if (predicate == null) return -2;");
             sb.AppendLine(2.Indent() + "var property = propertyEnum.GetEnumDescription();");
             sb.AppendLine(2.Indent() + "var objectType = this.GetType();");
             sb.AppendLine(2.Indent() + "var propertyInfo = objectType.GetProperty(property);");
             sb.AppendLine(2.Indent() + "if (propertyInfo == null) return -2;");
-            sb.AppendLine(2.Indent() + "var propertyType = propertyInfo.GetGetMethod();");
+            sb.AppendLine(2.Indent() + "var getMethod = propertyInfo.GetGetMethod();");
+            sb.AppendLine(2.Indent() + "if (getMethod.ReturnType != typeof(List<RecordInstanceData>)) return -1;//Verify that the argument can be added to the property type");
+            sb.AppendLine(2.Indent() + "var getter = (List<RecordInstanceData>)propertyInfo.GetValue(this);");
+            sb.AppendLine(2.Indent() + "if (getter == null) return -2;");
+            sb.AppendLine(2.Indent() + "var foundValues = getter.Where(predicate).ToList();");
+            sb.AppendLine(2.Indent() + "if (foundValues.Count < 1) return 0;");
+            sb.AppendLine(2.Indent() + "getter.RemoveAll(x => foundValues.Contains(x));");
+            sb.AppendLine(2.Indent() + "propertyInfo.SetValue(this, getter);");
+            sb.AppendLine(2.Indent() + "return foundValues.Count;");
+            sb.AppendLine(1.Indent() + "}"); //close method
+            
+            #endregion
+            #region Remove string
 
-            sb.AppendLine(2.Indent() + "if (recordInstanceDataPredicate != null)");
-            sb.AppendLine(2.Indent() + "{"); //open if
-            sb.AppendLine(3.Indent() + "if (propertyType.ReturnType != typeof(List<RecordInstanceData>)) return -1;");
-            sb.AppendLine(3.Indent() + "var getter = (List<RecordInstanceData>)propertyInfo.GetValue(this);");
-            sb.AppendLine(3.Indent() + "if (getter == null) return -2;");
-            sb.AppendLine(3.Indent() + "var foundValues = getter.Where(recordInstanceDataPredicate).ToList();");
-            sb.AppendLine(3.Indent() + "if (foundValues.Count < 1) return 0;");
-            sb.AppendLine(3.Indent() + "getter.RemoveAll(x => foundValues.Contains(x));");
-            sb.AppendLine(3.Indent() + "propertyInfo.SetValue(this, getter);");
-            sb.AppendLine(3.Indent() + "return foundValues.Count;");
-            sb.AppendLine(2.Indent() + "}"); //close if
-            sb.AppendLine(2.Indent() + "if(stringPredicate == null) return -2;");
-            sb.AppendLine(2.Indent() + "if (propertyType.ReturnType != typeof(List<string>)) return -1;");
-            sb.AppendLine(2.Indent() + "var stringGetter = (List<string>)propertyInfo.GetValue(this);");
-            sb.AppendLine(2.Indent() + "if(stringGetter == null) return -2;");
-            sb.AppendLine(2.Indent() + "var foundStrings = stringGetter.Where(stringPredicate).ToList();");
+            sb.AppendLine(1.Indent() + "/// <summary>");
+            sb.AppendLine(1.Indent() + "/// Remove all data from enumerable class property that matches predicate");
+            sb.AppendLine(1.Indent() + "/// Example predicate: x => string.IsNullOrEmpty(x)");
+            sb.AppendLine(1.Indent() + "/// </summary>");
+            sb.AppendLine(1.Indent() + "/// <param name=\"propertyEnum\">Class public property name</param>");
+            sb.AppendLine(1.Indent() + "/// <param name=\"predicate\"></param>");
+            sb.AppendLine(1.Indent() + "/// <returns>Amount of values removed. Type errors: -1. null errors: -2</returns>");
+            sb.AppendLine(1.Indent() +
+                          $"public int RemoveFrom({className}Enum propertyEnum, Func<string, bool> predicate)");
+            sb.AppendLine(1.Indent() + "{"); //open method
+            sb.AppendLine(2.Indent() + "if (predicate == null) return -2;");
+            sb.AppendLine(2.Indent() + "var property = propertyEnum.GetEnumDescription();");
+            sb.AppendLine(2.Indent() + "var objectType = this.GetType();");
+            sb.AppendLine(2.Indent() + "var propertyInfo = objectType.GetProperty(property);");
+            sb.AppendLine(2.Indent() + "if (propertyInfo == null) return -2;");
+            sb.AppendLine(2.Indent() + "var propertyMethod = propertyInfo.GetGetMethod();");
+            sb.AppendLine(2.Indent() + "if (propertyMethod.ReturnType != typeof(List<string>)) return -1;//Verify that the argument can be added to the property type");
+            sb.AppendLine(2.Indent() + "var getter = (List<string>)propertyInfo.GetValue(this);");
+            sb.AppendLine(2.Indent() + "if(getter == null) return -2;");
+            sb.AppendLine(2.Indent() + "var foundStrings = getter.Where(predicate).ToList();");
             sb.AppendLine(2.Indent() + "if (foundStrings.Count < 1) return 0;");
-            sb.AppendLine(2.Indent() + "propertyInfo.SetValue(this, stringGetter.RemoveAll(x => foundStrings.Contains(x)));");
+            sb.AppendLine(2.Indent() + "propertyInfo.SetValue(this, getter.RemoveAll(x => foundStrings.Contains(x)));");
             sb.AppendLine(2.Indent() + "return foundStrings.Count;");
             sb.AppendLine(1.Indent() + "}"); //close method
 
@@ -500,22 +578,21 @@ namespace DemoKatan.mCase
 
             return sb.ToString();
         }
-        
+
         public static string GeneratePropertyEnums(HashSet<string> fieldSet, string className)
         {
             var sb = new StringBuilder();
 
             sb.AppendLine(0.Indent() + $"public enum {className}Enum");
-            sb.AppendLine(0.Indent() + "{");
+            sb.AppendLine(0.Indent() + "{");//open enum
 
             foreach (var field in fieldSet)
             {
                 sb.AppendLine(1.Indent() + $"[Description(\"{field.CleanString()}\")]");
                 sb.AppendLine(1.Indent() + $"{field},");
-
             }
 
-            sb.AppendLine(0.Indent() + "}");
+            sb.AppendLine(0.Indent() + "}");//close enum
 
             return sb.ToString();
         }

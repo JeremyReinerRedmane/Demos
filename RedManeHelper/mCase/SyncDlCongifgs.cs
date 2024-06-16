@@ -172,7 +172,7 @@ namespace DemoKatan.mCase
             if (fields == null)
                 return new StringBuilder();
 
-            var sb = Factory.ClassInitializer(jsonObject, className);
+            var sb = Factory.ClassInitializer(jsonObject, className);//TODO Generate Partial class, Methods in one, Properties in the other
 
             var requiresEnumeration = false;
 
@@ -271,7 +271,6 @@ namespace DemoKatan.mCase
                 case MCaseTypes.Section: //need in ce's?
                 case MCaseTypes.Narrative: //need in ce's?
                 case MCaseTypes.Header: //need in ce's?
-
                 case MCaseTypes.UserRoleSecurityRestrict: //not required in CE's
                 case MCaseTypes.DynamicCalculatedField: //not required in CE's
                 case MCaseTypes.CalculatedField: // not required in CE's 
