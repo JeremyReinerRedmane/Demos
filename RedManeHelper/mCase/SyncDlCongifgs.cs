@@ -46,7 +46,7 @@ namespace DemoKatan.mCase
             _credentials = commandLineArgs[3];//3
             Console.WriteLine("Credentials: " + _credentials);
 
-            _mCaseUrl = commandLineArgs[4];//4
+            _mCaseUrl = commandLineArgs[4] +"/Resource/Export/DataList/Configuration/";//4
             Console.WriteLine("Mcase Url: " + _mCaseUrl);
 
             _outputDirectory = commandLineArgs[5];//5
@@ -58,7 +58,9 @@ namespace DemoKatan.mCase
 
         public async Task RemoteSync()
         {
-            var sqlResult = DataAccess();
+            var sqlResult = await DataAccess();
+
+            if (!sqlResult.Any()) return;
 
             var byteArray = Encoding.ASCII.GetBytes(_credentials);
 
@@ -72,11 +74,9 @@ namespace DemoKatan.mCase
 
             foreach (var id in sqlResult)
             {
-                if (id == "545")//Id for todo dl
-                    continue;
-
                 var url = _mCaseUrl + id;
 
+                Console.WriteLine($"Attempting to reach url: {url}");
                 try
                 {
                     var clientResult = await client.GetAsync(new Uri(url));
@@ -88,7 +88,7 @@ namespace DemoKatan.mCase
                         var path = await Sync(content);
 
                         if (!string.IsNullOrEmpty(path))
-                            Console.WriteLine(path);
+                            Console.WriteLine("Received data from path: " + path);
                     }
                 }
                 catch (Exception ex)
@@ -102,31 +102,46 @@ namespace DemoKatan.mCase
             }
         }
 
-        private IEnumerable<string> DataAccess()
+        private async Task<List<string>> DataAccess()
         {
-            using (var connection = new SqlConnection(_connectionString))
+            var ids = new List<string>();
+            try
             {
-                connection.Open();
-
-                // Execute the query and process results
-                var command = new SqlCommand(_sqlCommand, connection);
-
-                using (var reader = command.ExecuteReader())
+                using (var connection = new SqlConnection(_connectionString))
                 {
-                    while (reader.Read())
+                    connection.Open();
+
+                    // Execute the query and process results
+                    var command = new SqlCommand(_sqlCommand, connection);
+
+                    using (var reader = command.ExecuteReader())
                     {
-                        var values = new object[1];
+                        while (reader.Read())
+                        {
+                            var values = new object[1];
 
-                        // Access data from each row
-                        reader.GetValues(values);
+                            // Access data from each row
+                            reader.GetValues(values);
 
-                        var value = int.TryParse(values[0].ToString(), out var listId);
+                            var value = int.TryParse(values[0].ToString(), out var listId);
 
-                        if (value && listId > 0)
-                            yield return listId.ToString();
+                            if (value && listId > 0)
+                                ids.Add(listId.ToString());
+                        }
                     }
                 }
             }
+            catch (Exception ex)
+            {
+                Console.ForegroundColor = ConsoleColor.DarkRed;
+                Console.WriteLine($"Sql Exception: " + ex);
+                var path = Path.Combine(_exceptionDirectory, $"Sql Exception {DateTime.Now.ToString(Extensions.TimeFormat)}.cs");
+                await File.WriteAllTextAsync(path, ex.ToString());
+                Console.ForegroundColor = ConsoleColor.DarkGray;
+                return new List<string>();
+            }
+
+            return ids;
         }
 
         /// <summary>
