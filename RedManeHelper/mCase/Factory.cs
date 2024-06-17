@@ -55,12 +55,18 @@ namespace DemoKatan.mCase
             sb.AppendLine(0.Indent() + "{"); //open class
             sb.AppendLine(1.Indent() + "private RecordInstanceData _recordInsData;");
             sb.AppendLine(1.Indent() + "private AEventHelper _eventHelper;");
+            sb.AppendLine(1.Indent() + "/// <summary>");
+            sb.AppendLine(1.Indent() + "/// Class for Updating Existing RecordInstanceData");
+            sb.AppendLine(1.Indent() + "/// </summary>");
             sb.AppendLine(1.Indent() +
                           $"public {className}Entity(RecordInstanceData recordInsData, AEventHelper eventHelper)");
             sb.AppendLine(1.Indent() + "{"); //open constructor
             sb.AppendLine(2.Indent() + "_recordInsData = recordInsData;");
             sb.AppendLine(2.Indent() + "_eventHelper = eventHelper;");
             sb.AppendLine(1.Indent() + "}"); //close constructor
+            sb.AppendLine(1.Indent() + "/// <summary>");
+            sb.AppendLine(1.Indent() + "/// Class for Creating New RecordInstanceData");
+            sb.AppendLine(1.Indent() + "/// </summary>");
             sb.AppendLine(1.Indent() +
                           $"public {className}Entity(AEventHelper eventHelper)");
             sb.AppendLine(1.Indent() + "{"); //open constructor #Create new Record

@@ -1,6 +1,6 @@
 echo Begining Class Sync
 rem [1] path to exe file
-rem [2] connection string 
+rem [2] connection string (Verify that connection string allows access to trusted certificate: TrustServerCertificate=true)
 rem [3] sql query
 rem [4] system login for "ADMIN" account (mcase requires admin role for exporting data)
 rem [5] mcase url

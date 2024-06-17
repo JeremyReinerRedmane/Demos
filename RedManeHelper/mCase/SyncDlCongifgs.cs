@@ -2,6 +2,7 @@
 using System.Net.Http.Headers;
 using System.Text;
 using DemoKatan.mCase.Static;
+using Microsoft.Data.SqlClient;
 using Newtonsoft.Json.Linq;
 using Extensions = DemoKatan.mCase.Static.Extensions;
 
@@ -18,20 +19,20 @@ namespace DemoKatan.mCase
 
         public SyncDlConfigs()
         {
-            _connectionString = "data source=localhost;initial catalog=mCASE_ADMIN;integrated security=True";
-            _sqlCommand = "SELECT [DataListID] FROM [mCASE_ADMIN].[dbo].[DataList]";
-            _outputDirectory = @"C:\Users\jreiner\source\repos\AR-mCase-CustomEvents\MCaseCustomEvents\ARFocus\FactoryEntities";
+            _connectionString = "";
+            _sqlCommand = "";
+            _outputDirectory = @"";
             
             if (!Directory.Exists(_outputDirectory))
                 Directory.CreateDirectory(_outputDirectory);
             
-            _exceptionDirectory = @"C:\Users\jreiner\Desktop\Exceptions";
+            _exceptionDirectory = @"";
 
             if (!Directory.Exists(_exceptionDirectory))
                 Directory.CreateDirectory(_exceptionDirectory);
 
-            _credentials = "admin:Password123!";//TODO add credentials username:password
-            _mCaseUrl = "http://localhost:64762" + "/Resource/Export/DataList/Configuration/";
+            _credentials = "";//TODO add credentials username:password
+            _mCaseUrl = "" + "/Resource/Export/DataList/Configuration/";
         }
 
         public SyncDlConfigs(string[] commandLineArgs)
@@ -100,17 +101,21 @@ namespace DemoKatan.mCase
                         var path = await Sync(content);
 
                         if (!string.IsNullOrEmpty(path))
+                        {
+                            Console.ForegroundColor = ConsoleColor.DarkGreen;
                             Console.WriteLine("Received data from path: " + path);
+                        }
                     }
                 }
                 catch (Exception ex)
                 {
                     Console.ForegroundColor = ConsoleColor.DarkRed;
-                    Console.WriteLine($"Unaccessable API Endpoint: " + url);
+                    Console.WriteLine("Unaccessable API Endpoint: " + url);
                     var path = Path.Combine(_exceptionDirectory, $"Endpoint-{id}-{DateTime.Now.ToString(Extensions.TimeFormat)}.cs");
                     await File.WriteAllTextAsync(path, ex.ToString());
-                    Console.ForegroundColor = ConsoleColor.DarkGray;
                 }
+                Console.ForegroundColor = ConsoleColor.DarkGray;
+
             }
         }
 
@@ -181,7 +186,7 @@ namespace DemoKatan.mCase
 
                 var path = Path.Combine(_outputDirectory, $"{className}Entity.cs");
 
-                File.WriteAllText(path, sb.ToString());
+                await File.WriteAllTextAsync(path, sb.ToString());
 
                 return path;
             }
