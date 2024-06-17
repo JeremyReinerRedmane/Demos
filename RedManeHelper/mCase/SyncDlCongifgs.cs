@@ -18,20 +18,20 @@ namespace DemoKatan.mCase
 
         public SyncDlConfigs()
         {
-            _connectionString = "data source=localhost;initial catalog=mCASE_ADMIN;integrated security=True";
-            _sqlCommand = "SELECT [DataListID] FROM [mCASE_ADMIN].[dbo].[DataList]";
-            _outputDirectory = @"C:\Users\jreiner\source\repos\AR-mCase-CustomEvents\MCaseCustomEvents\ARFocus\FactoryEntities";
+            _connectionString = "";
+            _sqlCommand = "";
+            _outputDirectory = @"";
             
             if (!Directory.Exists(_outputDirectory))
                 Directory.CreateDirectory(_outputDirectory);
             
-            _exceptionDirectory = @"C:\Users\jreiner\Desktop\Exceptions";
+            _exceptionDirectory = @"";
 
             if (!Directory.Exists(_exceptionDirectory))
                 Directory.CreateDirectory(_exceptionDirectory);
 
-            _credentials = "admin:Password123!";//TODO add credentials username:password
-            _mCaseUrl = "http://localhost:64762" + "/Resource/Export/DataList/Configuration/";
+            _credentials = "";//TODO add credentials username:password
+            _mCaseUrl = "" + "/Resource/Export/DataList/Configuration/";
         }
 
         public SyncDlConfigs(string[] commandLineArgs)
