@@ -5,6 +5,7 @@ namespace DemoKatan.mCase.Static
     public static class Extensions
     {
         public static string MCaseDateTimeStorageFormat => "yyyy-MM-dd HH:mm:ss";
+        public static string TimeFormat => "yyyy_MM_dd_HH_mm_ss";
 
         public static string ParseJson(this JObject jObject, string property)
         {

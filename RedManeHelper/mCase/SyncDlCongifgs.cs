@@ -3,6 +3,7 @@ using System.Net.Http.Headers;
 using System.Text;
 using DemoKatan.mCase.Static;
 using Newtonsoft.Json.Linq;
+using Extensions = DemoKatan.mCase.Static.Extensions;
 
 namespace DemoKatan.mCase
 {
@@ -19,15 +20,15 @@ namespace DemoKatan.mCase
         {
             _connectionString = "";
             _sqlCommand = "";
-            _outputDirectory = "";
-            _exceptionDirectory = "";
+            _outputDirectory = @"";
+            _exceptionDirectory = @"";
             _credentials = "";//TODO add credentials username:password
             _mCaseUrl = "";
         }
-        
+
         public SyncDlConfigs(string[] commandLineArgs)
         {
-            if (commandLineArgs.Length != 8)
+            if (commandLineArgs.Length != 7)
             {
                 Console.WriteLine(commandLineArgs.Length > 8
                     ? $"Too many arguments [{commandLineArgs.Length - 8}]"
@@ -35,23 +36,23 @@ namespace DemoKatan.mCase
 
                 throw new ArgumentException("Invalid params. 1: Connection string, 2: Sql command 3: Credentials, 4: Enviroment Url 5: Output directory, 6: Exception directory");
             }
-            // [0] dll exe path [1] run program.cs
-            _connectionString = commandLineArgs[2];//1
+            // [0] bin dir containing dll and exe files
+            _connectionString = commandLineArgs[1];//1
             Console.WriteLine("Connection string: " + _connectionString);
 
-            _sqlCommand = commandLineArgs[3];//2
+            _sqlCommand = commandLineArgs[2];//2
             Console.WriteLine("Sql Command: " + _sqlCommand);
 
-            _credentials = commandLineArgs[4];//3
+            _credentials = commandLineArgs[3];//3
             Console.WriteLine("Credentials: " + _credentials);
 
-            _mCaseUrl = commandLineArgs[5];//4
+            _mCaseUrl = commandLineArgs[4];//4
             Console.WriteLine("Mcase Url: " + _mCaseUrl);
 
-            _outputDirectory = commandLineArgs[6];//5
+            _outputDirectory = commandLineArgs[5];//5
             Console.WriteLine("Output Dir: " + _outputDirectory);
 
-            _exceptionDirectory = commandLineArgs[7];//6
+            _exceptionDirectory = commandLineArgs[6];//6
             Console.WriteLine("Exception Dir: " + _exceptionDirectory);
         }
 
@@ -84,7 +85,7 @@ namespace DemoKatan.mCase
 
                     if (!string.IsNullOrEmpty(content))
                     {
-                        var path = Sync(content);
+                        var path = await Sync(content);
 
                         if (!string.IsNullOrEmpty(path))
                             Console.WriteLine(path);
@@ -92,7 +93,11 @@ namespace DemoKatan.mCase
                 }
                 catch (Exception ex)
                 {
-                    //Console.WriteLine(ex);
+                    Console.ForegroundColor = ConsoleColor.DarkRed;
+                    Console.WriteLine($"Unaccessable API Endpoint: " + url);
+                    var path = Path.Combine(_exceptionDirectory, $"Endpoint-{id}-{DateTime.Now.ToString(Extensions.TimeFormat)}.cs");
+                    await File.WriteAllTextAsync(path, ex.ToString());
+                    Console.ForegroundColor = ConsoleColor.DarkGray;
                 }
             }
         }
@@ -128,7 +133,7 @@ namespace DemoKatan.mCase
         /// Using List transfer we can catch the structure of our DL's from the db, and reconstruct a C# object. used for custom events
         /// </summary>
         /// <param name="data"></param>
-        private string Sync(string data)
+        private async Task<string> Sync(string data)
         {
             var closing = data.LastIndexOf(']');
 
@@ -155,7 +160,7 @@ namespace DemoKatan.mCase
                 Console.ForegroundColor = ConsoleColor.DarkRed;
                 Console.WriteLine($"{className}: " + ex);
                 var path = Path.Combine(_exceptionDirectory, $"{className}Entity.cs");
-                File.WriteAllText(path, ex.ToString());
+                await File.WriteAllTextAsync(path, ex.ToString());
                 Console.ForegroundColor = ConsoleColor.DarkGray;
             }
 
@@ -198,7 +203,7 @@ namespace DemoKatan.mCase
                 if (string.IsNullOrEmpty(systemName) || fieldSet.Contains(systemName))
                     continue; //if property is already in field list then continue, no need to duplicate
 
-                if (requiresEnumerationValues.Any(x => string.Equals(x,type, StringComparison.OrdinalIgnoreCase)))
+                if (requiresEnumerationValues.Any(x => string.Equals(x, type, StringComparison.OrdinalIgnoreCase)))
                 {
                     enumerableFieldSet.Add(systemName);
 

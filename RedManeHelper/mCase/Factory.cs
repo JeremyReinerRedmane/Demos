@@ -61,6 +61,12 @@ namespace DemoKatan.mCase
             sb.AppendLine(2.Indent() + "_recordInsData = recordInsData;");
             sb.AppendLine(2.Indent() + "_eventHelper = eventHelper;");
             sb.AppendLine(1.Indent() + "}"); //close constructor
+            sb.AppendLine(1.Indent() +
+                          $"public {className}Entity(AEventHelper eventHelper)");
+            sb.AppendLine(1.Indent() + "{"); //open constructor #Create new Record
+            sb.AppendLine(2.Indent() + "_recordInsData = new RecordInstanceData();");
+            sb.AppendLine(2.Indent() + "_eventHelper = eventHelper;");
+            sb.AppendLine(1.Indent() + "}"); //close constructor
             sb.AppendLine(1.Indent() + "public long RecordInstanceId => _recordInsData.RecordInstanceID;");
             sb.AppendLine(1.Indent() + "public void SaveRecord()");
             sb.AppendLine(1.Indent() + "{"); //open Method
