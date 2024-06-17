@@ -18,12 +18,20 @@ namespace DemoKatan.mCase
 
         public SyncDlConfigs()
         {
-            _connectionString = "";
-            _sqlCommand = "";
-            _outputDirectory = @"";
-            _exceptionDirectory = @"";
-            _credentials = "";//TODO add credentials username:password
-            _mCaseUrl = "";
+            _connectionString = "data source=localhost;initial catalog=mCASE_ADMIN;integrated security=True";
+            _sqlCommand = "SELECT [DataListID] FROM [mCASE_ADMIN].[dbo].[DataList]";
+            _outputDirectory = @"C:\Users\jreiner\source\repos\AR-mCase-CustomEvents\MCaseCustomEvents\ARFocus\FactoryEntities";
+            
+            if (!Directory.Exists(_outputDirectory))
+                Directory.CreateDirectory(_outputDirectory);
+            
+            _exceptionDirectory = @"C:\Users\jreiner\Desktop\Exceptions";
+
+            if (!Directory.Exists(_exceptionDirectory))
+                Directory.CreateDirectory(_exceptionDirectory);
+
+            _credentials = "admin:Password123!";//TODO add credentials username:password
+            _mCaseUrl = "http://localhost:64762" + "/Resource/Export/DataList/Configuration/";
         }
 
         public SyncDlConfigs(string[] commandLineArgs)
@@ -46,14 +54,18 @@ namespace DemoKatan.mCase
             _credentials = commandLineArgs[3];//3
             Console.WriteLine("Credentials: " + _credentials);
 
-            _mCaseUrl = commandLineArgs[4] +"/Resource/Export/DataList/Configuration/";//4
+            _mCaseUrl = commandLineArgs[4] + "/Resource/Export/DataList/Configuration/";//4
             Console.WriteLine("Mcase Url: " + _mCaseUrl);
 
             _outputDirectory = commandLineArgs[5];//5
             Console.WriteLine("Output Dir: " + _outputDirectory);
+            if (!Directory.Exists(_outputDirectory))
+                Directory.CreateDirectory(_outputDirectory);
 
             _exceptionDirectory = commandLineArgs[6];//6
             Console.WriteLine("Exception Dir: " + _exceptionDirectory);
+            if (!Directory.Exists(_exceptionDirectory))
+                Directory.CreateDirectory(_exceptionDirectory);
         }
 
         public async Task RemoteSync()
@@ -158,10 +170,13 @@ namespace DemoKatan.mCase
 
             var jsonObject = JObject.Parse(result);
 
-            var className = jsonObject.ParseJson(ListTransferFields.SystemName.GetDescription()).CleanString();
+            var parsedClassName = jsonObject.ParseJson(ListTransferFields.SystemName.GetDescription()).CleanString();
 
+            var className = parsedClassName.CleanString();
+            
             try
             {
+
                 var sb = GenerateFileData(jsonObject, className);
 
                 var path = Path.Combine(_outputDirectory, $"{className}Entity.cs");
@@ -233,7 +248,7 @@ namespace DemoKatan.mCase
                 if (requiresEnumerationValues.Contains(type))
                     requiresEnumeration = true;
 
-                var property = AddProperties(field);
+                var property = AddProperties(field);//Magic happens here
 
                 if (string.IsNullOrEmpty(property))
                     continue;
@@ -263,6 +278,10 @@ namespace DemoKatan.mCase
 
             var typeEnum = type.GetEnumValue<MCaseTypes>();
 
+            var sysName = jToken.ParseToken(ListTransferFields.SystemName.GetDescription());
+
+            var propertyName = sysName.GetPropertyNameFromSystemName();
+
             switch (typeEnum)
             {
                 //case mCaseTypes.EmbeddedList: Processed after loop completion
@@ -270,7 +289,7 @@ namespace DemoKatan.mCase
                 case MCaseTypes.DropDownList:
                 case MCaseTypes.DynamicDropDown:
                 case MCaseTypes.CascadingDynamicDropDown:
-                    return Factory.EnumerableFactory(jToken, typeEnum); //multiselect?
+                    return Factory.EnumerableFactory(jToken, typeEnum, propertyName, sysName, type); //multiselect?
                 case MCaseTypes.String:
                 case MCaseTypes.LongString:
                 case MCaseTypes.EmailAddress:
@@ -285,9 +304,9 @@ namespace DemoKatan.mCase
                 case MCaseTypes.ReadonlyField:
                 case MCaseTypes.User:
                 case MCaseTypes.Address:
-                    return Factory.StringFactory(jToken);
+                    return Factory.StringFactory(jToken, propertyName, sysName, type);
                 case MCaseTypes.Attachment:
-                    return Factory.LongFactory(jToken);
+                    return Factory.LongFactory(jToken, propertyName, sysName, type);
                 case MCaseTypes.Section: //need in ce's?
                 case MCaseTypes.Narrative: //need in ce's?
                 case MCaseTypes.Header: //need in ce's?

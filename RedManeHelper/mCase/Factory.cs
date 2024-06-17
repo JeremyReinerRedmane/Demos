@@ -132,20 +132,18 @@ namespace DemoKatan.mCase
             return sb.ToString();
         }
 
-        public static string EnumerableFactory(JToken jToken, MCaseTypes type)
+        public static string EnumerableFactory(JToken jToken, MCaseTypes type, string propertyName, string sysName, string fieldType)
         {
             var sb = new StringBuilder();
 
-            var sysName = jToken.ParseToken(ListTransferFields.SystemName.GetDescription());
             var fieldOptions = jToken.ParseToken(ListTransferFields.FieldOptions.GetDescription());
-            var fieldType = jToken.ParseToken(ListTransferFields.Type.GetDescription());
             var dynamicData = jToken.ParseDynamicData(ListTransferFields.DynamicData.GetDescription(),
                 ListTransferFields.DynamicSourceSystemName.GetDescription());
 
-            var privateName = $"_{sysName.ToLower()}";
+            var privateName = $"_{propertyName.ToLower()}";
             var notAbleToSelectManyValues = fieldOptions.Contains("\"Able to Select Multiple values\"" + ":" + "\"No\"", StringComparison.OrdinalIgnoreCase);
-
             var multiSelect = notAbleToSelectManyValues ? "False" : "True";
+            
             switch (type)
             {
                 case MCaseTypes.CascadingDropDown:
@@ -159,7 +157,7 @@ namespace DemoKatan.mCase
                     sb.AppendLine(1.Indent() + "/// [Getting: Returns the list of field labels]");
                     sb.AppendLine(1.Indent() + "/// [Updating: Requires use of either AddTo(), or RemoveFrom()]");
                     sb.AppendLine(1.Indent() + "/// </summary>");
-                    sb.AppendLine(1.Indent() + $"public List<string> {sysName.CleanString()}");
+                    sb.AppendLine(1.Indent() + $"public List<string> {propertyName}");
                     sb.AppendLine(1.Indent() + "{"); //open Property
                     sb.AppendLine(2.Indent() + "get");
                     sb.AppendLine(2.Indent() + "{"); //open Getter
@@ -196,7 +194,7 @@ namespace DemoKatan.mCase
                     sb.AppendLine(1.Indent() + "/// [Getting: Returns the list of RecordInstancesData's]");
                     sb.AppendLine(1.Indent() + "/// [Updating: Requires use of either AddTo(), or RemoveFrom()]");
                     sb.AppendLine(1.Indent() + "/// </summary>");
-                    sb.AppendLine(1.Indent() + $"public List<RecordInstanceData> {sysName.CleanString()}");
+                    sb.AppendLine(1.Indent() + $"public List<RecordInstanceData> {propertyName}");
                     sb.AppendLine(1.Indent() + "{"); //open Property
                     sb.AppendLine(2.Indent() + "get");
                     sb.AppendLine(2.Indent() + "{"); //open Getter
@@ -229,14 +227,12 @@ namespace DemoKatan.mCase
             return sb.ToString();
         }
 
-        public static string StringFactory(JToken jToken)
+        public static string StringFactory(JToken jToken, string propertyName, string sysName, string type)
         {
             var sb = new StringBuilder();
-            var sysName = jToken.ParseToken(ListTransferFields.SystemName.GetDescription()); //title case
-            var type = jToken.ParseToken(ListTransferFields.Type.GetDescription()); //title case
             var enumType = type.GetEnumValue<MCaseTypes>();
 
-            var privateSysName = $"_{sysName.ToLower()}";
+            var privateSysName = $"_{propertyName.ToLower()}";
             var mirroredField = jToken.IsMirrorField();
 
             sb.AppendLine(1.Indent() + $"private string {privateSysName} = string.Empty;");
@@ -247,7 +243,7 @@ namespace DemoKatan.mCase
             sb.AppendLine(1.Indent() + "/// </summary>");
             if(_stringCheck.Contains(enumType) && !mirroredField)
                 sb.AppendLine(1.Indent() + "/// <returns>\"-1 if string does not pass mCase data type validation.\"</returns>");
-            sb.AppendLine(1.Indent() + $"public string {sysName.CleanString()}");
+            sb.AppendLine(1.Indent() + $"public string {propertyName}");
             sb.AppendLine(1.Indent() + "{"); //open Property
             sb.AppendLine(2.Indent() + "get");
             sb.AppendLine(2.Indent() + "{"); //open Getter
@@ -318,21 +314,18 @@ namespace DemoKatan.mCase
             return sb.ToString();
         }
 
-        public static string LongFactory(JToken jToken)
+        public static string LongFactory(JToken jToken, string propertyName, string sysName, string type)
         {
             var sb = new StringBuilder();
 
-            var sysName = jToken.ParseToken(ListTransferFields.SystemName.GetDescription());
-            var type = jToken.ParseToken(ListTransferFields.Type.GetDescription());
-
-            var privateSysName = $"_{sysName.ToLower()}";
+            var privateSysName = $"_{propertyName.ToLower()}";
 
             sb.AppendLine(1.Indent() + $"private string {privateSysName} = string.Empty;");
             sb.AppendLine(1.Indent() + "/// <summary>");
             sb.AppendLine(1.Indent() + $"/// [mCase data type: {type}]");
             sb.AppendLine(1.Indent() + "/// Gets value, and sets long value");
             sb.AppendLine(1.Indent() + "/// </summary>");
-            sb.AppendLine(1.Indent() + $"public string {sysName.CleanString()}");
+            sb.AppendLine(1.Indent() + $"public string {propertyName}");
             sb.AppendLine(1.Indent() + "{"); //open Property
             sb.AppendLine(2.Indent() + "get");
             sb.AppendLine(2.Indent() + "{"); //open Getter
@@ -594,8 +587,9 @@ namespace DemoKatan.mCase
 
             foreach (var field in fieldSet)
             {
-                sb.AppendLine(1.Indent() + $"[Description(\"{field.CleanString()}\")]");
-                sb.AppendLine(1.Indent() + $"{field},");
+                
+                sb.AppendLine(1.Indent() + $"[Description(\"{field.GetPropertyNameFromSystemName()}\")]");
+                sb.AppendLine(1.Indent() + $"{field.GetPropertyNameFromSystemName()},");
             }
 
             sb.AppendLine(0.Indent() + "}");//close enum

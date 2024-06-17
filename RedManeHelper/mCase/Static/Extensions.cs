@@ -31,6 +31,29 @@ namespace DemoKatan.mCase.Static
                 : fieldValue.CleanString();
         }
 
+        public static string GetPropertyNameFromSystemName(this string input)
+        {
+            var inputIsNumber = int.TryParse(input, out _);
+
+            if (inputIsNumber)
+                return "f_" + input;
+
+            var firstCharIsNum = int.TryParse(input[0].ToString(), out _);
+
+            if (firstCharIsNum)
+            {
+                var temp = input[0];
+                var updated = input.Remove(0, 1);
+                updated += temp;
+                return updated.GetPropertyNameFromSystemName();
+            }
+
+            var c = input[0];
+            char.TryParse(c.ToString().ToUpperInvariant(), out var cap);
+            var titleCase = input.Substring(1).ToLower();
+            return cap + titleCase;
+        }
+
         public static List<string> ParseChildren(this JToken token, string property)
         {
             var containers = token.Children();
