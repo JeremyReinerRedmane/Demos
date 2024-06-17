@@ -30,9 +30,9 @@ namespace DemoKatan.mCase
         {
             if (commandLineArgs.Length != 7)
             {
-                Console.WriteLine(commandLineArgs.Length > 8
-                    ? $"Too many arguments [{commandLineArgs.Length - 8}]"
-                    : $"Missing arguments [{8 - commandLineArgs.Length}]");
+                Console.WriteLine(commandLineArgs.Length > 7
+                    ? $"Too many arguments [{commandLineArgs.Length - 7}]"
+                    : $"Missing arguments [{7 - commandLineArgs.Length}]");
 
                 throw new ArgumentException("Invalid params. 1: Connection string, 2: Sql command 3: Credentials, 4: Enviroment Url 5: Output directory, 6: Exception directory");
             }
