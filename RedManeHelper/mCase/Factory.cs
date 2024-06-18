@@ -256,24 +256,32 @@ namespace DemoKatan.mCase
                           $"if({privateName} == null) {privateName} = new List<string>();");
             sb.AppendLine(3.Indent() +
                           "if (value != null && value.Any(string.IsNullOrEmpty)) value.RemoveAll(string.IsNullOrEmpty);");
-            sb.AppendLine(3.Indent() +
-                          $"if(value == null || !value.Any()) {privateName} = new List<string>();");
-            if (notAbleToSelectManyValues)
-            {
-                sb.AppendLine(3.Indent() +
-                $"if (value != null && value.Count > 1) {privateName} = new List<string>()" + "{\"[Multi Select is Disabled] " + propertyName + " only accepts a list length of 1.\"};");
-            }
-
+            bool raised = false;//if list does not have default values, we still wnt to raise the notAbleToSelectManyValues flage
             if (defaultValues.Any())
             {
                 sb.AppendLine(3.Indent() + "if (value != null && value.Any())");
                 sb.AppendLine(3.Indent() + "{// check that all values being set exist in default values enum");//open if
                 sb.AppendLine(4.Indent() + $"var defaultOptions = ObjectExtensions.GetDescriptions<{enumName}>();//get all possible default options");
                 sb.AppendLine(4.Indent() + "var filteredValues = value.Select(entry => defaultOptions.Contains(entry) ? entry : $\"[Not found in Default Values] {entry}\").ToList();");
+                if (notAbleToSelectManyValues)
+                {
+                    raised = true;
+                    sb.AppendLine(4.Indent() +
+                                  $"if (value.Count > 1) {privateName} = new List<string>()" + "{\"[Multi Select is Disabled] " + propertyName + " only accepts a list length of 1.\"};");
+                }
                 sb.AppendLine(4.Indent() + $"{privateName} = filteredValues;");
                 sb.AppendLine(3.Indent() + "}");//close if
                 sb.AppendLine(3.Indent() + "else//value could be null or empty. Set to new list");//open single else
                 sb.AppendLine(4.Indent() + $"{privateName} = new List<string>();");
+            }
+
+            if (!raised)
+            {
+                if (notAbleToSelectManyValues)
+                {
+                    sb.AppendLine(3.Indent() +
+                                  $"if (value != null && value.Count > 1) {privateName} = new List<string>()" + "{\"[Multi Select is Disabled] " + propertyName + " only accepts a list length of 1.\"};");
+                }
             }
 
             sb.AppendLine(3.Indent() +
