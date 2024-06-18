@@ -104,6 +104,10 @@ namespace DemoKatan.mCase.Static
         [Description("Relationships")]
         Relationships,
         [Description("FieldValues")]
-        FieldValues
+        FieldValues,
+        [Description("Name")]
+        Name,
+        [Description("Value")]
+        Value
     }
 }

@@ -269,7 +269,8 @@ namespace DemoKatan.mCase
 
                     if (string.Equals(requiresEnumerationValues[0], type, StringComparison.OrdinalIgnoreCase))
                     {
-                        embeddedRelatedFields.Add(systemName);
+                        var fieldName = field.ParseEmbeddedOptions(ListTransferFields.Name.GetDescription());
+                        embeddedRelatedFields.Add($"{fieldName} : {systemName}");
                         fieldSet.Add(systemName);
                         continue;
                     }
@@ -300,7 +301,7 @@ namespace DemoKatan.mCase
 
             sb.AppendLine(0.Indent() + "}"); //close class
 
-            sb.AppendLine(Factory.GeneratePropertyEnums(enumerableFieldSet.ToList(), className));
+            sb.AppendLine(Factory.GenerateEnums(enumerableFieldSet.ToList(), className, true));
 
             sb.AppendLine("}"); //close namespace
             return sb;

@@ -34,6 +34,28 @@ namespace DemoKatan.mCase.Static
                 : fieldValue.GetPropertyNameFromSystemName();
         }
 
+        public static string ParseEmbeddedOptions(this JToken token, string property)
+        {
+            var fieldValue = token[property]?.Parent?.FirstOrDefault();
+
+            if(fieldValue == null) return string.Empty;
+
+            if(!fieldValue.HasValues) return string.Empty;
+
+            var nextToken = fieldValue?.FirstOrDefault()?.Value<JToken>();
+
+            if(nextToken == null) return string.Empty;
+
+            if(!nextToken.HasValues) return string.Empty;
+
+            var value = nextToken[ListTransferFields.Value.GetDescription()]?.Value<string>();
+
+            if(string.IsNullOrEmpty(value)) return string.Empty;
+
+            return value;
+
+        }
+
         public static List<string> ParseDefaultData(this JToken token, string property)
         {
             var fieldValue = token[property];
@@ -60,7 +82,7 @@ namespace DemoKatan.mCase.Static
                 if (childValues == null) continue;
 
                 //get value
-                var actualValue = childValues["Value"];
+                var actualValue = childValues[ListTransferFields.Value.GetDescription()];
 
                 if(actualValue == null) continue;
 
@@ -68,7 +90,7 @@ namespace DemoKatan.mCase.Static
 
                 if(valueObject == null) continue;
 
-                var x = valueObject["Value"]?.Value<string>();
+                var x = valueObject[ListTransferFields.Value.GetDescription()]?.Value<string>();
 
                 if(string.IsNullOrEmpty(x)) continue;
 
