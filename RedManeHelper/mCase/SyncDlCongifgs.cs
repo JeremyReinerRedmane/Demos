@@ -16,6 +16,7 @@ namespace DemoKatan.mCase
         private readonly string _exceptionDirectory;
         private readonly string _credentials;
         private readonly string _mCaseUrl;
+        private readonly string _namespace;
 
         public SyncDlConfigs()
         {

@@ -115,12 +115,12 @@ namespace DemoKatan.mCase
             if (parentRelationships.Any())
             {
                 var parentList = parentRelationships.Aggregate(
-                    "public List<string> ParentRelationShips => new List<string>() {", (current, child) => current + $"\"{child}\",");
+                    "public enum ParentRelationShips {", (current, child) => current + $"[Description(\"{child}\")] {child},");
                 parentList += "};";
                 sb.AppendLine(1.Indent() + parentList);
             }
             else
-                sb.AppendLine(1.Indent() + "public List<string> ParentRelationShips => new List<string>();");
+                sb.AppendLine(1.Indent() + "public enum ParentRelationShips {}");
 
             var childRelationships =
                 relationships.ParseChildren(ListTransferFields.ChildSystemName.GetDescription());
@@ -128,12 +128,12 @@ namespace DemoKatan.mCase
             if (childRelationships.Any())
             {
                 var childList = childRelationships.Aggregate(
-                    "public List<string> ChildRelationShips => new List<string>() {", (current, child) => current + $"\"{child}\",");
+                    "public enum ChildRelationShips {", (current, child) => current + $"[Description(\"{child}\")] {child},");
                 childList += "};";
                 sb.AppendLine(1.Indent() + childList);
             }
             else
-                sb.AppendLine(1.Indent() + "public List<string> ChildRelationShips => new List<string>();");
+                sb.AppendLine(1.Indent() + "public enum ChildRelationShips {}");
 
             return sb.ToString();
         }

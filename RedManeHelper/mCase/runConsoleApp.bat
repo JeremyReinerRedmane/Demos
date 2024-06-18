@@ -7,5 +7,5 @@ rem [5] mcase url
 rem [6] output directory
 rem [7] exception directory [6 & 7] will be created if none exist
 rem (6 & 7) will be created if none exist
-
-Direct executable filepath "connection string" "sql query" "credentials" "target url" "output directory" "output exception directory"
+rem [8] namespace
+Direct executable filepath "connection string" "sql query" "credentials" "target url" "output directory" "output exception directory" "namespace"
