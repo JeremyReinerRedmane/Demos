@@ -2,7 +2,7 @@
 
 namespace DemoKatan.mCase.Static
 {
-    public static class MCaseStringExtensions
+    public static class EnumExtensions
     {
         public static string GetDescription(this Enum value)
         {
@@ -21,12 +21,18 @@ namespace DemoKatan.mCase.Static
                 .Cast<TEnum>()
                 .ToDictionary(e => e.GetDescription());
 
-            if (map.TryGetValue(description, out TEnum result))
+            if (map.TryGetValue(description, out var result))
             {
                 return result;
             }
 
             return default;
         }
+
+        public static List<string> GetEnumDescriptions<TEnum>() where TEnum : Enum =>
+            Enum.GetValues(typeof(TEnum))
+                .Cast<TEnum>()
+                .Select(e => e.GetDescription())
+                .ToList();
     }
 }

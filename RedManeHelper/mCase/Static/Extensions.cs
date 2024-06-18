@@ -1,4 +1,7 @@
 ﻿using Newtonsoft.Json.Linq;
+using System.ComponentModel;
+using System.Text.RegularExpressions;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace DemoKatan.mCase.Static
 {
@@ -16,23 +19,71 @@ namespace DemoKatan.mCase.Static
             
             return string.IsNullOrEmpty(propertyValue)
                 ? string.Empty
-                : propertyValue.CleanString();
+                : propertyValue.GetPropertyNameFromSystemName();
         }
 
         public static string ParseToken(this JToken token, string property)
         {
             var fieldValue = token[property]?.Parent?.FirstOrDefault()?.Value<string>();
 
-            if (string.Equals("SystemName", property, StringComparison.OrdinalIgnoreCase) || string.Equals("FieldOptions", property, StringComparison.OrdinalIgnoreCase) && !string.IsNullOrEmpty(fieldValue))
+            if (!string.IsNullOrEmpty(fieldValue) && string.Equals("SystemName", property, StringComparison.OrdinalIgnoreCase) || string.Equals("FieldOptions", property, StringComparison.OrdinalIgnoreCase))
                 return fieldValue;
 
             return string.IsNullOrEmpty(fieldValue)
                 ? string.Empty
-                : fieldValue.CleanString();
+                : fieldValue.GetPropertyNameFromSystemName();
+        }
+
+        public static List<string> ParseDefaultData(this JToken token, string property)
+        {
+            var fieldValue = token[property];
+
+            if(fieldValue == null)
+                return new List<string>();
+
+            var hasValues = fieldValue.HasValues;
+
+            if(!hasValues) return new List<string>();
+
+            var values = fieldValue.Value<JToken>();
+
+            if(values == null) return new List<string>();
+
+            var returnValues = new List<string>();
+
+            foreach (var value in values)
+            {
+                if (!value.HasValues) continue;
+
+                var childValues = value.Value<JToken>();
+
+                if (childValues == null) continue;
+
+                //get value
+                var actualValue = childValues["Value"];
+
+                if(actualValue == null) continue;
+
+                var valueObject= actualValue.FirstOrDefault();
+
+                if(valueObject == null) continue;
+
+                var x = valueObject["Value"]?.Value<string>();
+
+                if(string.IsNullOrEmpty(x)) continue;
+
+                returnValues.Add(x);
+
+            }
+
+            return returnValues;
+
         }
 
         public static string GetPropertyNameFromSystemName(this string input)
         {
+            input = Regex.Replace(input, @"[^\w]", "");
+
             var inputIsNumber = int.TryParse(input, out _);
 
             if (inputIsNumber)
@@ -42,12 +93,8 @@ namespace DemoKatan.mCase.Static
 
             if (firstCharIsNum)
             {
-                var temp = input[0];
-                var updated = input.Remove(0, 1);
-                updated += temp;
-                return updated.GetPropertyNameFromSystemName();
+                input = "f_" + input;
             }
-
             var c = input[0];
             char.TryParse(c.ToString().ToUpperInvariant(), out var cap);
             var titleCase = input.Substring(1).ToLower();
@@ -75,34 +122,6 @@ namespace DemoKatan.mCase.Static
             return property2 ?? string.Empty;
         }
 
-        public static string CleanString(this string input)
-        {
-            var name = string.Empty;
-            var num = string.Empty;
-            var firstChar = true;
-            foreach (var c in input)
-            {
-                if (char.IsDigit(c))
-                {
-                    num += c;
-                    continue;
-                }
-
-                if (!char.IsLetter(c))
-                    continue;
-
-                if (firstChar)
-                {
-                    name += c.ToString().ToUpper();
-                    firstChar = false;
-                }
-                else
-                    name += c.ToString().ToLower();
-            }
-
-            return name + num;
-        }
-
         public static bool IsMirrorField(this JToken jToken)
         {
             var defaultValue = jToken.ParseToken(ListTransferFields.DefaultValue.GetDescription());
@@ -120,6 +139,8 @@ namespace DemoKatan.mCase.Static
                 { 1, "       " },
                 { 2, "           " },
                 { 3, "               " },
+                { 4, "                  " },
+                { 5, "                      " },
             };
             return dict[level];
         }

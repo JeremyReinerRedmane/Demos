@@ -1,13 +1,11 @@
-﻿using DemoKatan.mCase.Static;
+﻿using System.Reflection.Metadata;
+using DemoKatan.mCase.Static;
 using Newtonsoft.Json.Linq;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Reflection;
 using System.Text;
-using System.Threading.Tasks;
-using Bogus.DataSets;
+using System.Xml.Linq;
 using Extensions = DemoKatan.mCase.Static.Extensions;
+using static System.Net.Mime.MediaTypeNames;
+using System.Text.RegularExpressions;
 
 namespace DemoKatan.mCase
 {
@@ -28,9 +26,9 @@ namespace DemoKatan.mCase
                 "using System;\nusing System.Collections.Generic;\nusing System.Linq;\nusing MCaseCustomEvents.ARFocus.DataAccess;\nusing MCaseEventsSDK;\nusing MCaseEventsSDK.Util;\nusing MCaseEventsSDK.Util.Data;\nusing System.ComponentModel;\nusing System.Reflection;");
             sb.AppendLine($"namespace {namespace_}"); //TODO: project specific namespace
             sb.AppendLine("{"); //open namespace
-            
+
             #region Dl Info Class
-            
+
             sb.AppendLine(0.Indent() + "/// <summary>");
             sb.AppendLine(0.Indent() + $"/// Synchronized data list [{id}][{sysName}] on {dtNow}");
             sb.AppendLine(0.Indent() + "/// </summary>");
@@ -106,9 +104,9 @@ namespace DemoKatan.mCase
             sb.AppendLine(2.Indent() + "}"); //close Getter
             sb.AppendLine(1.Indent() + "}"); //close Property
 
-            if (relationships == null || !relationships.Any()) 
+            if (relationships == null || !relationships.Any())
                 return sb.ToString();
-            
+
             var parentRelationships =
                 relationships.ParseChildren(ListTransferFields.ParentSystemName.GetDescription());
 
@@ -149,86 +147,143 @@ namespace DemoKatan.mCase
             var privateName = $"_{propertyName.ToLower()}";
             var notAbleToSelectManyValues = fieldOptions.Contains("\"Able to Select Multiple values\"" + ":" + "\"No\"", StringComparison.OrdinalIgnoreCase);
             var multiSelect = notAbleToSelectManyValues ? "False" : "True";
-            
+
             switch (type)
             {
                 case MCaseTypes.CascadingDropDown:
                 case MCaseTypes.DropDownList:
-                    sb.AppendLine(1.Indent() + $"private List<string> {privateName} = null;");
-                    sb.AppendLine(1.Indent() + "/// <summary>");
-                    sb.AppendLine(1.Indent() + $"/// [mCase data type: {fieldType}]");
-                    sb.AppendLine(1.Indent() + $"/// [Multi Select: {multiSelect}]");
-                    sb.AppendLine(1.Indent() +
-                                  "/// [Setting: Accepts a list of strings such as 'yes' or 'no' added to the original value]");
-                    sb.AppendLine(1.Indent() + "/// [Getting: Returns the list of field labels]");
-                    sb.AppendLine(1.Indent() + "/// [Updating: Requires use of either AddTo(), or RemoveFrom()]");
-                    sb.AppendLine(1.Indent() + "/// </summary>");
-                    sb.AppendLine(1.Indent() + $"public List<string> {propertyName}");
-                    sb.AppendLine(1.Indent() + "{"); //open Property
-                    sb.AppendLine(2.Indent() + "get");
-                    sb.AppendLine(2.Indent() + "{"); //open Getter
-                    sb.AppendLine(3.Indent() + $"if({privateName} != null) return {privateName};");
-                    sb.AppendLine(3.Indent() +
-                                  $"{privateName} = _recordInsData.GetMultiSelectFieldValue(\"{sysName}\");");
-                    sb.AppendLine(3.Indent() + $"return {privateName};");
-                    sb.AppendLine(2.Indent() + "}"); //close Getter
-                    sb.AppendLine(2.Indent() + "set");
-                    sb.AppendLine(2.Indent() + "{"); //open Setter
-                    sb.AppendLine(3.Indent() +
-                                  $"if({privateName} == null || value == null || !value.Any()) {privateName} = new List<string>();");
-                    sb.AppendLine(3.Indent() +
-                                  "if (value != null && value.Any(string.IsNullOrEmpty)) value.RemoveAll(string.IsNullOrEmpty);");
-                    sb.AppendLine(3.Indent() +
-                                  $"if(value == null || !value.Any()) {privateName} = new List<string>();");
-                    if (notAbleToSelectManyValues)
-                        sb.AppendLine(3.Indent() +
-                                      $"if (value != null && value.Count > 1) throw new Exception(\"[Multi Select is Disabled] {sysName} only accepts a list length of 1.\");");
-                    sb.AppendLine(3.Indent() + $"else {privateName} = value;");
-                    sb.AppendLine(3.Indent() +
-                                  $"_recordInsData.SetValue(\"{sysName}\", string.Join(MCaseEventConstants.MultiDropDownDelimiter, {privateName}));");
-                    sb.AppendLine(2.Indent() + "}"); //close Setter
-                    sb.AppendLine(1.Indent() + "}"); //close Property
+                    sb.Append(DropDownFactory(jToken, propertyName, sysName, fieldType, privateName, multiSelect, notAbleToSelectManyValues));
                     break;
                 case MCaseTypes.CascadingDynamicDropDown:
                 case MCaseTypes.DynamicDropDown:
-                    sb.AppendLine(1.Indent() + $"private List<RecordInstanceData> {privateName} = null;");
-                    sb.AppendLine(1.Indent() + "/// <summary>");
-                    sb.AppendLine(1.Indent() + $"/// [mCase data type: {fieldType}]");
-                    sb.AppendLine(1.Indent() + $"/// [Multi Select: {multiSelect}]");
-                    sb.AppendLine(1.Indent() + $"/// [Dynamic Source: {dynamicData}]");
-                    sb.AppendLine(1.Indent() + "/// [Setting: Requires a RecordInstancesData]");
-                    sb.AppendLine(1.Indent() + "/// [Getting: Returns the list of RecordInstancesData's]");
-                    sb.AppendLine(1.Indent() + "/// [Updating: Requires use of either AddTo(), or RemoveFrom()]");
-                    sb.AppendLine(1.Indent() + "/// </summary>");
-                    sb.AppendLine(1.Indent() + $"public List<RecordInstanceData> {propertyName}");
-                    sb.AppendLine(1.Indent() + "{"); //open Property
-                    sb.AppendLine(2.Indent() + "get");
-                    sb.AppendLine(2.Indent() + "{"); //open Getter
-                    sb.AppendLine(3.Indent() + $"if({privateName}!=null) return {privateName};");
-                    sb.AppendLine(3.Indent() +
-                                  $"{privateName}=_eventHelper.GetDynamicDropdownRecords(_recordInsData.RecordInstanceID, \"{sysName}\").ToList();");
-                    sb.AppendLine(3.Indent() + $"return {privateName};");
-                    sb.AppendLine(2.Indent() + "}"); //close Getter
-                    sb.AppendLine(2.Indent() + "set");
-                    sb.AppendLine(2.Indent() + "{"); //open Setter
-                    sb.AppendLine(3.Indent() +
-                                  $"if({privateName} == null || value == null || !value.Any()) {privateName} = new List<RecordInstanceData>();");
-                    sb.AppendLine(3.Indent() +
-                                  "if (value != null && value.Any(x => x == null)) value.RemoveAll(x => x == null);");
-                    sb.AppendLine(3.Indent() +
-                                  $"if(value == null || !value.Any()) {privateName} = new List<RecordInstanceData>();");
-                    if (notAbleToSelectManyValues)
-                        sb.AppendLine(3.Indent() +
-                                      $"if (value != null && value.Count > 1) throw new Exception(\"[Multi Select is Disabled] {sysName} only accepts a list length of 1.\");");
-                    sb.AppendLine(3.Indent() + $"else {privateName} = value;");
-                    sb.AppendLine(3.Indent() +
-                                  $"_recordInsData.SetValue(\"{sysName}\", string.Join(MCaseEventConstants.MultiDropDownDelimiter, {privateName}.Select(x => x.RecordInstanceID)));");
-                    sb.AppendLine(2.Indent() + "}"); //close Setter
-                    sb.AppendLine(1.Indent() + "}"); //close Property
+                    sb.Append(DynamicDropDownFactory(propertyName, sysName, fieldType, privateName, multiSelect, dynamicData, notAbleToSelectManyValues));
                     break;
                 default:
                     return string.Empty;
             }
+
+            return sb.ToString();
+        }
+
+        private static string DynamicDropDownFactory(string propertyName, string sysName, string fieldType,
+            string privateName, string multiSelect, string dynamicData, bool notAbleToSelectManyValues)
+        {
+            var sb = new StringBuilder();
+
+            sb.AppendLine(1.Indent() + $"private List<RecordInstanceData> {privateName} = null;");
+            sb.AppendLine(1.Indent() + "/// <summary>");
+            sb.AppendLine(1.Indent() + $"/// [mCase data type: {fieldType}]");
+            sb.AppendLine(1.Indent() + $"/// [Multi Select: {multiSelect}]");
+            sb.AppendLine(1.Indent() + $"/// [Dynamic Source: {dynamicData}]");
+            sb.AppendLine(1.Indent() + "/// [Setting: Requires a RecordInstancesData]");
+            sb.AppendLine(1.Indent() + "/// [Getting: Returns the list of RecordInstancesData's]");
+            sb.AppendLine(1.Indent() + "/// [Updating: Requires use of either AddTo(), or RemoveFrom()]");
+            sb.AppendLine(1.Indent() + "/// </summary>");
+            sb.AppendLine(1.Indent() + $"public List<RecordInstanceData> {propertyName}");
+            sb.AppendLine(1.Indent() + "{"); //open Property
+            sb.AppendLine(2.Indent() + "get");
+            sb.AppendLine(2.Indent() + "{"); //open Getter
+            sb.AppendLine(3.Indent() + $"if({privateName}!=null) return {privateName};");
+            sb.AppendLine(3.Indent() +
+                          $"{privateName}=_eventHelper.GetDynamicDropdownRecords(_recordInsData.RecordInstanceID, \"{sysName}\").ToList();");
+            sb.AppendLine(3.Indent() + $"return {privateName};");
+            sb.AppendLine(2.Indent() + "}"); //close Getter
+            sb.AppendLine(2.Indent() + "set");
+            sb.AppendLine(2.Indent() + "{"); //open Setter
+            sb.AppendLine(3.Indent() +
+                          $"if({privateName} == null || value == null || !value.Any()) {privateName} = new List<RecordInstanceData>();");
+            sb.AppendLine(3.Indent() +
+                          "if (value != null && value.Any(x => x == null)) value.RemoveAll(x => x == null);");
+            sb.AppendLine(3.Indent() +
+                          $"if(value == null || !value.Any()) {privateName} = new List<RecordInstanceData>();");
+            if (notAbleToSelectManyValues)
+                sb.AppendLine(3.Indent() +
+                              $"if (value != null && value.Count > 1) throw new Exception(\"[Multi Select is Disabled] {sysName} only accepts a list length of 1.\");");
+            sb.AppendLine(3.Indent() + $"else {privateName} = value;");
+            sb.AppendLine(3.Indent() +
+                          $"_recordInsData.SetValue(\"{sysName}\", string.Join(MCaseEventConstants.MultiDropDownDelimiter, {privateName}.Select(x => x.RecordInstanceID)));");
+            sb.AppendLine(2.Indent() + "}"); //close Setter
+            sb.AppendLine(1.Indent() + "}"); //close Property
+
+            return sb.ToString();
+        }
+
+        private static string DropDownFactory(JToken jToken, string propertyName, string sysName, string fieldType,
+            string privateName, string multiSelect, bool notAbleToSelectManyValues)
+        {
+            var sb = new StringBuilder();
+            var defaultValues = jToken.ParseDefaultData(ListTransferFields.FieldValues.GetDescription());
+            var enumName = $"{propertyName}Enum";
+            if (defaultValues.Any())
+            {
+                sb.AppendLine(GeneratePropertyEnums(defaultValues, propertyName));
+            }
+
+            sb.AppendLine(1.Indent() + $"private List<string> {privateName} = null;");
+            #region Summary
+            sb.AppendLine(1.Indent() + "/// <summary>");
+            sb.AppendLine(1.Indent() + $"/// [mCase data type: {fieldType}]");
+            sb.AppendLine(1.Indent() + $"/// [Multi Select: {multiSelect}]");
+
+            if (defaultValues.Any())
+            {
+                sb.AppendLine(1.Indent() + $"/// [Default list values can be found in {enumName}]");
+            }
+
+            sb.AppendLine(1.Indent() +
+                          "/// [Setting: Accepts a list of strings such as 'yes' or 'no' added to the original value]");
+            sb.AppendLine(1.Indent() + "/// [Getting: Returns the list of field labels]");
+            sb.AppendLine(1.Indent() + "/// [Updating: Requires use of either AddTo(), or RemoveFrom()]");
+            sb.AppendLine(1.Indent() + "/// </summary>");
+
+            if (defaultValues.Any())
+            {
+                sb.AppendLine(1.Indent() + $"/// <returns>If value not found in {enumName}. new value will return: [Not found in Default Values] + updated value</returns>");
+            }
+            #endregion
+            sb.AppendLine(1.Indent() + $"public List<string> {propertyName}");
+            sb.AppendLine(1.Indent() + "{"); //open Property
+            sb.AppendLine(2.Indent() + "get");
+            sb.AppendLine(2.Indent() + "{"); //open Getter
+            sb.AppendLine(3.Indent() + $"if({privateName} != null) return {privateName};");
+            sb.AppendLine(3.Indent() +
+                          $"{privateName} = _recordInsData.GetMultiSelectFieldValue(\"{sysName}\");");
+            sb.AppendLine(3.Indent() + $"return {privateName};");
+            sb.AppendLine(2.Indent() + "}"); //close Getter
+            sb.AppendLine(2.Indent() + "set");
+            sb.AppendLine(2.Indent() + "{"); //open Setter
+            sb.AppendLine(3.Indent() +
+                          $"if({privateName} == null || value == null || !value.Any()) {privateName} = new List<string>();");
+            sb.AppendLine(3.Indent() +
+                          "if (value != null && value.Any(string.IsNullOrEmpty)) value.RemoveAll(string.IsNullOrEmpty);");
+            sb.AppendLine(3.Indent() +
+                          $"if(value == null || !value.Any()) {privateName} = new List<string>();");
+            if (notAbleToSelectManyValues)
+            {
+                sb.AppendLine(3.Indent() +
+                              $"if (value != null && value.Count > 1) {privateName} = new List<string>()" + "{\"[Multi Select is Disabled] "+ propertyName + " only accepts a list length of 1.\"};");
+            }
+
+            if (defaultValues.Any())
+            {
+                sb.AppendLine(3.Indent() + "else");
+                sb.AppendLine(3.Indent() + "{// continue to processing value data");//open else
+                sb.AppendLine(4.Indent() + "if (value != null && value.Any())");
+                sb.AppendLine(4.Indent() + "{// check that all values being set exist in default values enum");//open if
+                sb.AppendLine(5.Indent() + $"var defaultOptions = ObjectExtensions.GetDescriptions<{enumName}>();//get all possible default options");
+                sb.AppendLine(5.Indent() + "var filteredValues = value.Select(entry => defaultOptions.Contains(entry) ? entry : $\"[Not found in Default Values] {entry}\").ToList();");
+                sb.AppendLine(5.Indent() + $"{privateName} = filteredValues;");//close if
+                sb.AppendLine(4.Indent() + "}");//close if
+                sb.AppendLine(4.Indent() + "else//value is not null but it is an empty list");//open single else
+                sb.AppendLine(5.Indent() + $"{privateName} = value;");
+
+                sb.AppendLine(3.Indent() + "}");//close else
+            }
+
+            sb.AppendLine(3.Indent() +
+                          $"_recordInsData.SetValue(\"{sysName}\", string.Join(MCaseEventConstants.MultiDropDownDelimiter, {privateName}));");
+            sb.AppendLine(2.Indent() + "}"); //close Setter
+            sb.AppendLine(1.Indent() + "}"); //close Property
 
             return sb.ToString();
         }
@@ -247,7 +302,7 @@ namespace DemoKatan.mCase
             if (mirroredField)
                 sb.AppendLine(1.Indent() + "/// This is a Mirrored field. No setting / updating allowed.");
             sb.AppendLine(1.Indent() + "/// </summary>");
-            if(_stringCheck.Contains(enumType) && !mirroredField)
+            if (_stringCheck.Contains(enumType) && !mirroredField)
                 sb.AppendLine(1.Indent() + "/// <returns>\"-1 if string does not pass mCase data type validation.\"</returns>");
             sb.AppendLine(1.Indent() + $"public string {propertyName}");
             sb.AppendLine(1.Indent() + "{"); //open Property
@@ -550,7 +605,7 @@ namespace DemoKatan.mCase
             sb.AppendLine(2.Indent() + "propertyInfo.SetValue(this, getter);");
             sb.AppendLine(2.Indent() + "return foundValues.Count;");
             sb.AppendLine(1.Indent() + "}"); //close method
-            
+
             #endregion
             #region Remove string
 
@@ -584,19 +639,76 @@ namespace DemoKatan.mCase
             return sb.ToString();
         }
 
-        public static string GeneratePropertyEnums(HashSet<string> fieldSet, string className)
+        public static string GeneratePropertyEnums(List<string> fieldSet, string className)
         {
             var sb = new StringBuilder();
 
-            var enums = fieldSet.Aggregate(
-                $"public enum {className}Enum" + "{", (current, child) => current + $"[Description(\"{child.GetPropertyNameFromSystemName()}\")] {child.GetPropertyNameFromSystemName()},");
+            var distinct = fieldSet.Distinct().OrderBy(x => x).ToList();
+            var distinctEnums = new List<string>();
 
-            enums += "}";
-                
-            sb.AppendLine(0.Indent() + enums);
+            var property = $"public enum {className}Enum" + "{";//open
+
+            for (var i = 0; i < distinct.Count; i++)
+            {
+                var field = distinct[i];
+
+                if (field.Contains("\""))
+                {
+                    field = field.Replace("\"", "\\\"");
+                }
+
+                property += $"[Description(\"{field}\")] ";
+
+                var enumName = field.GetPropertyNameFromSystemName();
+
+                if (distinctEnums.Contains(enumName))
+                {
+                    property += enumName + $"_{i}_,";//generate enum duplicate
+                }
+                else
+                {
+                    property += enumName + ",";//generate enum 
+                    distinctEnums.Add(enumName);
+                }
+            }
+
+            property += "}";//close enum
+
+            sb.AppendLine(1.Indent() + property);
+
 
             return sb.ToString();
         }
 
+        public static string GenerateEnumExtensions()
+        {
+            var sb = new StringBuilder();
+
+            sb.AppendLine(1.Indent() + "public static List<string> GetDescriptions<TEnum>() where TEnum : Enum =>");
+            sb.AppendLine(2.Indent() + "Enum.GetValues(typeof(TEnum))");
+            sb.AppendLine(3.Indent() + ".Cast<TEnum>()");
+            sb.AppendLine(3.Indent() + ".Select(e => e.GetEnumDescription())");
+            sb.AppendLine(3.Indent() + ".ToList();");
+            return sb.ToString();
+        }
+
+        public static string GenerateStaticFile(string namespace_)
+        {
+
+            var sb = new StringBuilder();
+
+            sb.AppendLine(//TODO continue to add usings, as more and more validations are made
+                "using System;\nusing System.Collections.Generic;\nusing System.ComponentModel;\nusing System.Linq;\nusing MCaseEventsSDK.Util;\n");
+            sb.AppendLine($"namespace {namespace_}"); //TODO: project specific namespace
+            sb.AppendLine("{"); //Open class
+            sb.AppendLine(0.Indent() + "public static class ObjectExtensions"); //static class
+            sb.AppendLine(0.Indent() + "{"); //open class
+            sb.Append(GenerateEnumExtensions());
+            sb.AppendLine(0.Indent() + "}"); //close class
+            sb.AppendLine("}"); //close  class
+
+            return sb.ToString();
+
+        }
     }
 }

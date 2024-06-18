@@ -21,13 +21,26 @@ namespace DemoKatan.mCase
         public SyncDlConfigs()
         {
             _connectionString = "";
+            Console.WriteLine("Connection string: " + _connectionString);
+
             _sqlCommand = "";
+            Console.WriteLine("Sql Command: " + _sqlCommand);
+
+            _credentials = "";//TODO add credentials username:password
+            Console.WriteLine("Credentials: " + _credentials);
+
+            _mCaseUrl = "" + "/Resource/Export/DataList/Configuration/";
+            Console.WriteLine("Mcase Url: " + _mCaseUrl);
+
+
             _outputDirectory = @"";
+            Console.WriteLine("Output Dir: " + _outputDirectory);
             
             if (!Directory.Exists(_outputDirectory))
                 Directory.CreateDirectory(_outputDirectory);
             
             _exceptionDirectory = @"";
+            Console.WriteLine("Exception Dir: " + _exceptionDirectory);
 
             if (!Directory.Exists(_exceptionDirectory))
                 Directory.CreateDirectory(_exceptionDirectory);
@@ -119,6 +132,13 @@ namespace DemoKatan.mCase
                     await File.WriteAllTextAsync(path, ex.ToString());
                 }
                 Console.ForegroundColor = ConsoleColor.DarkGray;
+            }
+
+            var staticFileData = Factory.GenerateStaticFile(_namespace);
+
+            var staticPath = Path.Combine(_outputDirectory, "ObjectExtensions.cs");
+
+            await File.WriteAllTextAsync(staticPath, staticFileData);
 
             }
         }
@@ -181,7 +201,7 @@ namespace DemoKatan.mCase
 
             var parsedClassName = jsonObject.ParseJson(ListTransferFields.SystemName.GetDescription()).CleanString();
 
-            var className = parsedClassName.CleanString();
+            var className = parsedClassName.GetPropertyNameFromSystemName();
             
             try
             {
@@ -270,26 +290,28 @@ namespace DemoKatan.mCase
             if (embeddedRelatedFields.Count > 0)
                 sb.AppendLine(Factory.GetEmbeddedOptions(embeddedRelatedFields.ToList()));
 
+            sb.Append(Factory.GenerateEnumExtensions());
+
+
             if (requiresEnumeration)
                 sb.AppendLine(Factory.AddEnumerableExtensions(className));
 
+
             sb.AppendLine(0.Indent() + "}"); //close class
 
-            sb.AppendLine(Factory.GeneratePropertyEnums(enumerableFieldSet, className));
+            sb.AppendLine(Factory.GeneratePropertyEnums(enumerableFieldSet.ToList(), className));
 
             sb.AppendLine("}"); //close namespace
             return sb;
         }
 
-        private string AddProperties(JToken jToken, string type, string sysName)
+        private string AddProperties(JToken jToken, string type, string sysName)//sysname is uppercase
         {
             var type = jToken.ParseToken(ListTransferFields.Type.GetDescription());
 
             var typeEnum = type.GetEnumValue<MCaseTypes>();
 
-            var sysName = jToken.ParseToken(ListTransferFields.SystemName.GetDescription());
-
-            var propertyName = sysName.GetPropertyNameFromSystemName();
+            var propertyName = sysName.GetPropertyNameFromSystemName();// title case
 
             switch (typeEnum)
             {

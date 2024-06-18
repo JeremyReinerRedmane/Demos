@@ -102,6 +102,8 @@ namespace DemoKatan.mCase.Static
         [Description("DynamicSourceSystemName")]
         DynamicSourceSystemName,
         [Description("Relationships")]
-        Relationships
+        Relationships,
+        [Description("FieldValues")]
+        FieldValues
     }
 }
