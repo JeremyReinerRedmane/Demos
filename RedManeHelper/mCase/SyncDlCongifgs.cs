@@ -1,4 +1,5 @@
 ﻿using System.Data.SqlClient;
+using System.Diagnostics;
 using System.Net.Http.Headers;
 using System.Text;
 using DemoKatan.mCase.Static;
@@ -257,7 +258,7 @@ namespace DemoKatan.mCase
 
                 if (string.IsNullOrEmpty(type)) continue;
 
-                var systemName = field.ParseToken(ListTransferFields.SystemName.GetDescription());
+                var systemName = field.ParseToken(ListTransferFields.SystemName.GetDescription());//All caps
 
                 if (string.IsNullOrEmpty(systemName) || fieldSet.Contains(systemName))
                     continue; //if property is already in field list then continue, no need to duplicate
@@ -307,8 +308,6 @@ namespace DemoKatan.mCase
 
         private string AddProperties(JToken jToken, string type, string sysName)//sysname is uppercase
         {
-            var type = jToken.ParseToken(ListTransferFields.Type.GetDescription());
-
             var typeEnum = type.GetEnumValue<MCaseTypes>();
 
             var propertyName = sysName.GetPropertyNameFromSystemName();// title case

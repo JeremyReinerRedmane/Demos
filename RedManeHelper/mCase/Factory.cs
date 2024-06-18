@@ -253,7 +253,7 @@ namespace DemoKatan.mCase
             sb.AppendLine(2.Indent() + "set");
             sb.AppendLine(2.Indent() + "{"); //open Setter
             sb.AppendLine(3.Indent() +
-                          $"if({privateName} == null || value == null || !value.Any()) {privateName} = new List<string>();");
+                          $"if({privateName} == null) {privateName} = new List<string>();");
             sb.AppendLine(3.Indent() +
                           "if (value != null && value.Any(string.IsNullOrEmpty)) value.RemoveAll(string.IsNullOrEmpty);");
             sb.AppendLine(3.Indent() +
@@ -266,18 +266,14 @@ namespace DemoKatan.mCase
 
             if (defaultValues.Any())
             {
-                sb.AppendLine(3.Indent() + "else");
-                sb.AppendLine(3.Indent() + "{// continue to processing value data");//open else
-                sb.AppendLine(4.Indent() + "if (value != null && value.Any())");
-                sb.AppendLine(4.Indent() + "{// check that all values being set exist in default values enum");//open if
-                sb.AppendLine(5.Indent() + $"var defaultOptions = ObjectExtensions.GetDescriptions<{enumName}>();//get all possible default options");
-                sb.AppendLine(5.Indent() + "var filteredValues = value.Select(entry => defaultOptions.Contains(entry) ? entry : $\"[Not found in Default Values] {entry}\").ToList();");
-                sb.AppendLine(5.Indent() + $"{privateName} = filteredValues;");//close if
-                sb.AppendLine(4.Indent() + "}");//close if
-                sb.AppendLine(4.Indent() + "else//value is not null but it is an empty list");//open single else
-                sb.AppendLine(5.Indent() + $"{privateName} = value;");
-
-                sb.AppendLine(3.Indent() + "}");//close else
+                sb.AppendLine(3.Indent() + "if (value != null && value.Any())");
+                sb.AppendLine(3.Indent() + "{// check that all values being set exist in default values enum");//open if
+                sb.AppendLine(4.Indent() + $"var defaultOptions = ObjectExtensions.GetDescriptions<{enumName}>();//get all possible default options");
+                sb.AppendLine(4.Indent() + "var filteredValues = value.Select(entry => defaultOptions.Contains(entry) ? entry : $\"[Not found in Default Values] {entry}\").ToList();");
+                sb.AppendLine(4.Indent() + $"{privateName} = filteredValues;");
+                sb.AppendLine(3.Indent() + "}");//close if
+                sb.AppendLine(3.Indent() + "else//value could be null or empty. Set to new list");//open single else
+                sb.AppendLine(4.Indent() + $"{privateName} = new List<string>();");
             }
 
             sb.AppendLine(3.Indent() +
