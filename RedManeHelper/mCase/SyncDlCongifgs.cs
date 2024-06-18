@@ -31,17 +31,17 @@ namespace DemoKatan.mCase
             if (!Directory.Exists(_exceptionDirectory))
                 Directory.CreateDirectory(_exceptionDirectory);
 
-            _credentials = "";//TODO add credentials username:password
-            _mCaseUrl = "" + "/Resource/Export/DataList/Configuration/";
+            _namespace = "";
+            Console.WriteLine("Namespace: " + _namespace);
         }
 
         public SyncDlConfigs(string[] commandLineArgs)
         {
-            if (commandLineArgs.Length != 7)
+            if (commandLineArgs.Length != 8)
             {
-                Console.WriteLine(commandLineArgs.Length > 7
-                    ? $"Too many arguments [{commandLineArgs.Length - 7}]"
-                    : $"Missing arguments [{7 - commandLineArgs.Length}]");
+                Console.WriteLine(commandLineArgs.Length > 8
+                    ? $"Too many arguments [{commandLineArgs.Length - 8}]"
+                    : $"Missing arguments [{8 - commandLineArgs.Length}]");
 
                 throw new ArgumentException("Invalid params. 1: Connection string, 2: Sql command 3: Credentials, 4: Enviroment Url 5: Output directory, 6: Exception directory");
             }
@@ -67,6 +67,9 @@ namespace DemoKatan.mCase
             Console.WriteLine("Exception Dir: " + _exceptionDirectory);
             if (!Directory.Exists(_exceptionDirectory))
                 Directory.CreateDirectory(_exceptionDirectory);
+
+            _namespace = commandLineArgs[7];//7
+            Console.WriteLine("Namespace: " + _namespace);
         }
 
         public async Task RemoteSync()
@@ -212,7 +215,7 @@ namespace DemoKatan.mCase
             if (fields == null)
                 return new StringBuilder();
 
-            var sb = Factory.ClassInitializer(jsonObject, className);//TODO Generate Partial class, Methods in one, Properties in the other
+            var sb = Factory.ClassInitializer(jsonObject, className, _namespace);//TODO Generate Partial class, Methods in one, Properties in the other
 
             var requiresEnumeration = false;
 
@@ -253,7 +256,7 @@ namespace DemoKatan.mCase
                 if (requiresEnumerationValues.Contains(type))
                     requiresEnumeration = true;
 
-                var property = AddProperties(field);//Magic happens here
+                var property = AddProperties(field, type, systemName);//Magic happens here
 
                 if (string.IsNullOrEmpty(property))
                     continue;
@@ -277,7 +280,7 @@ namespace DemoKatan.mCase
             return sb;
         }
 
-        private string AddProperties(JToken jToken)
+        private string AddProperties(JToken jToken, string type, string sysName)
         {
             var type = jToken.ParseToken(ListTransferFields.Type.GetDescription());
 

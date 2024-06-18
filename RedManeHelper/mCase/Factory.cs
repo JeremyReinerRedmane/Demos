@@ -15,7 +15,7 @@ namespace DemoKatan.mCase
     {
         private static List<MCaseTypes> _stringCheck => new() { MCaseTypes.Date, MCaseTypes.Boolean, MCaseTypes.DateTime, MCaseTypes.EmailAddress, MCaseTypes.Number, MCaseTypes.Phone, MCaseTypes.Time, MCaseTypes.URL };
 
-        public static StringBuilder ClassInitializer(JObject jObject, string className)
+        public static StringBuilder ClassInitializer(JObject jObject, string className, string namespace_)
         {
             var sb = new StringBuilder();
 
@@ -26,7 +26,7 @@ namespace DemoKatan.mCase
 
             sb.AppendLine(//TODO continue to add usings, as more and more validations are made
                 "using System;\nusing System.Collections.Generic;\nusing System.Linq;\nusing MCaseCustomEvents.ARFocus.DataAccess;\nusing MCaseEventsSDK;\nusing MCaseEventsSDK.Util;\nusing MCaseEventsSDK.Util.Data;\nusing System.ComponentModel;\nusing System.Reflection;");
-            sb.AppendLine("namespace MCaseCustomEvents.ARFocus.FactoryEntities"); //TODO: project specific namespace
+            sb.AppendLine($"namespace {namespace_}"); //TODO: project specific namespace
             sb.AppendLine("{"); //open namespace
             
             #region Dl Info Class
