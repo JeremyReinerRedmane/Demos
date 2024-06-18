@@ -261,7 +261,7 @@ namespace DemoKatan.mCase
             if (notAbleToSelectManyValues)
             {
                 sb.AppendLine(3.Indent() +
-                              $"if (value != null && value.Count > 1) {privateName} = new List<string>()" + "{\"[Multi Select is Disabled] "+ propertyName + " only accepts a list length of 1.\"};");
+                $"if (value != null && value.Count > 1) {privateName} = new List<string>()" + "{\"[Multi Select is Disabled] " + propertyName + " only accepts a list length of 1.\"};");
             }
 
             if (defaultValues.Any())
