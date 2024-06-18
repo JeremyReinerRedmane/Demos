@@ -588,17 +588,12 @@ namespace DemoKatan.mCase
         {
             var sb = new StringBuilder();
 
-            sb.AppendLine(0.Indent() + $"public enum {className}Enum");
-            sb.AppendLine(0.Indent() + "{");//open enum
+            var enums = fieldSet.Aggregate(
+                $"public enum {className}Enum" + "{", (current, child) => current + $"[Description(\"{child.GetPropertyNameFromSystemName()}\")] {child.GetPropertyNameFromSystemName()},");
 
-            foreach (var field in fieldSet)
-            {
+            enums += "}";
                 
-                sb.AppendLine(1.Indent() + $"[Description(\"{field.GetPropertyNameFromSystemName()}\")]");
-                sb.AppendLine(1.Indent() + $"{field.GetPropertyNameFromSystemName()},");
-            }
-
-            sb.AppendLine(0.Indent() + "}");//close enum
+            sb.AppendLine(0.Indent() + enums);
 
             return sb.ToString();
         }
