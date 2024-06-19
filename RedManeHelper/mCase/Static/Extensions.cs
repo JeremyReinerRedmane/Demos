@@ -34,26 +34,38 @@ namespace DemoKatan.mCase.Static
                 : fieldValue.GetPropertyNameFromSystemName();
         }
 
-        public static string ParseEmbeddedOptions(this JToken token, string property)
+        public static string ParseClassName(this JToken token, string property)
         {
-            var fieldValue = token[property]?.Parent?.FirstOrDefault();
+            var fieldValue = token[property];
 
-            if(fieldValue == null) return string.Empty;
+            if (fieldValue == null)
+                return string.Empty;
 
-            if(!fieldValue.HasValues) return string.Empty;
+            var hasValues = fieldValue.HasValues;
 
-            var nextToken = fieldValue?.FirstOrDefault()?.Value<JToken>();
+            if (!hasValues) return string.Empty;
 
-            if(nextToken == null) return string.Empty;
+            var values = fieldValue.Value<JToken>();
 
-            if(!nextToken.HasValues) return string.Empty;
+            if (values == null) return string.Empty;
 
-            var value = nextToken[ListTransferFields.Value.GetDescription()]?.Value<string>();
+            foreach (var value in values)
+            {
+                if (!value.HasValues) continue;
 
-            if(string.IsNullOrEmpty(value)) return string.Empty;
+                var childValues = value.Value<JToken>();
 
-            return value;
+                if (childValues == null) continue;
 
+                //get value
+                var actualValue = childValues[ListTransferFields.Value.GetDescription()];
+
+                if (actualValue == null) continue;
+
+                return actualValue.Value<string>() ?? string.Empty;
+            }
+
+            return string.Empty;
         }
 
         public static List<string> ParseDefaultData(this JToken token, string property)
@@ -133,15 +145,15 @@ namespace DemoKatan.mCase.Static
                 .ToList();
         }
 
-        public static string ParseDynamicData(this JToken token, string prop1, string prop2)
+        public static string ParseDynamicData(this JToken token, string prop1)
         {
             var property = token[prop1];
 
             if(property == null || !property.HasValues) return string.Empty;
 
-            var property2= property.ParseToken(prop2);
+            var property2= property.ParseToken(ListTransferFields.DynamicSourceSystemName.GetDescription());
 
-            return property2 ?? string.Empty;
+            return property2;
         }
 
         public static bool IsMirrorField(this JToken jToken)

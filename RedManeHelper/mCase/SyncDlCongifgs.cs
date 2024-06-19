@@ -18,6 +18,7 @@ namespace DemoKatan.mCase
         private readonly string _credentials;
         private readonly string _mCaseUrl;
         private readonly string _namespace;
+        private HashSet<string> _classNames;
 
         public SyncDlConfigs()
         {
@@ -48,6 +49,8 @@ namespace DemoKatan.mCase
 
             _namespace = "";
             Console.WriteLine("Namespace: " + _namespace);
+
+            _classNames = new HashSet<string>();
         }
 
         public SyncDlConfigs(string[] commandLineArgs)
@@ -85,6 +88,8 @@ namespace DemoKatan.mCase
 
             _namespace = commandLineArgs[7];//7
             Console.WriteLine("Namespace: " + _namespace);
+
+            _classNames = new HashSet<string>();
         }
 
         public async Task RemoteSync()
@@ -137,16 +142,16 @@ namespace DemoKatan.mCase
 
             var staticFileData = Factory.GenerateStaticFile(_namespace);
 
-            var staticPath = Path.Combine(_outputDirectory, "ObjectExtensions.cs");
+            var staticPath = Path.Combine(_outputDirectory, "FactoryExtensions.cs");
 
             await File.WriteAllTextAsync(staticPath, staticFileData);
 
             }
         }
 
-        private async Task<List<string>> DataAccess()
+        private async Task<List<int>> DataAccess()
         {
-            var ids = new List<string>();
+            var ids = new List<int>();
             try
             {
                 using (var connection = new SqlConnection(_connectionString))
@@ -156,7 +161,7 @@ namespace DemoKatan.mCase
                     // Execute the query and process results
                     var command = new SqlCommand(_sqlCommand, connection);
 
-                    using (var reader = command.ExecuteReader())
+                    using (var reader = await command.ExecuteReaderAsync())
                     {
                         while (reader.Read())
                         {
@@ -168,9 +173,12 @@ namespace DemoKatan.mCase
                             var value = int.TryParse(values[0].ToString(), out var listId);
 
                             if (value && listId > 0)
-                                ids.Add(listId.ToString());
+                                ids.Add(listId);
                         }
                     }
+
+                    Console.WriteLine($"Processing {ids.Count} Data lists");
+                    return ids.OrderBy(x => x).ToList();
                 }
             }
             catch (Exception ex)
@@ -180,7 +188,7 @@ namespace DemoKatan.mCase
                 var path = Path.Combine(_exceptionDirectory, $"Sql Exception {DateTime.Now.ToString(Extensions.TimeFormat)}.cs");
                 await File.WriteAllTextAsync(path, ex.ToString());
                 Console.ForegroundColor = ConsoleColor.DarkGray;
-                return new List<string>();
+                return new List<int>();
             }
 
             return ids;
@@ -198,12 +206,21 @@ namespace DemoKatan.mCase
 
             var result = cleanedClose.Remove(0, 1);
 
+            if(string.IsNullOrEmpty(result))
+                return string.Empty; // Currently Two dls are empty. Returning from mCase "[]. 1799, & 1805"
+
             var jsonObject = JObject.Parse(result);
 
-            var parsedClassName = jsonObject.ParseJson(ListTransferFields.SystemName.GetDescription()).CleanString();
+            var className = jsonObject.ParseClassName(ListTransferFields.Name.GetDescription()).GetPropertyNameFromSystemName();
 
-            var className = parsedClassName.GetPropertyNameFromSystemName();
+            if (string.IsNullOrEmpty(className)) return string.Empty;
+
+            var count = _classNames.Count(x => string.Equals(x, className, StringComparison.OrdinalIgnoreCase));
             
+            if (count > 0)
+            {
+                className += $"_{count}";
+            }
             try
             {
 
@@ -213,6 +230,10 @@ namespace DemoKatan.mCase
 
                 await File.WriteAllTextAsync(path, sb.ToString());
 
+                if (!string.IsNullOrEmpty(path))
+                {
+                    _classNames.Add(className);
+                }
                 return path;
             }
             catch (Exception ex)
@@ -237,7 +258,7 @@ namespace DemoKatan.mCase
             if (fields == null)
                 return new StringBuilder();
 
-            var sb = Factory.ClassInitializer(jsonObject, className, _namespace);//TODO Generate Partial class, Methods in one, Properties in the other
+            var sb = Factory.ClassInitializer(jsonObject, className, _namespace);
 
             var requiresEnumeration = false;
 
@@ -269,8 +290,12 @@ namespace DemoKatan.mCase
 
                     if (string.Equals(requiresEnumerationValues[0], type, StringComparison.OrdinalIgnoreCase))
                     {
-                        var fieldName = field.ParseEmbeddedOptions(ListTransferFields.Name.GetDescription());
-                        embeddedRelatedFields.Add($"{fieldName} : {systemName}");
+                        var fieldName = field.ParseDynamicData(ListTransferFields.DynamicData.GetDescription());
+                        if (string.IsNullOrEmpty(fieldName))
+                            continue;//weird but true. DL: TDM-Signatures Field: TDMSIGNATURES
+
+                        var entityName = fieldName.GetPropertyNameFromSystemName();
+                        embeddedRelatedFields.Add(entityName);
                         fieldSet.Add(systemName);
                         continue;
                     }

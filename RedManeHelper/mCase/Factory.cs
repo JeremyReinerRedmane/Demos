@@ -141,8 +141,7 @@ namespace DemoKatan.mCase
             var sb = new StringBuilder();
 
             var fieldOptions = jToken.ParseToken(ListTransferFields.FieldOptions.GetDescription());
-            var dynamicData = jToken.ParseDynamicData(ListTransferFields.DynamicData.GetDescription(),
-                ListTransferFields.DynamicSourceSystemName.GetDescription());
+            var dynamicData = jToken.ParseDynamicData(ListTransferFields.DynamicData.GetDescription());
 
             var privateName = $"_{propertyName.ToLower()}";
             var notAbleToSelectManyValues = fieldOptions.Contains("\"Able to Select Multiple values\"" + ":" + "\"No\"", StringComparison.OrdinalIgnoreCase);
@@ -426,18 +425,23 @@ namespace DemoKatan.mCase
         {
             var sb = new StringBuilder();
 
+            sb.Append(GenerateEnums(data, "EmbeddedOptionsEnum", false));
             sb.AppendLine(1.Indent() + "/// <summary>");
             sb.AppendLine(1.Indent() + "/// [mCase data type] Embedded List.");
             sb.AppendLine(1.Indent() + "/// Requires the Datalist Id from one of the following Embedded Data lists:");
-            sb.AppendLine(1.Indent() + "/// " + string.Join(", ", data));
+            sb.AppendLine(1.Indent() + "/// Refer to EmbeddedOptionsEnum for embedded options");
             sb.AppendLine(1.Indent() + "/// </summary>");
             sb.AppendLine(1.Indent() + "/// <param name=\"childDataListId\"> Data list Id</param>");
-            sb.AppendLine(1.Indent() + "/// <returns>Related children from selected data list</returns>)");
-            sb.AppendLine(1.Indent() + "public List<RecordInstanceData> GetActiveChildRecords(int childDataListId)");
-            sb.AppendLine(2.Indent() + "=> _eventHelper");
-            sb.AppendLine(3.Indent() + ".GetActiveChildRecordsByParentRecId(_recordInsData.RecordInstanceID)");
+            sb.AppendLine(1.Indent() + "/// <returns>Related children from selected data list</returns>");
+            sb.AppendLine(1.Indent() + "public List<RecordInstanceData> GetActiveChildRecords(EmbeddedOptions embeddedEnum)");
+            sb.AppendLine(1.Indent() + "{");//open class
+            sb.AppendLine(2.Indent() + "var sysName = embeddedEnum.GetEnumDescription();");
+            sb.AppendLine(2.Indent() + "if(string.IsNullOrEmpty(sysName)) return new  List<RecordInstanceData>();");
+            sb.AppendLine(2.Indent() + "var childDataListId = _eventHelper.GetDataListID(sysName);");
+            sb.AppendLine(3.Indent() + "return _eventHelper.GetActiveChildRecordsByParentRecId(_recordInsData.RecordInstanceID)");
             sb.AppendLine(3.Indent() + ".Where(x => x.DataListID == childDataListId)");
             sb.AppendLine(3.Indent() + ".ToList();");
+            sb.AppendLine(1.Indent() + "}");//close class
 
             return sb.ToString();
         }
@@ -480,8 +484,10 @@ namespace DemoKatan.mCase
 
             property += "}";//close enum
 
-            sb.AppendLine(1.Indent() + property);
-
+            if(titleCase)
+                sb.AppendLine(0.Indent() + property);
+            else
+                sb.AppendLine(1.Indent() + property);
 
             return sb.ToString();
         }
@@ -492,10 +498,12 @@ namespace DemoKatan.mCase
 
             sb.AppendLine(1.Indent() + $"public int RemoveFrom({className}Enum propertyEnum, Func<RecordInstanceData, bool> predicate) => this.RemoveFrom<{className}Entity, {className}Enum>(propertyEnum, predicate);");
             sb.AppendLine(1.Indent() + $"public int RemoveFrom({className}Enum propertyEnum, Func<string, bool> predicate) => this.RemoveFrom<{className}Entity, {className}Enum>(propertyEnum, predicate);");
-
+            
+            //add single
             sb.AppendLine(1.Indent() + $"public int AddTo({className}Enum propertyEnum, RecordInstanceData param) => this.AddTo<{className}Entity, {className}Enum>(propertyEnum, param);");
             sb.AppendLine(1.Indent() + $"public int AddTo({className}Enum propertyEnum, string param) => this.AddTo<{className}Entity, {className}Enum>(propertyEnum, param);");
 
+            //add range
             sb.AppendLine(1.Indent() + $"public int AddTo({className}Enum propertyEnum, List<RecordInstanceData> param) => this.AddTo<{className}Entity, {className}Enum>(propertyEnum, param);");
             sb.AppendLine(1.Indent() + $"public int AddTo({className}Enum propertyEnum, List<string> param) => this.AddTo<{className}Entity, {className}Enum>(propertyEnum, param);");
             return sb.ToString();
@@ -555,7 +563,8 @@ namespace DemoKatan.mCase
             sb.AppendLine(1.Indent() + "/// Add data onto enumerable class property.");
             sb.AppendLine(1.Indent() + "/// </summary>");
             sb.AppendLine(1.Indent() + "/// <param name=\"propertyEnum\">Class public property name</param>");
-            sb.AppendLine(1.Indent() + "/// <param name=\"value\">Default null value</param>");
+            sb.AppendLine(1.Indent() + "/// <param name=\"value\">Value added to Class</param>");
+            sb.AppendLine(1.Indent() + "/// <param name=\"classObject\">Factory Entity Object</param>");
             sb.AppendLine(1.Indent() + "/// <returns>Amount of values removed. Type errors: -1. Null errors: -2. RecordInstance not Created: -5.</returns>");
             sb.AppendLine(1.Indent() +
                           "public static int AddTo<T, TEnum>(this T classObject, TEnum propertyEnum, RecordInstanceData value) where TEnum : Enum");
@@ -582,7 +591,8 @@ namespace DemoKatan.mCase
             sb.AppendLine(1.Indent() + "/// Add data onto enumerable class property.");
             sb.AppendLine(1.Indent() + "/// </summary>");
             sb.AppendLine(1.Indent() + "/// <param name=\"propertyEnum\">Class public property name</param>");
-            sb.AppendLine(1.Indent() + "/// <param name=\"value\"></param>");
+            sb.AppendLine(1.Indent() + "/// <param name=\"value\">Value added to Class</param>");
+            sb.AppendLine(1.Indent() + "/// <param name=\"classObject\">Factory Entity Object</param>");
             sb.AppendLine(1.Indent() + "/// <returns>Amount of values removed. Type errors: -1. Null errors: -2.</returns>");
             sb.AppendLine(1.Indent() +
                           $"public static int AddTo<T, TEnum>(this T classObject, TEnum propertyEnum, string value) where TEnum : Enum");
@@ -616,7 +626,8 @@ namespace DemoKatan.mCase
             sb.AppendLine(1.Indent() + "/// List of RecordInstanceData's");
             sb.AppendLine(1.Indent() + "/// </summary>");
             sb.AppendLine(1.Indent() + "/// <param name=\"propertyEnum\">Class public property name</param>");
-            sb.AppendLine(1.Indent() + "/// <param name=\"value\">list of Record Instance Data</param>");
+            sb.AppendLine(1.Indent() + "/// <param name=\"value\">Value added to Class</param>");
+            sb.AppendLine(1.Indent() + "/// <param name=\"classObject\">Factory Entity Object</param>");
             sb.AppendLine(1.Indent() + "/// <returns>Amount of values added. Type errors: -1. null errors: -2. RecordInstance not Created: -5</returns>");
             sb.AppendLine(1.Indent() +
                           $"public static int AddTo<T, TEnum>(this T classObject, TEnum propertyEnum, List<RecordInstanceData> value) where TEnum : Enum");
@@ -647,7 +658,8 @@ namespace DemoKatan.mCase
             sb.AppendLine(1.Indent() + "/// 'List of strings'.");
             sb.AppendLine(1.Indent() + "/// </summary>");
             sb.AppendLine(1.Indent() + "/// <param name=\"propertyEnum\">Class public property name</param>");
-            sb.AppendLine(1.Indent() + "/// <param name=\"value\">List of strings</param>");
+            sb.AppendLine(1.Indent() + "/// <param name=\"value\">Value added to Class</param>");
+            sb.AppendLine(1.Indent() + "/// <param name=\"classObject\">Factory Entity Object</param>");
             sb.AppendLine(1.Indent() + "/// <returns>Amount of values added. Type errors: -1. null errors: -2.</returns>");
             sb.AppendLine(1.Indent() +
                           $"public static int AddTo<T, TEnum>(this T classObject, TEnum propertyEnum, List<string> value) where TEnum : Enum");
@@ -683,7 +695,8 @@ namespace DemoKatan.mCase
             sb.AppendLine(1.Indent() + "/// Remove all data from enumerable class property that matches predicate");
             sb.AppendLine(1.Indent() + "/// </summary>");
             sb.AppendLine(1.Indent() + "/// <param name=\"propertyEnum\">Class public property name</param>");
-            sb.AppendLine(1.Indent() + "/// <param name=\"predicate\"></param>");
+            sb.AppendLine(1.Indent() + "/// <param name=\"predicate\">Value added to Class</param>");
+            sb.AppendLine(1.Indent() + "/// <param name=\"classObject\">Factory Entity Object</param>");
             sb.AppendLine(1.Indent() + "/// <returns>Amount of values removed. Type errors: -1. null errors: -2</returns>");
             sb.AppendLine(1.Indent() +
                           $"public static int RemoveFrom<T, TEnum>(this T classObject, TEnum propertyEnum, Func<RecordInstanceData, bool> predicate) where TEnum : Enum");
@@ -712,7 +725,8 @@ namespace DemoKatan.mCase
             sb.AppendLine(1.Indent() + "/// Example predicate: x => string.IsNullOrEmpty(x)");
             sb.AppendLine(1.Indent() + "/// </summary>");
             sb.AppendLine(1.Indent() + "/// <param name=\"propertyEnum\">Class public property name</param>");
-            sb.AppendLine(1.Indent() + "/// <param name=\"predicate\"></param>");
+            sb.AppendLine(1.Indent() + "/// <param name=\"predicate\">Value added to Class</param>");
+            sb.AppendLine(1.Indent() + "/// <param name=\"classObject\">Factory Entity Object</param>");
             sb.AppendLine(1.Indent() + "/// <returns>Amount of values removed. Type errors: -1. null errors: -2</returns>");
             sb.AppendLine(1.Indent() +
                           $"public static int RemoveFrom<T, TEnum>(this T classObject, TEnum propertyEnum, Func<string, bool> predicate) where TEnum : Enum");
