@@ -332,7 +332,8 @@ namespace DemoKatan.mCase
             sb.AppendLine(0.Indent() + $"public static class {className}Static");
             sb.AppendLine(0.Indent() + "{");//open static class
             sb.AppendLine(Factory.GenerateEnums(enumerableFieldSet.ToList(), "Properties_", true).ToString());// All class property names
-            sb.Append(Factory.GenerateEnums(embeddedRelatedFields.ToList(), "EmbeddedOptions", false)); //enum adds Enum to name at end
+            if(embeddedRelatedFields.Count > 0)
+                sb.AppendLine(Factory.GenerateEnums(embeddedRelatedFields.ToList(), "EmbeddedOptions", false).ToString()); //enum adds Enum to name at end
 
             foreach (var sbs in _stringBuilders)
             {

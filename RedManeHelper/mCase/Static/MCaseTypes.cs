@@ -43,7 +43,7 @@ namespace DemoKatan.mCase.Static
         UniqueIdentifier,
         [Description("User")]
         User,
-        [Description("DateTime")]
+        [Description("Datetime")]
         DateTime,
         [Description("Cascadingdynamicdropdown")]//Cascading Dynamic Drop-Down
         CascadingDynamicDropDown,
@@ -61,7 +61,7 @@ namespace DemoKatan.mCase.Static
         CascadingDropDown,
         [Description("Score2")]//Score 2
         Score2,
-        [Description("URL")]
+        [Description("Url")]
         URL,
         [Description("Readonlyfield")]//Read-only Field
         ReadonlyField,

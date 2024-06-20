@@ -122,46 +122,7 @@ namespace DemoKatan.mCase
             return sb;
         }
 
-        public static StringBuilder GenerateRelationships(JToken? relationships)
-        {
-            //TODO validate new extension does not throw errors
-            var sb = new StringBuilder();
-
-            if (relationships == null || !relationships.Any())
-                return sb;
-
-            var parentRelationships =
-                relationships.ParseChildren(ListTransferFields.ParentSystemName.GetDescription());
-
-            if (parentRelationships.Any())
-            {
-                var parentList = parentRelationships.Aggregate(
-                    "public enum ParentRelationShips {",
-                    (current, child) => current + $"[Description(\"{child}\")] {child},");
-                parentList += "};";
-                sb.AppendLine(1.Indent() + parentList);
-            }
-            else
-                sb.AppendLine(1.Indent() + "public enum ParentRelationShips {}");
-
-            var childRelationships =
-                relationships.ParseChildren(ListTransferFields.ChildSystemName.GetDescription());
-
-            if (childRelationships.Any())
-            {
-                var childList = childRelationships.Aggregate(
-                    "public enum ChildRelationShips {",
-                    (current, child) => current + $"[Description(\"{child}\")] {child},");
-                childList += "};";
-                sb.AppendLine(1.Indent() + childList);
-            }
-            else
-                sb.AppendLine(1.Indent() + "public enum ChildRelationShips {}");
-
-            return sb;
-        }
-
-        #region Type Factories
+        #region Factories
 
         public static string StringFactory(JToken jToken, string propertyName, string sysName, string type)
         {
@@ -524,103 +485,6 @@ namespace DemoKatan.mCase
         }
 
         #endregion
-
-        public static string GetEmbeddedOptions(string className)
-        {
-            var sb = new StringBuilder();
-            var embeddedEnum = $"{className}Static.EmbeddedOptionsEnum";
-
-            sb.AppendLine(1.Indent() + "/// <summary>");
-            sb.AppendLine(1.Indent() + "/// [mCase data type] Embedded List.");
-            sb.AppendLine(1.Indent() + "/// Requires the Datalist Id from one of the following Embedded Data lists:");
-            sb.AppendLine(1.Indent() + $"/// Refer to {embeddedEnum} for embedded options");
-            sb.AppendLine(1.Indent() + "/// </summary>");
-            sb.AppendLine(1.Indent() + "/// <param name=\"embeddedEnum\"> Enum built for this specific method</param>");
-            sb.AppendLine(1.Indent() + "/// <returns>Related children from selected data list</returns>");
-            sb.AppendLine(1.Indent() +
-                          $"public List<RecordInstanceData> GetActiveChildRecords({embeddedEnum} embeddedEnum)"); // property name is added back with enum name appended 
-            sb.AppendLine(1.Indent() + "{"); //open class
-            sb.AppendLine(2.Indent() + "var sysName = embeddedEnum.GetEnumDescription();");
-            sb.AppendLine(2.Indent() + "if(string.IsNullOrEmpty(sysName)) return new  List<RecordInstanceData>();");
-            sb.AppendLine(2.Indent() + "var childDataListId = _eventHelper.GetDataListID(sysName);");
-            sb.AppendLine(3.Indent() +
-                          "return _eventHelper.GetActiveChildRecordsByParentRecId(RecordInsData.RecordInstanceID)");
-            sb.AppendLine(4.Indent() + ".Where(x => x.DataListID == childDataListId)");
-            sb.AppendLine(4.Indent() + ".ToList();");
-            sb.AppendLine(1.Indent() + "}"); //close class
-
-            return sb.ToString();
-        }
-
-        public static StringBuilder GenerateEnums(List<string> fieldSet, string className, bool titleCase)
-        {
-            var sb = new StringBuilder();
-
-            var distinct = fieldSet.Distinct().OrderBy(x => x).ToList();
-            var distinctEnums = new List<string>();
-
-            var property = $"public enum {className}Enum" + "{"; //open
-
-            for (var i = 0; i < distinct.Count; i++)
-            {
-                var field = distinct[i];
-
-                if (field.Contains("\""))
-                {
-                    field = field.Replace("\"", "\\\"");
-                }
-
-                if (titleCase)
-                    property += $"[Description(\"{field.GetPropertyNameFromSystemName()}\")] ";
-                else
-                    property +=
-                        $"[Description(\"{field}\")] "; //Can remain in all caps, string does not need further cleaning
-
-                var enumName = field.GetPropertyNameFromSystemName();
-
-                if (distinctEnums.Contains(enumName))
-                {
-                    property += enumName + $"_{i}_,"; //generate enum duplicate
-                }
-                else
-                {
-                    property += enumName + ","; //generate enum 
-                    distinctEnums.Add(enumName);
-                }
-            }
-
-            property += "}"; //close enum
-
-            sb.AppendLine(1.Indent() + property);
-
-            return sb;
-        }
-
-        public static string AddEnumerableExtensions(string className)
-        {
-            var sb = new StringBuilder();
-
-            var classEnum = $"{className}Static.Properties_Enum";
-            // remove value by predicate
-            sb.AppendLine(1.Indent() +
-                          $"public int RemoveFrom({classEnum} propertyEnum, Func<RecordInstanceData, bool> predicate) => this.RemoveFrom<{className}Entity, {classEnum}>(propertyEnum, predicate);");
-            sb.AppendLine(1.Indent() +
-                          $"public int RemoveFrom({classEnum} propertyEnum, Func<string, bool> predicate) => this.RemoveFrom<{className}Entity, {classEnum}>(propertyEnum, predicate);");
-
-            //add single
-            sb.AppendLine(1.Indent() +
-                          $"public int AddTo({classEnum} propertyEnum, RecordInstanceData param) => this.AddTo<{className}Entity, {classEnum}>(propertyEnum, param);");
-            sb.AppendLine(1.Indent() +
-                          $"public int AddTo({classEnum} propertyEnum, string param) => this.AddTo<{className}Entity, {classEnum}>(propertyEnum, param);");
-
-            //add range
-            sb.AppendLine(1.Indent() +
-                          $"public int AddTo({classEnum} propertyEnum, List<RecordInstanceData> param) => this.AddTo<{className}Entity, {classEnum}>(propertyEnum, param);");
-            sb.AppendLine(1.Indent() +
-                          $"public int AddTo({classEnum} propertyEnum, List<string> param) => this.AddTo<{className}Entity, {classEnum}>(propertyEnum, param);");
-            return sb.ToString();
-        }
-
         #region Static File Extensions
 
         public static string GenerateStaticFile(string namespace_)
@@ -893,5 +757,142 @@ namespace DemoKatan.mCase
         }
 
         #endregion
+
+        public static string GetEmbeddedOptions(string className)
+        {
+            var sb = new StringBuilder();
+            var embeddedEnum = $"{className}Static.EmbeddedOptionsEnum";
+
+            sb.AppendLine(1.Indent() + "/// <summary>");
+            sb.AppendLine(1.Indent() + "/// [mCase data type] Embedded List.");
+            sb.AppendLine(1.Indent() + "/// Requires the Datalist Id from one of the following Embedded Data lists:");
+            sb.AppendLine(1.Indent() + $"/// Refer to {embeddedEnum} for embedded options");
+            sb.AppendLine(1.Indent() + "/// </summary>");
+            sb.AppendLine(1.Indent() + "/// <param name=\"embeddedEnum\"> Enum built for this specific method</param>");
+            sb.AppendLine(1.Indent() + "/// <returns>Related children from selected data list</returns>");
+            sb.AppendLine(1.Indent() +
+                          $"public List<RecordInstanceData> GetActiveChildRecords({embeddedEnum} embeddedEnum)"); // property name is added back with enum name appended 
+            sb.AppendLine(1.Indent() + "{"); //open class
+            sb.AppendLine(2.Indent() + "var sysName = embeddedEnum.GetEnumDescription();");
+            sb.AppendLine(2.Indent() + "if(string.IsNullOrEmpty(sysName)) return new  List<RecordInstanceData>();");
+            sb.AppendLine(2.Indent() + "var childDataListId = _eventHelper.GetDataListID(sysName);");
+            sb.AppendLine(3.Indent() +
+                          "return _eventHelper.GetActiveChildRecordsByParentRecId(RecordInsData.RecordInstanceID)");
+            sb.AppendLine(4.Indent() + ".Where(x => x.DataListID == childDataListId)");
+            sb.AppendLine(4.Indent() + ".ToList();");
+            sb.AppendLine(1.Indent() + "}"); //close class
+
+            return sb.ToString();
+        }
+
+        public static string AddEnumerableExtensions(string className)
+        {
+            var sb = new StringBuilder();
+
+            var classEnum = $"{className}Static.Properties_Enum";
+            // remove value by predicate
+            sb.AppendLine(1.Indent() +
+                          $"public int RemoveFrom({classEnum} propertyEnum, Func<RecordInstanceData, bool> predicate) => this.RemoveFrom<{className}Entity, {classEnum}>(propertyEnum, predicate);");
+            sb.AppendLine(1.Indent() +
+                          $"public int RemoveFrom({classEnum} propertyEnum, Func<string, bool> predicate) => this.RemoveFrom<{className}Entity, {classEnum}>(propertyEnum, predicate);");
+
+            //add single
+            sb.AppendLine(1.Indent() +
+                          $"public int AddTo({classEnum} propertyEnum, RecordInstanceData param) => this.AddTo<{className}Entity, {classEnum}>(propertyEnum, param);");
+            sb.AppendLine(1.Indent() +
+                          $"public int AddTo({classEnum} propertyEnum, string param) => this.AddTo<{className}Entity, {classEnum}>(propertyEnum, param);");
+
+            //add range
+            sb.AppendLine(1.Indent() +
+                          $"public int AddTo({classEnum} propertyEnum, List<RecordInstanceData> param) => this.AddTo<{className}Entity, {classEnum}>(propertyEnum, param);");
+            sb.AppendLine(1.Indent() +
+                          $"public int AddTo({classEnum} propertyEnum, List<string> param) => this.AddTo<{className}Entity, {classEnum}>(propertyEnum, param);");
+            return sb.ToString();
+        }
+
+        public static StringBuilder GenerateEnums(List<string> fieldSet, string className, bool titleCase)
+        {
+            var sb = new StringBuilder();
+
+            var distinct = fieldSet.Distinct().OrderBy(x => x).ToList();
+            var distinctEnums = new List<string>();
+
+            if (distinct.Count == 0) 
+                return sb;
+
+            var property = $"public enum {className}Enum" + "{"; //open
+
+            for (var i = 0; i < distinct.Count; i++)
+            {
+                var field = distinct[i];
+
+                if (field.Contains("\""))
+                {
+                    field = field.Replace("\"", "\\\"");
+                }
+
+                if (titleCase)
+                    property += $"[Description(\"{field.GetPropertyNameFromSystemName()}\")] ";
+                else
+                    property +=
+                        $"[Description(\"{field}\")] "; //Can remain in all caps, string does not need further cleaning
+
+                var enumName = field.GetPropertyNameFromSystemName();
+
+                if (distinctEnums.Contains(enumName))
+                {
+                    property += enumName + $"_{i}_,"; //generate enum duplicate
+                }
+                else
+                {
+                    property += enumName + ","; //generate enum 
+                    distinctEnums.Add(enumName);
+                }
+            }
+
+            property += "}"; //close enum
+
+            sb.AppendLine(1.Indent() + property);
+
+            return sb;
+        }
+
+        public static StringBuilder GenerateRelationships(JToken? relationships)
+        {
+            var sb = new StringBuilder();
+
+            if (relationships == null || !relationships.Any())
+                return sb;
+
+            var parentRelationships =
+                relationships.ParseChildren(ListTransferFields.ParentSystemName.GetDescription());
+
+            if (parentRelationships.Any())
+            {
+                var parentList = parentRelationships.Aggregate(
+                    "public enum ParentRelationShips {",
+                    (current, child) => current + $"[Description(\"{child}\")] {child},");
+                parentList += "};";
+                sb.AppendLine(1.Indent() + parentList);
+            }
+            else
+                sb.AppendLine(1.Indent() + "public enum ParentRelationShips {}");
+
+            var childRelationships =
+                relationships.ParseChildren(ListTransferFields.ChildSystemName.GetDescription());
+
+            if (childRelationships.Any())
+            {
+                var childList = childRelationships.Aggregate(
+                    "public enum ChildRelationShips {",
+                    (current, child) => current + $"[Description(\"{child}\")] {child},");
+                childList += "};";
+                sb.AppendLine(1.Indent() + childList);
+            }
+            else
+                sb.AppendLine(1.Indent() + "public enum ChildRelationShips {}");
+
+            return sb;
+        }
     }
 }
