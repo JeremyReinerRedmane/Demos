@@ -1,6 +1,7 @@
 ﻿using System.Data.SqlClient;
 using System.Diagnostics;
 using System.Net.Http.Headers;
+using System.Reflection.Metadata.Ecma335;
 using System.Text;
 using DemoKatan.mCase.Static;
 using Microsoft.Data.SqlClient;
@@ -19,35 +20,36 @@ namespace DemoKatan.mCase
         private readonly string _mCaseUrl;
         private readonly string _namespace;
         private HashSet<string> _classNames;
+        private List<StringBuilder> _stringBuilders;
 
         public SyncDlConfigs()
         {
-            _connectionString = "";
+            _connectionString = "data source=localhost;initial catalog=mCASE_ADMIN;integrated security=True;TrustServerCertificate=true;";
             Console.WriteLine("Connection string: " + _connectionString);
 
-            _sqlCommand = "";
+            _sqlCommand = "SELECT [DataListID] FROM [mCASE_ADMIN].[dbo].[DataList]";
             Console.WriteLine("Sql Command: " + _sqlCommand);
 
-            _credentials = "";//TODO add credentials username:password
+            _credentials = "lorenzo.orders:Password123!";//TODO add credentials username:password
             Console.WriteLine("Credentials: " + _credentials);
 
-            _mCaseUrl = "" + "/Resource/Export/DataList/Configuration/";
+            _mCaseUrl = "https://auusmc-arccwis-app-mcs-qa-r2.redmane-cloud.us" + "/Resource/Export/DataList/Configuration/";
             Console.WriteLine("Mcase Url: " + _mCaseUrl);
 
 
-            _outputDirectory = @"";
+            _outputDirectory = @"C:\Users\jreiner\source\repos\AR-mCase-CustomEvents\MCaseCustomEvents\ARFocus\FactoryEntities";//@"C:\Users\jreiner\Desktop\FactoryEntities";
             Console.WriteLine("Output Dir: " + _outputDirectory);
-            
+
             if (!Directory.Exists(_outputDirectory))
                 Directory.CreateDirectory(_outputDirectory);
-            
-            _exceptionDirectory = @"";
+
+            _exceptionDirectory = @"C:\Users\jreiner\Desktop\Exceptions";
             Console.WriteLine("Exception Dir: " + _exceptionDirectory);
 
             if (!Directory.Exists(_exceptionDirectory))
                 Directory.CreateDirectory(_exceptionDirectory);
 
-            _namespace = "";
+            _namespace = "MCaseCustomEvents.ARFocus.FactoryEntities";
             Console.WriteLine("Namespace: " + _namespace);
 
             _classNames = new HashSet<string>();
@@ -146,7 +148,6 @@ namespace DemoKatan.mCase
 
             await File.WriteAllTextAsync(staticPath, staticFileData);
 
-            }
         }
 
         private async Task<List<int>> DataAccess()
@@ -190,8 +191,6 @@ namespace DemoKatan.mCase
                 Console.ForegroundColor = ConsoleColor.DarkGray;
                 return new List<int>();
             }
-
-            return ids;
         }
 
         /// <summary>
@@ -206,7 +205,7 @@ namespace DemoKatan.mCase
 
             var result = cleanedClose.Remove(0, 1);
 
-            if(string.IsNullOrEmpty(result))
+            if (string.IsNullOrEmpty(result))
                 return string.Empty; // Currently Two dls are empty. Returning from mCase "[]. 1799, & 1805"
 
             var jsonObject = JObject.Parse(result);
@@ -216,14 +215,13 @@ namespace DemoKatan.mCase
             if (string.IsNullOrEmpty(className)) return string.Empty;
 
             var count = _classNames.Count(x => string.Equals(x, className, StringComparison.OrdinalIgnoreCase));
-            
+
             if (count > 0)
             {
                 className += $"_{count}";
             }
             try
             {
-
                 var sb = GenerateFileData(jsonObject, className);
 
                 var path = Path.Combine(_outputDirectory, $"{className}Entity.cs");
@@ -252,7 +250,7 @@ namespace DemoKatan.mCase
         {
             var fieldSet = new HashSet<string>(); //used to track properties being set
             var enumerableFieldSet = new HashSet<string>(); //used to enum properties being set
-
+            _stringBuilders = new List<StringBuilder>();//used for containing all of the enum property values in the class
             var fields = jsonObject[ListTransferFields.Fields.GetDescription()];
 
             if (fields == null)
@@ -304,7 +302,7 @@ namespace DemoKatan.mCase
                 if (requiresEnumerationValues.Contains(type))
                     requiresEnumeration = true;
 
-                var property = AddProperties(field, type, systemName);//Magic happens here
+                var property = AddProperties(field, type, systemName, className);//Magic happens here
 
                 if (string.IsNullOrEmpty(property))
                     continue;
@@ -315,24 +313,40 @@ namespace DemoKatan.mCase
             }
 
             if (embeddedRelatedFields.Count > 0)
-                sb.AppendLine(Factory.GetEmbeddedOptions(embeddedRelatedFields.ToList()));
-
-            sb.Append(Factory.GenerateEnumExtensions());
-
+                sb.AppendLine(Factory.GetEmbeddedOptions(className));
 
             if (requiresEnumeration)
                 sb.AppendLine(Factory.AddEnumerableExtensions(className));
 
-
             sb.AppendLine(0.Indent() + "}"); //close class
 
-            sb.AppendLine(Factory.GenerateEnums(enumerableFieldSet.ToList(), className, true));
+            #region Static File Backing
 
+            var relationships = jsonObject[ListTransferFields.Relationships.GetDescription()];
+            
+            var relationshipEnums = Factory.GenerateRelationships(relationships);
+            
+            if(!string.IsNullOrEmpty(relationshipEnums.ToString()))
+                _stringBuilders.Add(relationshipEnums);
+            
+            sb.AppendLine(0.Indent() + $"public static class {className}Static");
+            sb.AppendLine(0.Indent() + "{");//open static class
+            sb.AppendLine(Factory.GenerateEnums(enumerableFieldSet.ToList(), "Properties_", true).ToString());// All class property names
+            sb.Append(Factory.GenerateEnums(embeddedRelatedFields.ToList(), "EmbeddedOptions", false)); //enum adds Enum to name at end
+
+            foreach (var sbs in _stringBuilders)
+            {
+                sb.AppendLine(sbs.ToString());
+            }
+            
+            sb.AppendLine("}"); //close static class
+
+            #endregion
             sb.AppendLine("}"); //close namespace
             return sb;
         }
 
-        private string AddProperties(JToken jToken, string type, string sysName)//sysname is uppercase
+        private string AddProperties(JToken jToken, string type, string sysName, string className)//sysname is uppercase
         {
             var typeEnum = type.GetEnumValue<MCaseTypes>();
 
@@ -345,7 +359,11 @@ namespace DemoKatan.mCase
                 case MCaseTypes.DropDownList:
                 case MCaseTypes.DynamicDropDown:
                 case MCaseTypes.CascadingDynamicDropDown:
-                    return Factory.EnumerableFactory(jToken, typeEnum, propertyName, sysName, type); //multiselect?
+                    //Item 1 = property, Item 2 = Enum
+                    var values = Factory.EnumerableFactory(jToken, typeEnum, propertyName, sysName, type, className); //multiselect?
+                    if(!string.IsNullOrEmpty(values.Item2.ToString())) //if there are enum values
+                        _stringBuilders.Add(values.Item2);
+                    return values.Item1;
                 case MCaseTypes.String:
                 case MCaseTypes.LongString:
                 case MCaseTypes.EmailAddress:

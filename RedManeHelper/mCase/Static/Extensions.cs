@@ -114,6 +114,12 @@ namespace DemoKatan.mCase.Static
 
         }
 
+        /// <summary>
+        /// if first char is a num / the whole word is a num, then a f_ is inserted beforehand.
+        /// The final product is a word where the first char is uppercase, and everything else is lower case
+        /// </summary>
+        /// <param name="input"></param>
+        /// <returns></returns>
         public static string GetPropertyNameFromSystemName(this string input)
         {
             input = Regex.Replace(input, @"[^\w]", "");
