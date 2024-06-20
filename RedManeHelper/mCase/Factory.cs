@@ -13,7 +13,7 @@ namespace DemoKatan.mCase
     {
         private static List<MCaseTypes> _stringCheck => new()
         {
-            MCaseTypes.Date, MCaseTypes.Boolean, MCaseTypes.DateTime, MCaseTypes.EmailAddress, MCaseTypes.Number,
+            MCaseTypes.Boolean, MCaseTypes.EmailAddress, MCaseTypes.Number,
             MCaseTypes.Phone, MCaseTypes.Time, MCaseTypes.URL
         };
 
@@ -70,7 +70,7 @@ namespace DemoKatan.mCase
             sb.AppendLine(0.Indent() + "{"); //open class
             sb.AppendLine(1.Indent() + "public RecordInstanceData RecordInsData;");
             sb.AppendLine(1.Indent() + "private readonly AEventHelper _eventHelper;");
-            
+
             sb.AppendLine(1.Indent() + "/// <summary>");
             sb.AppendLine(1.Indent() + "/// Class for Updating Existing RecordInstanceData");
             sb.AppendLine(1.Indent() + "/// </summary>");
@@ -161,47 +161,78 @@ namespace DemoKatan.mCase
             return sb;
         }
 
-        /// <summary>
-        /// All enum values are required to be pushed to a enum static extension file
-        /// </summary>
-        /// <param name="jToken"></param>
-        /// <param name="type"></param>
-        /// <param name="propertyName"></param>
-        /// <param name="sysName"></param>
-        /// <param name="fieldType"></param>
-        /// <returns>Property, Enum</returns>
-        public static Tuple<string, StringBuilder> EnumerableFactory(JToken jToken, MCaseTypes type,
-            string propertyName, string sysName, string fieldType, string className)
+        #region Type Factories
+
+        public static string StringFactory(JToken jToken, string propertyName, string sysName, string type)
+        {
+            var sb = new StringBuilder();
+            var enumType = type.GetEnumValue<MCaseTypes>();
+
+            var privateSysName = $"_{propertyName.ToLower()}";
+            var mirroredField = jToken.IsMirrorField();
+
+            sb.AppendLine(1.Indent() + $"private string {privateSysName} = string.Empty;");
+            sb.AppendLine(1.Indent() + "/// <summary>");
+            sb.AppendLine(1.Indent() + $"/// [mCase data type: {type}]");
+            if (mirroredField)
+                sb.AppendLine(1.Indent() + "/// This is a Mirrored field. No setting / updating allowed.");
+            sb.AppendLine(1.Indent() + "/// </summary>");
+            if (_stringCheck.Contains(enumType) && !mirroredField)
+                sb.AppendLine(1.Indent() +
+                              "/// <returns>\"-1 if string does not pass mCase data type validation.\"</returns>");
+            sb.AppendLine(1.Indent() + $"public string {propertyName}");
+            sb.AppendLine(1.Indent() + "{"); //open Property
+            sb.AppendLine(2.Indent() + "get");
+            sb.AppendLine(2.Indent() + "{"); //open Getter
+            sb.AppendLine(3.Indent() + $"if(!string.IsNullOrEmpty({privateSysName})) return {privateSysName};");
+            sb.AppendLine(3.Indent() + $"{privateSysName} = RecordInsData.GetFieldValue(\"{sysName}\");");
+            sb.AppendLine(3.Indent() + $"return {privateSysName};");
+            sb.AppendLine(2.Indent() + "}"); //close Getter
+
+            if (!mirroredField)
+            {
+                //string is not readonly, add setter
+                sb.AppendLine(2.Indent() + "set");
+                sb.AppendLine(2.Indent() + "{"); //open Setter
+                if (_stringCheck.Contains(enumType))
+                    sb.Append(AddStringValidations(enumType));
+                sb.AppendLine(3.Indent() + $"{privateSysName} = value;");
+                sb.AppendLine(3.Indent() + $"RecordInsData.SetValue(\"{sysName}\", {privateSysName});");
+                sb.AppendLine(2.Indent() + "}"); //close Setter
+            }
+
+            sb.AppendLine(1.Indent() + "}"); //close Property
+
+            return sb.ToString();
+        }
+
+        public static string LongFactory(JToken jToken, string propertyName, string sysName, string type)
         {
             var sb = new StringBuilder();
 
-            var fieldOptions = jToken.ParseToken(ListTransferFields.FieldOptions.GetDescription());
-            var dynamicData = jToken.ParseDynamicData(ListTransferFields.DynamicData.GetDescription());
+            var privateSysName = $"_{propertyName.ToLower()}";
 
-            var privateName = $"_{propertyName.ToLower()}";
-            var notAbleToSelectManyValues = fieldOptions.Contains("\"Able to Select Multiple values\"" + ":" + "\"No\"",
-                StringComparison.OrdinalIgnoreCase);
-            var multiSelect = notAbleToSelectManyValues ? "False" : "True";
+            sb.AppendLine(1.Indent() + $"private string {privateSysName} = string.Empty;");
+            sb.AppendLine(1.Indent() + "/// <summary>");
+            sb.AppendLine(1.Indent() + $"/// [mCase data type: {type}]");
+            sb.AppendLine(1.Indent() + "/// Gets value, and sets long value");
+            sb.AppendLine(1.Indent() + "/// </summary>");
+            sb.AppendLine(1.Indent() + $"public string {propertyName}");
+            sb.AppendLine(1.Indent() + "{"); //open Property
+            sb.AppendLine(2.Indent() + "get");
+            sb.AppendLine(2.Indent() + "{"); //open Getter
+            sb.AppendLine(3.Indent() + $"if(!string.IsNullOrEmpty({privateSysName})) return {privateSysName};");
+            sb.AppendLine(3.Indent() + $"{privateSysName} = RecordInsData.GetFieldValue(\"{sysName}\");");
+            sb.AppendLine(3.Indent() + $"return {privateSysName};");
+            sb.AppendLine(2.Indent() + "}"); //close Getter
+            sb.AppendLine(2.Indent() + "set");
+            sb.AppendLine(2.Indent() + "{"); //open Setter
+            sb.AppendLine(3.Indent() + $"{privateSysName} = value;");
+            sb.AppendLine(3.Indent() + $"RecordInsData.SetLongValue(\"{sysName}\", {privateSysName});");
+            sb.AppendLine(2.Indent() + "}"); //close setter
+            sb.AppendLine(1.Indent() + "}"); //close 
 
-            switch (type)
-            {
-                case MCaseTypes.CascadingDropDown:
-                case MCaseTypes.DropDownList:
-                    var dropDownValues = DropDownFactory(jToken, propertyName, sysName, fieldType, privateName,
-                        multiSelect, notAbleToSelectManyValues, className);
-
-                    //Item 1 = property, Item 2 = Enum
-                    return new Tuple<string, StringBuilder>(dropDownValues.Item1, dropDownValues.Item2);
-
-                case MCaseTypes.CascadingDynamicDropDown:
-                case MCaseTypes.DynamicDropDown:
-                    var dynamicValues = DynamicDropDownFactory(propertyName, sysName, fieldType, privateName,
-                        multiSelect, dynamicData, notAbleToSelectManyValues);
-                    return new Tuple<string, StringBuilder>(dynamicValues, new StringBuilder());
-
-                default:
-                    return new Tuple<string, StringBuilder>(string.Empty, new StringBuilder());
-            }
+            return sb.ToString();
         }
 
         private static string DynamicDropDownFactory(string propertyName, string sysName, string fieldType,
@@ -248,14 +279,13 @@ namespace DemoKatan.mCase
         }
 
         private static Tuple<string, StringBuilder> DropDownFactory(JToken jToken, string propertyName, string sysName,
-            string fieldType,
-            string privateName, string multiSelect, bool notAbleToSelectManyValues, string className)
+            string fieldType, string privateName, string multiSelect, bool notAbleToSelectManyValues, string className)
         {
             var sb = new StringBuilder();
             var defaultValues = jToken.ParseDefaultData(ListTransferFields.FieldValues.GetDescription());
             var staticName = $"{className}Static.{propertyName}Enum";
             var enumName = $"{propertyName}Enum";
-            
+
             var enumValues = new StringBuilder();
 
             #region Default options enum
@@ -362,15 +392,57 @@ namespace DemoKatan.mCase
             return new Tuple<string, StringBuilder>(sb.ToString(), enumValues);
         }
 
-        public static string StringFactory(JToken jToken, string propertyName, string sysName, string type)
+        /// <summary>
+        /// All enum values are required to be pushed to a enum static extension file
+        /// </summary>
+        /// <param name="jToken"></param>
+        /// <param name="type"></param>
+        /// <param name="propertyName"></param>
+        /// <param name="sysName"></param>
+        /// <param name="fieldType"></param>
+        /// <returns>Property, Enum</returns>
+        public static Tuple<string, StringBuilder> EnumerableFactory(JToken jToken, MCaseTypes type,
+            string propertyName, string sysName, string fieldType, string className)
+        {
+            var sb = new StringBuilder();
+
+            var fieldOptions = jToken.ParseToken(ListTransferFields.FieldOptions.GetDescription());
+            var dynamicData = jToken.ParseDynamicData(ListTransferFields.DynamicData.GetDescription());
+
+            var privateName = $"_{propertyName.ToLower()}";
+            var notAbleToSelectManyValues = fieldOptions.Contains("\"Able to Select Multiple values\"" + ":" + "\"No\"",
+                StringComparison.OrdinalIgnoreCase);
+            var multiSelect = notAbleToSelectManyValues ? "False" : "True";
+
+            switch (type)
+            {
+                case MCaseTypes.CascadingDropDown:
+                case MCaseTypes.DropDownList:
+                    var dropDownValues = DropDownFactory(jToken, propertyName, sysName, fieldType, privateName,
+                        multiSelect, notAbleToSelectManyValues, className);
+
+                    //Item 1 = property, Item 2 = Enum
+                    return new Tuple<string, StringBuilder>(dropDownValues.Item1, dropDownValues.Item2);
+
+                case MCaseTypes.CascadingDynamicDropDown:
+                case MCaseTypes.DynamicDropDown:
+                    var dynamicValues = DynamicDropDownFactory(propertyName, sysName, fieldType, privateName,
+                        multiSelect, dynamicData, notAbleToSelectManyValues);
+                    return new Tuple<string, StringBuilder>(dynamicValues, new StringBuilder());
+
+                default:
+                    return new Tuple<string, StringBuilder>(string.Empty, new StringBuilder());
+            }
+        }
+
+        public static string DateFactory(JToken jToken, string propertyName, string sysName, string type)
         {
             var sb = new StringBuilder();
             var enumType = type.GetEnumValue<MCaseTypes>();
 
             var privateSysName = $"_{propertyName.ToLower()}";
             var mirroredField = jToken.IsMirrorField();
-
-            sb.AppendLine(1.Indent() + $"private string {privateSysName} = string.Empty;");
+            sb.AppendLine(1.Indent() + $"private DateTime {privateSysName} = DateTime.MinValue;");
             sb.AppendLine(1.Indent() + "/// <summary>");
             sb.AppendLine(1.Indent() + $"/// [mCase data type: {type}]");
             if (mirroredField)
@@ -378,25 +450,29 @@ namespace DemoKatan.mCase
             sb.AppendLine(1.Indent() + "/// </summary>");
             if (_stringCheck.Contains(enumType) && !mirroredField)
                 sb.AppendLine(1.Indent() +
-                              "/// <returns>\"-1 if string does not pass mCase data type validation.\"</returns>");
-            sb.AppendLine(1.Indent() + $"public string {propertyName}");
+                              "/// <returns>\"-1 if Datetime does not pass mCase data type validation.\"</returns>");
+            sb.AppendLine(1.Indent() + $"public DateTime {propertyName}");
             sb.AppendLine(1.Indent() + "{"); //open Property
             sb.AppendLine(2.Indent() + "get");
             sb.AppendLine(2.Indent() + "{"); //open Getter
-            sb.AppendLine(3.Indent() + $"if(!string.IsNullOrEmpty({privateSysName})) return {privateSysName};");
-            sb.AppendLine(3.Indent() + $"{privateSysName} = RecordInsData.GetFieldValue(\"{sysName}\");");
+            sb.AppendLine(3.Indent() + $"if({privateSysName} != DateTime.MinValue) return {privateSysName};");
+            sb.AppendLine(3.Indent() + $"var canParse = DateTime.TryParse(RecordInsData.GetFieldValue(\"{sysName}\"), out var dt);");
+            sb.AppendLine(3.Indent() + $"{privateSysName} = canParse ? dt : DateTime.MinValue;");
             sb.AppendLine(3.Indent() + $"return {privateSysName};");
             sb.AppendLine(2.Indent() + "}"); //close Getter
 
             if (!mirroredField)
             {
+                var setter = enumType == MCaseTypes.Date //only gets here if Date or DateTime
+                    ? $"{privateSysName}.ToString(MCaseEventConstants.DateStorageFormat)" 
+                    : $"{privateSysName}.ToString(MCaseEventConstants.DateTimeStorageFormat)"; 
+
                 //string is not readonly, add setter
                 sb.AppendLine(2.Indent() + "set");
                 sb.AppendLine(2.Indent() + "{"); //open Setter
                 if (_stringCheck.Contains(enumType))
-                    sb.Append(AddStringValidations(enumType));
-                sb.AppendLine(3.Indent() + $"{privateSysName} = value;");
-                sb.AppendLine(3.Indent() + $"RecordInsData.SetValue(\"{sysName}\", {privateSysName});");
+                    sb.Append(3.Indent() + $"{privateSysName} = value");
+                sb.AppendLine(3.Indent() + $"RecordInsData.SetValue(\"{sysName}\", {setter});");
                 sb.AppendLine(2.Indent() + "}"); //close Setter
             }
 
@@ -405,22 +481,15 @@ namespace DemoKatan.mCase
             return sb.ToString();
         }
 
+        #endregion
+        #region Additional Factory Validation
+
         private static string AddStringValidations(MCaseTypes type)
         {
             var sb = new StringBuilder();
 
             switch (type)
             {
-                case MCaseTypes.Date:
-                    sb.AppendLine(3.Indent() + "var result = DateTime.TryParse(value, out var dt);");
-                    sb.AppendLine(3.Indent() + "if(!result) value = \"-1\";");
-                    sb.AppendLine(3.Indent() + "else value = dt.ToString(MCaseEventConstants.DateStorageFormat);");
-                    break;
-                case MCaseTypes.DateTime:
-                    sb.AppendLine(3.Indent() + "var result = DateTime.TryParse(value, out var dt);");
-                    sb.AppendLine(3.Indent() + "if(!result) value = \"-1\";");
-                    sb.AppendLine(3.Indent() + "else value = dt.ToString(MCaseEventConstants.DateTimeStorageFormat);");
-                    break;
                 case MCaseTypes.Boolean:
                     sb.AppendLine(3.Indent() +
                                   "if(MCaseEventConstants.TrueValues.Contains(value?.Trim().ToLowerInvariant())) value = \"1\";");
@@ -454,48 +523,22 @@ namespace DemoKatan.mCase
             return sb.ToString();
         }
 
-        public static string LongFactory(JToken jToken, string propertyName, string sysName, string type)
-        {
-            var sb = new StringBuilder();
-
-            var privateSysName = $"_{propertyName.ToLower()}";
-
-            sb.AppendLine(1.Indent() + $"private string {privateSysName} = string.Empty;");
-            sb.AppendLine(1.Indent() + "/// <summary>");
-            sb.AppendLine(1.Indent() + $"/// [mCase data type: {type}]");
-            sb.AppendLine(1.Indent() + "/// Gets value, and sets long value");
-            sb.AppendLine(1.Indent() + "/// </summary>");
-            sb.AppendLine(1.Indent() + $"public string {propertyName}");
-            sb.AppendLine(1.Indent() + "{"); //open Property
-            sb.AppendLine(2.Indent() + "get");
-            sb.AppendLine(2.Indent() + "{"); //open Getter
-            sb.AppendLine(3.Indent() + $"if(!string.IsNullOrEmpty({privateSysName})) return {privateSysName};");
-            sb.AppendLine(3.Indent() + $"{privateSysName} = RecordInsData.GetFieldValue(\"{sysName}\");");
-            sb.AppendLine(3.Indent() + $"return {privateSysName};");
-            sb.AppendLine(2.Indent() + "}"); //close Getter
-            sb.AppendLine(2.Indent() + "set");
-            sb.AppendLine(2.Indent() + "{"); //open Setter
-            sb.AppendLine(3.Indent() + $"{privateSysName} = value;");
-            sb.AppendLine(3.Indent() + $"RecordInsData.SetLongValue(\"{sysName}\", {privateSysName});");
-            sb.AppendLine(2.Indent() + "}"); //close setter
-            sb.AppendLine(1.Indent() + "}"); //close 
-
-            return sb.ToString();
-        }
+        #endregion
 
         public static string GetEmbeddedOptions(string className)
         {
             var sb = new StringBuilder();
+            var embeddedEnum = $"{className}Static.EmbeddedOptionsEnum";
 
             sb.AppendLine(1.Indent() + "/// <summary>");
             sb.AppendLine(1.Indent() + "/// [mCase data type] Embedded List.");
             sb.AppendLine(1.Indent() + "/// Requires the Datalist Id from one of the following Embedded Data lists:");
-            sb.AppendLine(1.Indent() + $"/// Refer to {className}Static.EmbeddedOptionsEnum for embedded options");
+            sb.AppendLine(1.Indent() + $"/// Refer to {embeddedEnum} for embedded options");
             sb.AppendLine(1.Indent() + "/// </summary>");
             sb.AppendLine(1.Indent() + "/// <param name=\"embeddedEnum\"> Enum built for this specific method</param>");
             sb.AppendLine(1.Indent() + "/// <returns>Related children from selected data list</returns>");
             sb.AppendLine(1.Indent() +
-                          $"public List<RecordInstanceData> GetActiveChildRecords({className}Static.EmbeddedOptionsEnum embeddedEnum)"); // property name is added back with enum name appended 
+                          $"public List<RecordInstanceData> GetActiveChildRecords({embeddedEnum} embeddedEnum)"); // property name is added back with enum name appended 
             sb.AppendLine(1.Indent() + "{"); //open class
             sb.AppendLine(2.Indent() + "var sysName = embeddedEnum.GetEnumDescription();");
             sb.AppendLine(2.Indent() + "if(string.IsNullOrEmpty(sysName)) return new  List<RecordInstanceData>();");
@@ -515,7 +558,7 @@ namespace DemoKatan.mCase
 
             var distinct = fieldSet.Distinct().OrderBy(x => x).ToList();
             var distinctEnums = new List<string>();
-            
+
             var property = $"public enum {className}Enum" + "{"; //open
 
             for (var i = 0; i < distinct.Count; i++)

@@ -371,8 +371,6 @@ namespace DemoKatan.mCase
                 case MCaseTypes.URL:
                 case MCaseTypes.Number:
                 case MCaseTypes.Money:
-                case MCaseTypes.Date:
-                case MCaseTypes.DateTime:
                 case MCaseTypes.Time:
                 case MCaseTypes.Boolean:
                 case MCaseTypes.ReadonlyField:
@@ -381,6 +379,9 @@ namespace DemoKatan.mCase
                     return Factory.StringFactory(jToken, propertyName, sysName, type);
                 case MCaseTypes.Attachment:
                     return Factory.LongFactory(jToken, propertyName, sysName, type);
+                case MCaseTypes.Date:
+                case MCaseTypes.DateTime:
+                    return Factory.DateFactory(jToken, propertyName, sysName, type);
                 case MCaseTypes.Section: //need in ce's?
                 case MCaseTypes.Narrative: //need in ce's?
                 case MCaseTypes.Header: //need in ce's?
