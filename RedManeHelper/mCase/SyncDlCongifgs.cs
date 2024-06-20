@@ -24,32 +24,32 @@ namespace DemoKatan.mCase
 
         public SyncDlConfigs()
         {
-            _connectionString = "data source=localhost;initial catalog=mCASE_ADMIN;integrated security=True;TrustServerCertificate=true;";
+            _connectionString = "";
             Console.WriteLine("Connection string: " + _connectionString);
 
-            _sqlCommand = "SELECT [DataListID] FROM [mCASE_ADMIN].[dbo].[DataList]";
+            _sqlCommand = "";
             Console.WriteLine("Sql Command: " + _sqlCommand);
 
-            _credentials = "lorenzo.orders:Password123!";//TODO add credentials username:password
+            _credentials = "";//TODO add credentials username:password
             Console.WriteLine("Credentials: " + _credentials);
 
-            _mCaseUrl = "https://auusmc-arccwis-app-mcs-qa-r2.redmane-cloud.us" + "/Resource/Export/DataList/Configuration/";
+            _mCaseUrl = "" + "/Resource/Export/DataList/Configuration/";
             Console.WriteLine("Mcase Url: " + _mCaseUrl);
 
 
-            _outputDirectory = @"C:\Users\jreiner\source\repos\AR-mCase-CustomEvents\MCaseCustomEvents\ARFocus\FactoryEntities";//@"C:\Users\jreiner\Desktop\FactoryEntities";
+            _outputDirectory = @"";
             Console.WriteLine("Output Dir: " + _outputDirectory);
 
             if (!Directory.Exists(_outputDirectory))
                 Directory.CreateDirectory(_outputDirectory);
 
-            _exceptionDirectory = @"C:\Users\jreiner\Desktop\Exceptions";
+            _exceptionDirectory = @"";
             Console.WriteLine("Exception Dir: " + _exceptionDirectory);
 
             if (!Directory.Exists(_exceptionDirectory))
                 Directory.CreateDirectory(_exceptionDirectory);
 
-            _namespace = "MCaseCustomEvents.ARFocus.FactoryEntities";
+            _namespace = "";
             Console.WriteLine("Namespace: " + _namespace);
 
             _classNames = new HashSet<string>();
