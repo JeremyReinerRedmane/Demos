@@ -1,4 +1,5 @@
 ﻿using System.Reflection.Metadata;
+using System.Runtime.InteropServices.JavaScript;
 using DemoKatan.mCase.Static;
 using Newtonsoft.Json.Linq;
 using System.Text;
@@ -6,6 +7,7 @@ using System.Xml.Linq;
 using Extensions = DemoKatan.mCase.Static.Extensions;
 using static System.Net.Mime.MediaTypeNames;
 using System.Text.RegularExpressions;
+using Microsoft.VisualBasic.FileIO;
 
 namespace DemoKatan.mCase
 {
@@ -242,25 +244,79 @@ namespace DemoKatan.mCase
         private static Tuple<string, StringBuilder> DropDownFactory(JToken jToken, string propertyName, string sysName,
             string fieldType, string privateName, string multiSelect, bool notAbleToSelectManyValues, string className)
         {
-            var sb = new StringBuilder();
             var defaultValues = jToken.ParseDefaultData(ListTransferFields.FieldValues.GetDescription());
-            var staticName = $"{className}Static.{propertyName}Enum";
-            var enumName = $"{propertyName}Enum";
-
+            var staticName = $"{className}Static.DefaultValuesEnum";
+            var defaultOptionsName = $"{privateName}Values";
             var enumValues = new StringBuilder();
-
-            #region Default options enum
-
+            var returnValue = new StringBuilder();
+            
             if (defaultValues.Any())
             {
-                enumValues = GenerateEnums(defaultValues, propertyName, false);
+                returnValue = GenerateDDWithDefaultValues(propertyName, sysName, fieldType, privateName, multiSelect, notAbleToSelectManyValues, defaultValues, staticName, defaultOptionsName);
+
+                var enums = new StringBuilder();
+                enums.Append(string.Join("$~*@*~$", defaultValues));
+                enumValues = enums;
+            }
+            else
+            {
+                returnValue = NoDefaultValues(propertyName, sysName, privateName, fieldType, multiSelect);
             }
 
-            #endregion
+
+            return new Tuple<string, StringBuilder>(returnValue.ToString(), enumValues);
+        }
+
+        private static StringBuilder NoDefaultValues(string propertyName, string systemName, string privateName, string fieldType, string multiSelect)
+        {
+            var sb = new StringBuilder();
+
+            sb.AppendLine(1.Indent() + $"private List<string> {privateName}= null;");
+            sb.AppendLine(1.Indent() + "/// <summary>");
+            sb.AppendLine(1.Indent() + $"/// [mCase data type: {fieldType}]");
+            sb.AppendLine(1.Indent() + $"/// [Multi Select: {multiSelect}]");
+            sb.AppendLine(1.Indent() + "/// [Getting: Returns the list of field labels]");
+            sb.AppendLine(1.Indent() + "/// [Updating: Requires use of either AddTo(), or RemoveFrom()]");
+            sb.AppendLine(1.Indent() + "/// </summary>");
+
+            if (string.Equals(multiSelect, "True"))
+            {
+                sb.AppendLine(1.Indent() + "/// <returns> If multi select is false and more than one item found in list, then the new value will return: Multi Select: False</returns>");
+            }
+            sb.AppendLine(1.Indent() + $"public List<string> {propertyName}");
+            sb.AppendLine(1.Indent() + "{");//open property
+            sb.AppendLine(2.Indent() + "get");
+            sb.AppendLine(2.Indent() + "{");//open getter
+            sb.AppendLine(3.Indent() + $"if({privateName} != null) return {privateName};");
+            sb.AppendLine(3.Indent() + $"{privateName} = RecordInsData.GetMultiSelectFieldValue(\"{systemName}\");");
+            sb.AppendLine(3.Indent() + $"return {privateName};");
+            sb.AppendLine(2.Indent() + "}");//close getter
+            sb.AppendLine(2.Indent() + "set");
+            sb.AppendLine(2.Indent() + "{");//open setter
+            sb.AppendLine(3.Indent() + $"if({privateName} == null) {privateName} = new List<string>();");
+            sb.AppendLine(3.Indent() + $"RecordInsData.SetValue(\"{systemName}\", string.Join(MCaseEventConstants.MultiDropDownDelimiter, {privateName}));");
+            sb.AppendLine(2.Indent() + "}");//close setter
+            sb.AppendLine(1.Indent() + "}");//close property
+
+            return sb;
+        }
+
+        private static StringBuilder GenerateDDWithDefaultValues(string propertyName, string sysName, string fieldType,
+            string privateName, string multiSelect, bool notAbleToSelectManyValues, List<string> defaultValues
+            , string staticName, string defaultOptionsName)
+        {
+            var sb = new StringBuilder();
 
             #region private property
 
-            sb.AppendLine(1.Indent() + $"private List<string> {privateName} = null;");
+            var defaultAggregate = defaultValues.Aggregate(
+                $"private List<{staticName}> {defaultOptionsName} = new List<{staticName}>()" + "{", (current, child) => current + $"{staticName}.{child.GetPropertyNameFromSystemName()},");
+
+            defaultAggregate += "};";
+
+            sb.AppendLine(1.Indent() + defaultAggregate);
+
+            sb.AppendLine(1.Indent() + $"private List<{staticName}> {privateName} = null;");
 
             #endregion
 
@@ -270,87 +326,70 @@ namespace DemoKatan.mCase
             sb.AppendLine(1.Indent() + $"/// [mCase data type: {fieldType}]");
             sb.AppendLine(1.Indent() + $"/// [Multi Select: {multiSelect}]");
 
-            if (defaultValues.Any())
-            {
-                sb.AppendLine(1.Indent() + $"/// [Default list values can be found in {staticName}]");
-            }
 
-            sb.AppendLine(1.Indent() +
-                          "/// [Setting: Accepts a list of strings such as 'yes' or 'no' added to the original value]");
+            sb.AppendLine(1.Indent() + $"/// [Default field values can be found in {staticName}]");
+            sb.AppendLine(1.Indent() + $"/// [Available options can be found in {defaultOptionsName}]");
+
             sb.AppendLine(1.Indent() + "/// [Getting: Returns the list of field labels]");
             sb.AppendLine(1.Indent() + "/// [Updating: Requires use of either AddTo(), or RemoveFrom()]");
             sb.AppendLine(1.Indent() + "/// </summary>");
 
-            if (defaultValues.Any())
+            if (string.Equals(multiSelect, "True"))
             {
-                sb.AppendLine(1.Indent() +
-                              $"/// <returns>If value not found in {staticName}. new value will return: [Not found in Default Values] + updated value</returns>");
+                sb.AppendLine(1.Indent() + "/// <returns>");
+                sb.AppendLine(1.Indent() + $"/// If value not found in {defaultOptionsName}. New value will return: #~Invalid Selection~#");
+                sb.AppendLine(1.Indent() + "/// If multi select is false and more than one item found in list, then the new value will return: Multi Select: False");
+                sb.AppendLine(1.Indent() + "/// </returns>");
             }
 
             #endregion
 
             #region Public property
 
-            sb.AppendLine(1.Indent() + $"public List<string> {propertyName}");
+            sb.AppendLine(1.Indent() + $"public List<{staticName}> {propertyName}");
             sb.AppendLine(1.Indent() + "{"); //open Property
             sb.AppendLine(2.Indent() + "get");
             sb.AppendLine(2.Indent() + "{"); //open Getter
             sb.AppendLine(3.Indent() + $"if({privateName} != null) return {privateName};");
-            sb.AppendLine(3.Indent() +
-                          $"{privateName} = RecordInsData.GetMultiSelectFieldValue(\"{sysName}\");");
+            sb.AppendLine(3.Indent() + $"{privateName} = RecordInsData.GetMultiSelectFieldValue(\"{sysName}\").Select(x => x.GetEnumValue<{staticName}>()).ToList();");
             sb.AppendLine(3.Indent() + $"return {privateName};");
             sb.AppendLine(2.Indent() + "}"); //close Getter
             sb.AppendLine(2.Indent() + "set");
             sb.AppendLine(2.Indent() + "{"); //open Setter
-            sb.AppendLine(3.Indent() +
-                          $"if({privateName} == null) {privateName} = new List<string>();");
-            sb.AppendLine(3.Indent() +
-                          "if (value != null && value.Any(string.IsNullOrEmpty)) value.RemoveAll(string.IsNullOrEmpty);");
-            bool
-                raised = false; //if list does not have default values, we still wnt to raise the notAbleToSelectManyValues flage
-            if (defaultValues.Any())
-            {
-                sb.AppendLine(3.Indent() + "if (value != null && value.Any())");
-                sb.AppendLine(3.Indent() +
-                              "{// check that all values being set exist in default values enum"); //open if
-                sb.AppendLine(4.Indent() +
-                              $"var defaultOptions = ObjectExtensions.GetDescriptions<{staticName}>();//get all possible default options");
-                sb.AppendLine(4.Indent() +
-                              "var filteredValues = value.Select(entry => defaultOptions.Contains(entry) ? entry : $\"[Not found in Default Values] {entry}\").ToList();");
-                if (notAbleToSelectManyValues)
-                {
-                    raised = true;
-                    sb.AppendLine(4.Indent() +
-                                  $"if (value.Count > 1) {privateName} = new List<string>()" +
-                                  "{\"[Multi Select is Disabled] " + propertyName +
-                                  " only accepts a list length of 1.\"};");
-                }
+            sb.AppendLine(3.Indent() + $"if({privateName} == null) {privateName} = new List<{staticName}>();");
 
-                sb.AppendLine(4.Indent() + $"{privateName} = filteredValues;");
-                sb.AppendLine(3.Indent() + "}"); //close if
-                sb.AppendLine(3.Indent() + "else//value could be null or empty. Set to new list"); //open single else
-                sb.AppendLine(4.Indent() + $"{privateName} = new List<string>();");
+            bool raised = false; //if list does not have default values, we still wnt to raise the notAbleToSelectManyValues flage
+
+
+            sb.AppendLine(3.Indent() + "if (value != null && value.Any())");
+            sb.AppendLine(3.Indent() + "{// check that all values being set exist in default values enum"); //open if
+            sb.AppendLine(4.Indent() + $"if (value.Any(x => !{defaultOptionsName}.Contains(x))) value = new List<{staticName}>() " + "{" + $"{staticName}.Invalidselection" + "};");
+            if (notAbleToSelectManyValues)
+            {
+                raised = true;
+                sb.AppendLine(4.Indent() + $"if (value.Count > 1) value = new List<{staticName}>() " + "{" + $"{staticName}.Multiselectfalse" + "};");
             }
+
+            sb.AppendLine(4.Indent() + $"{privateName} = value;");
+            sb.AppendLine(3.Indent() + "}"); //close if
+            sb.AppendLine(3.Indent() + "else//value could be null or empty. Set to new list"); //open single else
+            sb.AppendLine(4.Indent() + $"{privateName} = new List<{staticName}>();");
 
             if (!raised)
             {
                 if (notAbleToSelectManyValues)
                 {
-                    sb.AppendLine(3.Indent() +
-                                  $"if (value != null && value.Count > 1) {privateName} = new List<string>()" +
-                                  "{\"[Multi Select is Disabled] " + propertyName +
-                                  " only accepts a list length of 1.\"};");
+                    sb.AppendLine(3.Indent() + $"if (value.Count > 1) value = new List<{staticName}>() " + "{" + $"{staticName}.Multiselectfalse" + "};");
                 }
             }
 
-            sb.AppendLine(3.Indent() +
-                          $"RecordInsData.SetValue(\"{sysName}\", string.Join(MCaseEventConstants.MultiDropDownDelimiter, {privateName}));");
+            sb.AppendLine(3.Indent() + $"RecordInsData.SetValue(\"{sysName}\", string.Join(MCaseEventConstants.MultiDropDownDelimiter, {privateName}.Select(x => x.GetEnumDescription())));");
             sb.AppendLine(2.Indent() + "}"); //close Setter
             sb.AppendLine(1.Indent() + "}"); //close Property
 
             #endregion
 
-            return new Tuple<string, StringBuilder>(sb.ToString(), enumValues);
+            return sb;
         }
 
         /// <summary>
@@ -365,8 +404,6 @@ namespace DemoKatan.mCase
         public static Tuple<string, StringBuilder> EnumerableFactory(JToken jToken, MCaseTypes type,
             string propertyName, string sysName, string fieldType, string className)
         {
-            var sb = new StringBuilder();
-
             var fieldOptions = jToken.ParseToken(ListTransferFields.FieldOptions.GetDescription());
             var dynamicData = jToken.ParseDynamicData(ListTransferFields.DynamicData.GetDescription());
 
@@ -380,7 +417,7 @@ namespace DemoKatan.mCase
                 case MCaseTypes.CascadingDropDown:
                 case MCaseTypes.DropDownList:
                     var dropDownValues = DropDownFactory(jToken, propertyName, sysName, fieldType, privateName,
-                        multiSelect, notAbleToSelectManyValues, className);
+                        multiSelect, notAbleToSelectManyValues, className);// has default values. Values are strings
 
                     //Item 1 = property, Item 2 = Enum
                     return new Tuple<string, StringBuilder>(dropDownValues.Item1, dropDownValues.Item2);
@@ -388,7 +425,7 @@ namespace DemoKatan.mCase
                 case MCaseTypes.CascadingDynamicDropDown:
                 case MCaseTypes.DynamicDropDown:
                     var dynamicValues = DynamicDropDownFactory(propertyName, sysName, fieldType, privateName,
-                        multiSelect, dynamicData, notAbleToSelectManyValues);
+                        multiSelect, dynamicData, notAbleToSelectManyValues);//does not have default values. Values are RecordInstances (pointers)
                     return new Tuple<string, StringBuilder>(dynamicValues, new StringBuilder());
 
                 default:
@@ -425,8 +462,8 @@ namespace DemoKatan.mCase
             if (!mirroredField)
             {
                 var setter = enumType == MCaseTypes.Date //only gets here if Date or DateTime
-                    ? $"{privateSysName}.ToString(MCaseEventConstants.DateStorageFormat)" 
-                    : $"{privateSysName}.ToString(MCaseEventConstants.DateTimeStorageFormat)"; 
+                    ? $"{privateSysName}.ToString(MCaseEventConstants.DateStorageFormat)"
+                    : $"{privateSysName}.ToString(MCaseEventConstants.DateTimeStorageFormat)";
 
                 //string is not readonly, add setter
                 sb.AppendLine(2.Indent() + "set");
@@ -534,16 +571,7 @@ namespace DemoKatan.mCase
 
             #region Add RecordInstance
 
-            sb.AppendLine(1.Indent() + "/// <summary>");
-            sb.AppendLine(1.Indent() + "/// Add data onto enumerable class property.");
-            sb.AppendLine(1.Indent() + "/// </summary>");
-            sb.AppendLine(1.Indent() + "/// <param name=\"propertyEnum\">Class public property name</param>");
-            sb.AppendLine(1.Indent() + "/// <param name=\"value\">Value added to Class</param>");
-            sb.AppendLine(1.Indent() + "/// <param name=\"classObject\">Factory Entity Object</param>");
-            sb.AppendLine(1.Indent() +
-                          "/// <returns>Amount of values removed. Type errors: -1. Null errors: -2. RecordInstance not Created: -5.</returns>");
-            sb.AppendLine(1.Indent() +
-                          "public static int AddTo<T, TEnum>(this T classObject, TEnum propertyEnum, RecordInstanceData value) where TEnum : Enum");
+            sb.AppendLine(1.Indent() + "public static int AddTo<T, TEnum>(this T classObject, TEnum propertyEnum, RecordInstanceData value) where TEnum : Enum");
             sb.AppendLine(1.Indent() + "{"); //open method
             sb.AppendLine(2.Indent() + "if (value == null) return -2;");
             sb.AppendLine(2.Indent() + "if (value.RecordInstanceID == 0) return -5;");
@@ -552,8 +580,7 @@ namespace DemoKatan.mCase
             sb.AppendLine(2.Indent() + "var propertyInfo = objectType.GetProperty(property);");
             sb.AppendLine(2.Indent() + "if (propertyInfo == null) return -2;");
             sb.AppendLine(2.Indent() + "var getMethod = propertyInfo.GetGetMethod();");
-            sb.AppendLine(2.Indent() +
-                          "if (getMethod.ReturnType != typeof(List<RecordInstanceData>)) return -1;//Verify that the argument can be added to the property type");
+            sb.AppendLine(2.Indent() + "if (getMethod.ReturnType != typeof(List<RecordInstanceData>)) return -1;//Verify that the argument can be added to the property type");
             sb.AppendLine(2.Indent() + "var getter = (List<RecordInstanceData>)propertyInfo.GetValue(classObject);");
             sb.AppendLine(2.Indent() + "if(getter == null) return -2;");
             sb.AppendLine(2.Indent() + "getter.Add(value);");
@@ -565,16 +592,7 @@ namespace DemoKatan.mCase
 
             #region Add String
 
-            sb.AppendLine(1.Indent() + "/// <summary>");
-            sb.AppendLine(1.Indent() + "/// Add data onto enumerable class property.");
-            sb.AppendLine(1.Indent() + "/// </summary>");
-            sb.AppendLine(1.Indent() + "/// <param name=\"propertyEnum\">Class public property name</param>");
-            sb.AppendLine(1.Indent() + "/// <param name=\"value\">Value added to Class</param>");
-            sb.AppendLine(1.Indent() + "/// <param name=\"classObject\">Factory Entity Object</param>");
-            sb.AppendLine(1.Indent() +
-                          "/// <returns>Amount of values removed. Type errors: -1. Null errors: -2.</returns>");
-            sb.AppendLine(1.Indent() +
-                          $"public static int AddTo<T, TEnum>(this T classObject, TEnum propertyEnum, string value) where TEnum : Enum");
+            sb.AppendLine(1.Indent() + "public static int AddTo<T, TEnum>(this T classObject, TEnum propertyEnum, string value) where TEnum : Enum");
             sb.AppendLine(1.Indent() + "{"); //open method
             sb.AppendLine(2.Indent() + "if (value == null) return -2;");
             sb.AppendLine(2.Indent() + "var property = propertyEnum.GetEnumDescription();");
@@ -582,8 +600,7 @@ namespace DemoKatan.mCase
             sb.AppendLine(2.Indent() + "var propertyInfo = objectType.GetProperty(property);");
             sb.AppendLine(2.Indent() + "if (propertyInfo == null) return -2;");
             sb.AppendLine(2.Indent() + "var getMethod = propertyInfo.GetGetMethod();");
-            sb.AppendLine(2.Indent() +
-                          "if (getMethod.ReturnType != typeof(List<string>)) return -1;//Verify that the argument can be added to the property type");
+            sb.AppendLine(2.Indent() + "if (getMethod.ReturnType != typeof(List<string>)) return -1;//Verify that the argument can be added to the property type");
             sb.AppendLine(2.Indent() + "var getter = (List<string>)propertyInfo.GetValue(classObject);");
             sb.AppendLine(2.Indent() + "if (getter == null) return -2;");
             sb.AppendLine(2.Indent() + "getter.Add(value);");
@@ -602,15 +619,6 @@ namespace DemoKatan.mCase
 
             #region AddRange RecordInstance
 
-            sb.AppendLine(1.Indent() + "/// <summary>");
-            sb.AppendLine(1.Indent() + "/// Add data onto enumerable class property.");
-            sb.AppendLine(1.Indent() + "/// List of RecordInstanceData's");
-            sb.AppendLine(1.Indent() + "/// </summary>");
-            sb.AppendLine(1.Indent() + "/// <param name=\"propertyEnum\">Class public property name</param>");
-            sb.AppendLine(1.Indent() + "/// <param name=\"value\">Value added to Class</param>");
-            sb.AppendLine(1.Indent() + "/// <param name=\"classObject\">Factory Entity Object</param>");
-            sb.AppendLine(1.Indent() +
-                          "/// <returns>Amount of values added. Type errors: -1. null errors: -2. RecordInstance not Created: -5</returns>");
             sb.AppendLine(1.Indent() +
                           $"public static int AddTo<T, TEnum>(this T classObject, TEnum propertyEnum, List<RecordInstanceData> value) where TEnum : Enum");
             sb.AppendLine(1.Indent() + "{"); //open method
@@ -637,15 +645,6 @@ namespace DemoKatan.mCase
 
             #region AddRange RecordInstance
 
-            sb.AppendLine(1.Indent() + "/// <summary>");
-            sb.AppendLine(1.Indent() + "/// Add data onto enumerable class property.");
-            sb.AppendLine(1.Indent() + "/// 'List of strings'.");
-            sb.AppendLine(1.Indent() + "/// </summary>");
-            sb.AppendLine(1.Indent() + "/// <param name=\"propertyEnum\">Class public property name</param>");
-            sb.AppendLine(1.Indent() + "/// <param name=\"value\">Value added to Class</param>");
-            sb.AppendLine(1.Indent() + "/// <param name=\"classObject\">Factory Entity Object</param>");
-            sb.AppendLine(1.Indent() +
-                          "/// <returns>Amount of values added. Type errors: -1. null errors: -2.</returns>");
             sb.AppendLine(1.Indent() +
                           $"public static int AddTo<T, TEnum>(this T classObject, TEnum propertyEnum, List<string> value) where TEnum : Enum");
             sb.AppendLine(1.Indent() + "{"); //open method
@@ -678,16 +677,7 @@ namespace DemoKatan.mCase
 
             #region Remove RecordInstance
 
-            sb.AppendLine(1.Indent() + "/// <summary>");
-            sb.AppendLine(1.Indent() + "/// Remove all data from enumerable class property that matches predicate");
-            sb.AppendLine(1.Indent() + "/// </summary>");
-            sb.AppendLine(1.Indent() + "/// <param name=\"propertyEnum\">Class public property name</param>");
-            sb.AppendLine(1.Indent() + "/// <param name=\"predicate\">Value added to Class</param>");
-            sb.AppendLine(1.Indent() + "/// <param name=\"classObject\">Factory Entity Object</param>");
-            sb.AppendLine(1.Indent() +
-                          "/// <returns>Amount of values removed. Type errors: -1. null errors: -2</returns>");
-            sb.AppendLine(1.Indent() +
-                          $"public static int RemoveFrom<T, TEnum>(this T classObject, TEnum propertyEnum, Func<RecordInstanceData, bool> predicate) where TEnum : Enum");
+            sb.AppendLine(1.Indent() + "public static int RemoveFrom<T, TEnum>(this T classObject, TEnum propertyEnum, Func<RecordInstanceData, bool> predicate) where TEnum : Enum");
             sb.AppendLine(1.Indent() + "{"); //open method
             sb.AppendLine(2.Indent() + "if (predicate == null) return -2;");
             sb.AppendLine(2.Indent() + "var property = propertyEnum.GetEnumDescription();");
@@ -695,8 +685,7 @@ namespace DemoKatan.mCase
             sb.AppendLine(2.Indent() + "var propertyInfo = objectType.GetProperty(property);");
             sb.AppendLine(2.Indent() + "if (propertyInfo == null) return -2;");
             sb.AppendLine(2.Indent() + "var getMethod = propertyInfo.GetGetMethod();");
-            sb.AppendLine(2.Indent() +
-                          "if (getMethod.ReturnType != typeof(List<RecordInstanceData>)) return -1;//Verify that the argument can be added to the property type");
+            sb.AppendLine(2.Indent() + "if (getMethod.ReturnType != typeof(List<RecordInstanceData>)) return -1;//Verify that the argument can be added to the property type");
             sb.AppendLine(2.Indent() + "var getter = (List<RecordInstanceData>)propertyInfo.GetValue(classObject);");
             sb.AppendLine(2.Indent() + "if (getter == null) return -2;");
             sb.AppendLine(2.Indent() + "var foundValues = getter.Where(predicate).ToList();");
@@ -710,15 +699,6 @@ namespace DemoKatan.mCase
 
             #region Remove string
 
-            sb.AppendLine(1.Indent() + "/// <summary>");
-            sb.AppendLine(1.Indent() + "/// Remove all data from enumerable class property that matches predicate");
-            sb.AppendLine(1.Indent() + "/// Example predicate: x => string.IsNullOrEmpty(x)");
-            sb.AppendLine(1.Indent() + "/// </summary>");
-            sb.AppendLine(1.Indent() + "/// <param name=\"propertyEnum\">Class public property name</param>");
-            sb.AppendLine(1.Indent() + "/// <param name=\"predicate\">Value added to Class</param>");
-            sb.AppendLine(1.Indent() + "/// <param name=\"classObject\">Factory Entity Object</param>");
-            sb.AppendLine(1.Indent() +
-                          "/// <returns>Amount of values removed. Type errors: -1. null errors: -2</returns>");
             sb.AppendLine(1.Indent() +
                           $"public static int RemoveFrom<T, TEnum>(this T classObject, TEnum propertyEnum, Func<string, bool> predicate) where TEnum : Enum");
             sb.AppendLine(1.Indent() + "{"); //open method
@@ -748,11 +728,34 @@ namespace DemoKatan.mCase
         {
             var sb = new StringBuilder();
 
+            //Get Descriptions
             sb.AppendLine(1.Indent() + "public static List<string> GetDescriptions<TEnum>() where TEnum : Enum =>");
             sb.AppendLine(2.Indent() + "Enum.GetValues(typeof(TEnum))");
             sb.AppendLine(3.Indent() + ".Cast<TEnum>()");
             sb.AppendLine(3.Indent() + ".Select(e => e.GetEnumDescription())");
             sb.AppendLine(3.Indent() + ".ToList();");
+
+            //Get Descriptions
+            sb.AppendLine(1.Indent() + "public static List<string> GetDescriptions<TEnum>(this List<TEnum> enums) where TEnum : Enum => enums.Select(e => e.GetEnumDescription()).ToList();");
+
+
+            //Get Enum values
+            sb.AppendLine(1.Indent() + "public static TEnum GetEnumValue<TEnum>(this string description) where TEnum : Enum");
+            sb.AppendLine(1.Indent() + "{");//open method
+            sb.AppendLine(2.Indent() + "if (string.IsNullOrEmpty(description)) return default;");
+            sb.AppendLine(2.Indent() + "var map = Enum.GetValues(typeof(TEnum)).Cast<TEnum>().ToDictionary(e => e.GetEnumDescription());");
+            sb.AppendLine(2.Indent() + "if (map.TryGetValue(description, out var result)) return result;");
+            sb.AppendLine(2.Indent() + "return default;");
+            sb.AppendLine(1.Indent() + "}");//close method
+
+            // map to enum type
+            sb.AppendLine(1.Indent() + "public static List<TEnum> MapTo<TEnum>(this List<TEnum> mapTo, List<string> values) where TEnum : Enum");
+            sb.AppendLine(1.Indent() + "{");//open method
+            sb.AppendLine(2.Indent() + "var descriptions = GetDescriptions<TEnum>();");
+            sb.AppendLine(2.Indent() + "mapTo.AddRange(from value in values where descriptions.Contains(value) select value.GetEnumValue<TEnum>());");
+            sb.AppendLine(2.Indent() + "return mapTo;");
+            sb.AppendLine(1.Indent() + "}");//close method
+
             return sb.ToString();
         }
 
@@ -785,28 +788,80 @@ namespace DemoKatan.mCase
             return sb.ToString();
         }
 
-        public static string AddEnumerableExtensions(string className)
+        public static string AddEnumerableExtensions(string className, bool addMap)
         {
             var sb = new StringBuilder();
 
             var classEnum = $"{className}Static.Properties_Enum";
+            if (addMap)
+            {
+                // Map To Enum
+                sb.AppendLine(1.Indent() + "/// <summary>");
+                sb.AppendLine(1.Indent() + "/// Maps a list of enums, to the next enum type");
+                sb.AppendLine(1.Indent() + "/// </summary>");
+                sb.AppendLine(1.Indent() + "/// <typeparam name=\"TEnum\">The enum you are mapping to</typeparam>");
+                sb.AppendLine(1.Indent() + "/// <param name=\"values\">Enum Values to convert</param>");
+                sb.AppendLine(1.Indent() + "/// <returns>Returns the converted list of enums, or default values if not found</returns>");
+                sb.AppendLine(1.Indent() + $"public List<TEnum> MapToEnum<TEnum>(List<{className}Static.DefaultValuesEnum> values) where TEnum : Enum => new List<TEnum>().MapTo(values.GetDescriptions());");
+
+            }
+
             // remove value by predicate
-            sb.AppendLine(1.Indent() +
-                          $"public int RemoveFrom({classEnum} propertyEnum, Func<RecordInstanceData, bool> predicate) => this.RemoveFrom<{className}Entity, {classEnum}>(propertyEnum, predicate);");
-            sb.AppendLine(1.Indent() +
-                          $"public int RemoveFrom({classEnum} propertyEnum, Func<string, bool> predicate) => this.RemoveFrom<{className}Entity, {classEnum}>(propertyEnum, predicate);");
+
+            sb.AppendLine(1.Indent() + "/// <summary>");
+            sb.AppendLine(1.Indent() + "/// Remove all data from enumerable class property that matches predicate");
+            sb.AppendLine(1.Indent() + "/// </summary>");
+            sb.AppendLine(1.Indent() + "/// <param name=\"propertyEnum\">Class public property name</param>");
+            sb.AppendLine(1.Indent() + "/// <param name=\"predicate\">Value added to Class</param>");
+            sb.AppendLine(1.Indent() + "/// <returns>Amount of values removed. Type errors: -1. null errors: -2</returns>");
+            sb.AppendLine(1.Indent() + $"public int RemoveFrom({classEnum} propertyEnum, Func<RecordInstanceData, bool> predicate) => this.RemoveFrom<{className}Entity, {classEnum}>(propertyEnum, predicate);");
+
+            sb.AppendLine(1.Indent() + "/// <summary>");
+            sb.AppendLine(1.Indent() + "/// Remove all data from enumerable class property that matches predicate");
+            sb.AppendLine(1.Indent() + "/// </summary>");
+            sb.AppendLine(1.Indent() + "/// <param name=\"propertyEnum\">Class public property name</param>");
+            sb.AppendLine(1.Indent() + "/// <param name=\"predicate\">Value added to Class</param>");
+            sb.AppendLine(1.Indent() + "/// <returns>Amount of values removed. Type errors: -1. null errors: -2</returns>");
+            sb.AppendLine(1.Indent() + $"public int RemoveFrom({classEnum} propertyEnum, Func<string, bool> predicate) => this.RemoveFrom<{className}Entity, {classEnum}>(propertyEnum, predicate);");
 
             //add single
+            sb.AppendLine(1.Indent() + "/// <summary>");
+            sb.AppendLine(1.Indent() + "/// Add data onto enumerable class property.");
+            sb.AppendLine(1.Indent() + "/// </summary>");
+            sb.AppendLine(1.Indent() + "/// <param name=\"propertyEnum\">Class public property name</param>");
+            sb.AppendLine(1.Indent() + "/// <param name=\"param\">Value added to Class</param>");
+            sb.AppendLine(1.Indent() + "/// <returns>Amount of values removed. Type errors: -1. Null errors: -2. RecordInstance not Created: -5.</returns>");
+            sb.AppendLine(1.Indent() + $"public int AddTo({classEnum} propertyEnum, RecordInstanceData param) => this.AddTo<{className}Entity, {classEnum}>(propertyEnum, param);");
+
+            sb.AppendLine(1.Indent() + "/// <summary>");
+            sb.AppendLine(1.Indent() + "/// Add data onto enumerable class property.");
+            sb.AppendLine(1.Indent() + "/// </summary>");
+            sb.AppendLine(1.Indent() + "/// <param name=\"propertyEnum\">Class public property name</param>");
+            sb.AppendLine(1.Indent() + "/// <param name=\"param\">Value added to Class</param>");
             sb.AppendLine(1.Indent() +
-                          $"public int AddTo({classEnum} propertyEnum, RecordInstanceData param) => this.AddTo<{className}Entity, {classEnum}>(propertyEnum, param);");
+                          "/// <returns>Amount of values removed. Type errors: -1. Null errors: -2.</returns>");
             sb.AppendLine(1.Indent() +
                           $"public int AddTo({classEnum} propertyEnum, string param) => this.AddTo<{className}Entity, {classEnum}>(propertyEnum, param);");
 
             //add range
-            sb.AppendLine(1.Indent() +
-                          $"public int AddTo({classEnum} propertyEnum, List<RecordInstanceData> param) => this.AddTo<{className}Entity, {classEnum}>(propertyEnum, param);");
-            sb.AppendLine(1.Indent() +
-                          $"public int AddTo({classEnum} propertyEnum, List<string> param) => this.AddTo<{className}Entity, {classEnum}>(propertyEnum, param);");
+            sb.AppendLine(1.Indent() + "/// <summary>");
+            sb.AppendLine(1.Indent() + "/// Add data onto enumerable class property.");
+            sb.AppendLine(1.Indent() + "/// List of RecordInstanceData's");
+            sb.AppendLine(1.Indent() + "/// </summary>");
+            sb.AppendLine(1.Indent() + "/// <param name=\"propertyEnum\">Class public property name</param>");
+            sb.AppendLine(1.Indent() + "/// <param name=\"param\">Value added to Class</param>");
+            sb.AppendLine(1.Indent() + "/// <returns>Amount of values added. Type errors: -1. null errors: -2. RecordInstance not Created: -5</returns>");
+            sb.AppendLine(1.Indent() + $"public int AddTo({classEnum} propertyEnum, List<RecordInstanceData> param) => this.AddTo<{className}Entity, {classEnum}>(propertyEnum, param);");
+
+            sb.AppendLine(1.Indent() + "/// <summary>");
+            sb.AppendLine(1.Indent() + "/// Add data onto enumerable class property.");
+            sb.AppendLine(1.Indent() + "/// List of string's");
+            sb.AppendLine(1.Indent() + "/// </summary>");
+            sb.AppendLine(1.Indent() + "/// <param name=\"propertyEnum\">Class public property name</param>");
+            sb.AppendLine(1.Indent() + "/// <param name=\"param\">Value added to Class</param>");
+            sb.AppendLine(1.Indent() + "/// <returns>Amount of values added. Type errors: -1. null errors: -2.</returns>");
+            sb.AppendLine(1.Indent() + $"public int AddTo({classEnum} propertyEnum, List<string> param) => this.AddTo<{className}Entity, {classEnum}>(propertyEnum, param);");
+
             return sb.ToString();
         }
 
@@ -817,7 +872,7 @@ namespace DemoKatan.mCase
             var distinct = fieldSet.Distinct().OrderBy(x => x).ToList();
             var distinctEnums = new List<string>();
 
-            if (distinct.Count == 0) 
+            if (distinct.Count == 0)
                 return sb;
 
             var property = $"public enum {className}Enum" + "{"; //open
@@ -869,7 +924,8 @@ namespace DemoKatan.mCase
 
             if (parentRelationships.Any())
             {
-                var parentList = parentRelationships.Aggregate(
+                var distinctParentRelationships = parentRelationships.Distinct();
+                var parentList = distinctParentRelationships.Aggregate(
                     "public enum ParentRelationShips {",
                     (current, child) => current + $"[Description(\"{child}\")] {child},");
                 parentList += "};";
@@ -883,7 +939,8 @@ namespace DemoKatan.mCase
 
             if (childRelationships.Any())
             {
-                var childList = childRelationships.Aggregate(
+                var distinctChildRelationships = childRelationships.Distinct();
+                var childList = distinctChildRelationships.Aggregate(
                     "public enum ChildRelationShips {",
                     (current, child) => current + $"[Description(\"{child}\")] {child},");
                 childList += "};";

@@ -316,7 +316,7 @@ namespace DemoKatan.mCase
                 sb.AppendLine(Factory.GetEmbeddedOptions(className));
 
             if (requiresEnumeration)
-                sb.AppendLine(Factory.AddEnumerableExtensions(className));
+                sb.AppendLine(Factory.AddEnumerableExtensions(className, _stringBuilders.Any()));
 
             sb.AppendLine(0.Indent() + "}"); //close class
 
@@ -332,15 +332,36 @@ namespace DemoKatan.mCase
             sb.AppendLine(0.Indent() + $"public static class {className}Static");
             sb.AppendLine(0.Indent() + "{");//open static class
             sb.AppendLine(Factory.GenerateEnums(enumerableFieldSet.ToList(), "Properties_", true).ToString());// All class property names
+            
             if(embeddedRelatedFields.Count > 0)
                 sb.AppendLine(Factory.GenerateEnums(embeddedRelatedFields.ToList(), "EmbeddedOptions", false).ToString()); //enum adds Enum to name at end
 
+            var allDefaultValues = new List<string>() { "#~Invalid Selection~#", "Multi Select: False"};
             foreach (var sbs in _stringBuilders)
             {
-                sb.AppendLine(sbs.ToString());
+                var csv = sbs.ToString();
+                if (string.IsNullOrEmpty(csv)) 
+                    continue;
+                var data = csv.Split("$~*@*~$");
+                allDefaultValues.AddRange(data);
+                allDefaultValues = allDefaultValues.Distinct().ToList();
+            }
+
+            var relationships = jsonObject[ListTransferFields.Relationships.GetDescription()];
+
+            var relationshipEnums = Factory.GenerateRelationships(relationships);
+
+            if (!string.IsNullOrEmpty(relationshipEnums.ToString()))
+                sb.Append(relationshipEnums.ToString());
+
+            if (allDefaultValues.Count > 2)
+            {
+                var distinctData = allDefaultValues.Distinct();
+
+                sb.AppendLine(Factory.GenerateEnums(distinctData.ToList(), "DefaultValues", false).ToString()); //enum adds Enum to name at end
             }
             
-            sb.AppendLine("}"); //close static class
+            sb.AppendLine(0.Indent() + "}"); //close static class
 
             #endregion
             sb.AppendLine("}"); //close namespace
