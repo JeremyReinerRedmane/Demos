@@ -80,7 +80,7 @@ namespace DemoKatan.mCase
             sb.AppendLine(1.Indent() +
                           $"public {className}Entity(RecordInstanceData recordInsData, AEventHelper eventHelper)");
             sb.AppendLine(1.Indent() + "{"); //open constructor #Existing Record Instance Data
-            sb.AppendLine(2.Indent() + $"if (recordInsData.RecordInstanceID != DataListId) throw new Exception(\"RecordInstance is not of type {className}Entity\");");
+            sb.AppendLine(2.Indent() + $"if (recordInsData.DataListID != DataListId) throw new Exception(\"RecordInstance is not of type {className}Entity\");");
             sb.AppendLine(2.Indent() + "RecordInsData = recordInsData;");
             sb.AppendLine(2.Indent() + "_eventHelper = eventHelper;");
             sb.AppendLine(1.Indent() + "}"); //close constructor
