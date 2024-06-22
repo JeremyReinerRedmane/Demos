@@ -24,39 +24,6 @@ namespace DemoKatan.mCase
         private HashSet<string> _classNames;
         private List<StringBuilder> _stringBuilders;
 
-        public SyncDlConfigs()
-        {
-            _connectionString = "";
-            Console.WriteLine("Connection string: " + _connectionString);
-
-            _sqlCommand = "";
-            Console.WriteLine("Sql Command: " + _sqlCommand);
-
-            _credentials = "";//TODO add credentials username:password
-            Console.WriteLine("Credentials: " + _credentials);
-
-            _mCaseUrl = "" + "/Resource/Export/DataList/Configuration/";
-            Console.WriteLine("Mcase Url: " + _mCaseUrl);
-
-
-            _outputDirectory = @"";
-            Console.WriteLine("Output Dir: " + _outputDirectory);
-
-            if (!Directory.Exists(_outputDirectory))
-                Directory.CreateDirectory(_outputDirectory);
-
-            _exceptionDirectory = @"";
-            Console.WriteLine("Exception Dir: " + _exceptionDirectory);
-
-            if (!Directory.Exists(_exceptionDirectory))
-                Directory.CreateDirectory(_exceptionDirectory);
-
-            _namespace = "";
-            Console.WriteLine("Namespace: " + _namespace);
-
-            _classNames = new HashSet<string>();
-        }
-
         public SyncDlConfigs(string[] commandLineArgs )
         {
             if (commandLineArgs.Length != 8 && commandLineArgs.Length != 7)//requires query, or has direct Id's
