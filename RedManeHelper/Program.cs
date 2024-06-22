@@ -27,11 +27,13 @@ if (commandLineArgs.Length > 1)
 }
 else
 {
+    var cmd = new List<string>
+    {
+    }.ToArray();
 
-    var local = new SyncDlConfigs();
+    var local = new SyncDlConfigs(cmd);
 
     var sqlQuery = await local.DataAccess();
 
     await local.RemoteSync(sqlQuery);
 }
-

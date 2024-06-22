@@ -26,7 +26,7 @@ namespace DemoKatan.mCase
 
         public SyncDlConfigs(string[] commandLineArgs )
         {
-            if (commandLineArgs.Length != 8 && commandLineArgs.Length != 7)//requires query, or has direct Id's
+            if (commandLineArgs.Length != 8 && commandLineArgs.Length != 7)//requires query, or csv
             {
                 Console.WriteLine("Invalid Params. There are only two constructors.. Direct Sql query = 8 params. Or Direct Id Requests in CSV Format = 7 params");
 
