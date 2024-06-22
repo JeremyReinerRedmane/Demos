@@ -724,7 +724,6 @@ namespace DemoKatan.mCase
             #endregion
 
             #region Remove string
-
             sb.AppendLine(1.Indent() +
                           "public static int RemoveFrom<T, TEnum>(this T classObject, TEnum propertyEnum, Func<string, bool> predicate) where TEnum : Enum");
             sb.AppendLine(1.Indent() + "{"); //open method
@@ -736,6 +735,28 @@ namespace DemoKatan.mCase
             sb.AppendLine(2.Indent() + "var propertyMethod = propertyInfo.GetGetMethod();");
             sb.AppendLine(2.Indent() +  "if (propertyMethod.ReturnType != typeof(List<string>)) return -1;//Verify that the argument can be added to the property type");
             sb.AppendLine(2.Indent() + "var getter = (List<string>)propertyInfo.GetValue(classObject);");
+            sb.AppendLine(2.Indent() + "if(getter == null) return -2;");
+            sb.AppendLine(2.Indent() + "var foundStrings = getter.Where(predicate).ToList();");
+            sb.AppendLine(2.Indent() + "if (foundStrings.Count < 1) return 0;");
+            sb.AppendLine(2.Indent() + "propertyInfo.SetValue(classObject, getter.RemoveAll(x => foundStrings.Contains(x)));");
+            sb.AppendLine(2.Indent() + "return foundStrings.Count;");
+            sb.AppendLine(1.Indent() + "}"); //close method
+
+            #endregion
+
+            #region Remove enum
+            
+            sb.AppendLine(1.Indent() +
+                          "public static int RemoveFrom<T, TEnum, TEnum2>(this T classObject, TEnum propertyEnum, Func<TEnum2, bool> predicate) where TEnum : Enum");
+            sb.AppendLine(1.Indent() + "{"); //open method
+            sb.AppendLine(2.Indent() + "if (predicate == null) return -2;");
+            sb.AppendLine(2.Indent() + "var property = propertyEnum.GetEnumDescription();");
+            sb.AppendLine(2.Indent() + "var objectType = classObject.GetType();");
+            sb.AppendLine(2.Indent() + "var propertyInfo = objectType.GetProperty(property);");
+            sb.AppendLine(2.Indent() + "if (propertyInfo == null) return -2;");
+            sb.AppendLine(2.Indent() + "var propertyMethod = propertyInfo.GetGetMethod();");
+            sb.AppendLine(2.Indent() + "if (propertyMethod.ReturnType != typeof(List<TEnum2>)) return -1;//Verify that the argument can be added to the property type");
+            sb.AppendLine(2.Indent() + "var getter = (List<TEnum2>)propertyInfo.GetValue(classObject);");
             sb.AppendLine(2.Indent() + "if(getter == null) return -2;");
             sb.AppendLine(2.Indent() + "var foundStrings = getter.Where(predicate).ToList();");
             sb.AppendLine(2.Indent() + "if (foundStrings.Count < 1) return 0;");
@@ -822,6 +843,15 @@ namespace DemoKatan.mCase
                 sb.AppendLine(1.Indent() + "/// <param name=\"values\">Enum Values to convert</param>");
                 sb.AppendLine(1.Indent() + "/// <returns>Returns the converted list of enums, or default values if not found</returns>");
                 sb.AppendLine(1.Indent() + $"public List<TEnum> MapToEnum<TEnum>(List<{className}Static.DefaultValuesEnum> values) where TEnum : Enum => new List<TEnum>().MapTo(values.GetDescriptions());");
+
+                //remove by enum predicate 
+                sb.AppendLine(1.Indent() + "/// <summary>");
+                sb.AppendLine(1.Indent() + "/// Remove all data from enumerable class property that matches predicate");
+                sb.AppendLine(1.Indent() + "/// </summary>");
+                sb.AppendLine(1.Indent() + "/// <param name=\"propertyEnum\">Class public property name</param>");
+                sb.AppendLine(1.Indent() + "/// <param name=\"predicate\">Default value to remove</param>");
+                sb.AppendLine(1.Indent() + "/// <returns>Amount of values removed. Type errors: -1. null errors: -2</returns>");
+                sb.AppendLine(1.Indent() + $"public int RemoveFrom({staticProperties} propertyEnum, Func<{defaultValues}, bool> predicate) => this.RemoveFrom<{className}Entity, {staticProperties}, {defaultValues}>(propertyEnum, predicate);");
             }
 
             #region Remove by predicate Predicate
@@ -830,7 +860,7 @@ namespace DemoKatan.mCase
             sb.AppendLine(1.Indent() + "/// Remove all data from enumerable class property that matches predicate");
             sb.AppendLine(1.Indent() + "/// </summary>");
             sb.AppendLine(1.Indent() + "/// <param name=\"propertyEnum\">Class public property name</param>");
-            sb.AppendLine(1.Indent() + "/// <param name=\"predicate\">Value added to Class</param>");
+            sb.AppendLine(1.Indent() + "/// <param name=\"predicate\">Record instance value to remove</param>");
             sb.AppendLine(1.Indent() + "/// <returns>Amount of values removed. Type errors: -1. null errors: -2</returns>");
             sb.AppendLine(1.Indent() + $"public int RemoveFrom({staticProperties} propertyEnum, Func<RecordInstanceData, bool> predicate) => this.RemoveFrom<{className}Entity, {staticProperties}>(propertyEnum, predicate);");
 
@@ -839,9 +869,10 @@ namespace DemoKatan.mCase
             sb.AppendLine(1.Indent() + "/// Remove all data from enumerable class property that matches predicate");
             sb.AppendLine(1.Indent() + "/// </summary>");
             sb.AppendLine(1.Indent() + "/// <param name=\"propertyEnum\">Class public property name</param>");
-            sb.AppendLine(1.Indent() + "/// <param name=\"predicate\">Value added to Class</param>");
+            sb.AppendLine(1.Indent() + "/// <param name=\"predicate\">String value to remove</param>");
             sb.AppendLine(1.Indent() + "/// <returns>Amount of values removed. Type errors: -1. null errors: -2</returns>");
             sb.AppendLine(1.Indent() + $"public int RemoveFrom({staticProperties} propertyEnum, Func<string, bool> predicate) => this.RemoveFrom<{className}Entity, {staticProperties}>(propertyEnum, predicate);");
+
             #endregion
 
             #region Add To
