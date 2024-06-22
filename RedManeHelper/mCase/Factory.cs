@@ -392,7 +392,7 @@ namespace DemoKatan.mCase
             sb.AppendLine(1.Indent() + $"/// [mCase data type: {fieldType}]");
             sb.AppendLine(1.Indent() + $"/// [Multi Select: {multiSelect}]");
             sb.AppendLine(1.Indent() + "/// [Getting: Returns the list of field labels]");
-            sb.AppendLine(1.Indent() + "/// [Updating: Requires use of either AddTo(), or RemoveFrom()]");
+            sb.AppendLine(1.Indent() + "/// [Updating: Requires use of either AddTo(), AddRangeTo() or RemoveFrom()]");
             sb.AppendLine(1.Indent() + "/// </summary>");
 
             if (string.Equals(multiSelect, "True"))
@@ -630,7 +630,7 @@ namespace DemoKatan.mCase
             #region AddRange RecordInstance
 
             sb.AppendLine(1.Indent() +
-                          $"public static int AddRange<T, TEnum>(this T classObject, TEnum propertyEnum, List<RecordInstanceData> value) where TEnum : Enum");
+                          $"public static int AddRangeTo<T, TEnum>(this T classObject, TEnum propertyEnum, List<RecordInstanceData> value) where TEnum : Enum");
             sb.AppendLine(1.Indent() + "{"); //open method
             sb.AppendLine(2.Indent() + "if (value == null) return -2;");
             sb.AppendLine(2.Indent() + "if (!value.Any()) return 0;");
@@ -656,7 +656,7 @@ namespace DemoKatan.mCase
             #region AddRange RecordInstance
 
             sb.AppendLine(1.Indent() +
-                          $"public static int AddRange<T, TEnum>(this T classObject, TEnum propertyEnum, List<string> value) where TEnum : Enum");
+                          $"public static int AddRangeTo<T, TEnum>(this T classObject, TEnum propertyEnum, List<string> value) where TEnum : Enum");
             sb.AppendLine(1.Indent() + "{"); //open method
             sb.AppendLine(2.Indent() + "if (value == null) return -2;");
             sb.AppendLine(2.Indent() + "if(!value.Any()) return 0;");
@@ -681,7 +681,7 @@ namespace DemoKatan.mCase
             #region AddRange Default Values
 
             sb.AppendLine(1.Indent() +
-                          $"public static int AddRange<T, TEnum, TEnum2>(this T classObject, TEnum propertyEnum, List<TEnum2> value) where TEnum : Enum");
+                          $"public static int AddRangeTo<T, TEnum, TEnum2>(this T classObject, TEnum propertyEnum, List<TEnum2> value) where TEnum : Enum");
             sb.AppendLine(1.Indent() + "{"); //open method
             sb.AppendLine(2.Indent() + "if (value == null) return -2;");
             sb.AppendLine(2.Indent() + "if(!value.Any()) return 0;");
@@ -901,7 +901,7 @@ namespace DemoKatan.mCase
             sb.AppendLine(1.Indent() + "/// <param name=\"propertyEnum\">Class public property name</param>");
             sb.AppendLine(1.Indent() + "/// <param name=\"param\">Value added to Class</param>");
             sb.AppendLine(1.Indent() + "/// <returns>Amount of values added. Type errors: -1. null errors: -2.</returns>");
-            sb.AppendLine(1.Indent() + $"public int AddRange({staticProperties} propertyEnum, List<string> param) => this.AddRange<{className}Entity, {staticProperties}>(propertyEnum, param);");
+            sb.AppendLine(1.Indent() + $"public int AddRangeTo({staticProperties} propertyEnum, List<string> param) => this.AddRangeTo<{className}Entity, {staticProperties}>(propertyEnum, param);");
 
             //add range Record Instance
             sb.AppendLine(1.Indent() + "/// <summary>");
@@ -911,7 +911,7 @@ namespace DemoKatan.mCase
             sb.AppendLine(1.Indent() + "/// <param name=\"propertyEnum\">Class public property name</param>");
             sb.AppendLine(1.Indent() + "/// <param name=\"param\">Value added to Class</param>");
             sb.AppendLine(1.Indent() + "/// <returns>Amount of values added. Type errors: -1. null errors: -2. RecordInstance not Created: -5</returns>");
-            sb.AppendLine(1.Indent() + $"public int AddRange({staticProperties} propertyEnum, List<RecordInstanceData> param) => this.AddRange<{className}Entity, {staticProperties}>(propertyEnum, param);");
+            sb.AppendLine(1.Indent() + $"public int AddRangeTo({staticProperties} propertyEnum, List<RecordInstanceData> param) => this.AddRangeTo<{className}Entity, {staticProperties}>(propertyEnum, param);");
 
 
             if (addMap)
@@ -924,7 +924,7 @@ namespace DemoKatan.mCase
                 sb.AppendLine(1.Indent() + "/// <param name=\"propertyEnum\">Class public property name</param>");
                 sb.AppendLine(1.Indent() + "/// <param name=\"param\">Value added to Class</param>");
                 sb.AppendLine(1.Indent() + "/// <returns>Amount of values added. Type errors: -1. null errors: -2.</returns>");
-                sb.AppendLine(1.Indent() + $"public int AddRange({staticProperties} propertyEnum, List<{defaultValues}> param) => this.AddRange<{className}Entity, {staticProperties}, {defaultValues}>(propertyEnum, param);");
+                sb.AppendLine(1.Indent() + $"public int AddRangeTo({staticProperties} propertyEnum, List<{defaultValues}> param) => this.AddRangeTo<{className}Entity, {staticProperties}, {defaultValues}>(propertyEnum, param);");
 
             }
             #endregion

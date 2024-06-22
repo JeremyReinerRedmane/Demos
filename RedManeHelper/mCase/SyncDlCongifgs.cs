@@ -2,6 +2,7 @@
 using System.Diagnostics;
 using System.Net.Http.Headers;
 using System.Reflection.Metadata.Ecma335;
+using System.Runtime.CompilerServices;
 using System.Text;
 using DemoKatan.mCase.Static;
 using Microsoft.Data.SqlClient;
@@ -12,6 +13,7 @@ namespace DemoKatan.mCase
 {
     public class SyncDlConfigs
     {
+        private readonly string _dataListIdCsv;
         private readonly string _connectionString;
         private readonly string _sqlCommand;
         private readonly string _outputDirectory;
@@ -55,16 +57,18 @@ namespace DemoKatan.mCase
             _classNames = new HashSet<string>();
         }
 
-        public SyncDlConfigs(string[] commandLineArgs)
+        public SyncDlConfigs(string[] commandLineArgs )
         {
-            if (commandLineArgs.Length != 8)
+            if (commandLineArgs.Length != 8 && commandLineArgs.Length != 7)//requires query, or has direct Id's
             {
-                Console.WriteLine(commandLineArgs.Length > 8
-                    ? $"Too many arguments [{commandLineArgs.Length - 8}]"
-                    : $"Missing arguments [{8 - commandLineArgs.Length}]");
+                Console.WriteLine("Invalid Params. There are only two constructors.. Direct Sql query = 8 params. Or Direct Id Requests in CSV Format = 7 params");
 
-                throw new ArgumentException("Invalid params. 1: Connection string, 2: Sql command 3: Credentials, 4: Enviroment Url 5: Output directory, 6: Exception directory");
+                throw new Exception();
             }
+
+            if (commandLineArgs.Length == 8) //Recieving all SQL Id's from specified Db
+            {
+                Console.WriteLine("System operation: Requesting Data from Db. Setting Parameters");
             // [0] bin dir containing dll and exe files
             _connectionString = commandLineArgs[1];//1
             Console.WriteLine("Connection string: " + _connectionString);
@@ -90,11 +94,41 @@ namespace DemoKatan.mCase
 
             _namespace = commandLineArgs[7];//7
             Console.WriteLine("Namespace: " + _namespace);
+            }
+
+            if (commandLineArgs.Length == 7)
+            {
+                Console.WriteLine("System operation: CSV Data. Setting Parameters");
+                // [0] bin dir containing dll and exe files
+                _dataListIdCsv = commandLineArgs[1];
+                Console.WriteLine("");
+
+                _credentials = commandLineArgs[2];
+                Console.WriteLine("Credentials: " + _credentials);
+
+                _mCaseUrl = commandLineArgs[2] + "/Resource/Export/DataList/Configuration/";//4
+                Console.WriteLine("Mcase Url: " + _mCaseUrl);
+
+                _outputDirectory = commandLineArgs[4];
+                Console.WriteLine("Output Dir: " + _outputDirectory);
+                if (!Directory.Exists(_outputDirectory))
+                    Directory.CreateDirectory(_outputDirectory);
+
+                _exceptionDirectory = commandLineArgs[5];
+                Console.WriteLine("Exception Dir: " + _exceptionDirectory);
+                if (!Directory.Exists(_exceptionDirectory))
+                    Directory.CreateDirectory(_exceptionDirectory);
+
+                _namespace = commandLineArgs[6];
+                Console.WriteLine("Namespace: " + _namespace);
+            }
+            
+            Console.WriteLine("All parameters have been completed. Moving to next step");
 
             _classNames = new HashSet<string>();
         }
 
-        public async Task RemoteSync()
+        public async Task RemoteSync(List<int>sqlResult)
         {
             var sqlResult = await DataAccess();
 
@@ -150,7 +184,7 @@ namespace DemoKatan.mCase
 
         }
 
-        private async Task<List<int>> DataAccess()
+        public async Task<List<int>> DataAccess()
         {
             var ids = new List<int>();
             try
@@ -191,6 +225,23 @@ namespace DemoKatan.mCase
                 Console.ForegroundColor = ConsoleColor.DarkGray;
                 return new List<int>();
             }
+        }
+
+        public List<int> DirectDataAccess()
+        {
+            if(string.IsNullOrEmpty(_dataListIdCsv)) return new List<int>();
+
+            var data = _dataListIdCsv.Split(',').ToList();
+
+            var nums = new List<int>();
+            foreach (var d in data)
+            {
+                if(int.TryParse(d, out var num))
+                    nums.Add(num);
+            }
+
+            Console.WriteLine($"Parsed csv data found {nums.Count} Id's");
+            return nums;
         }
 
         /// <summary>

@@ -4,15 +4,34 @@ var commandLineArgs = Environment.GetCommandLineArgs();
 
 if (commandLineArgs.Length > 1)
 {
-    var cmd = new SyncDlConfigs(commandLineArgs);
+    if (commandLineArgs.Length == 8)
+    {
+        //directly querying db for datalist id's
+        var cmd = new SyncDlConfigs(commandLineArgs);
 
-    await cmd.RemoteSync();
+        var sqlQuery = await cmd.DataAccess();
+
+        await cmd.RemoteSync(sqlQuery);
+    }
+
+    if (commandLineArgs.Length == 7)
+    {
+        //direct access to csv data
+        var cmd = new SyncDlConfigs(commandLineArgs);
+
+        var data = cmd.DirectDataAccess();
+
+        await cmd.RemoteSync(data);
+    }
     
 }
 else
 {
+
     var local = new SyncDlConfigs();
 
-    await local.RemoteSync();
+    var sqlQuery = await local.DataAccess();
+
+    await local.RemoteSync(sqlQuery);
 }
 
