@@ -106,7 +106,7 @@ namespace DemoKatan.mCase
                 _credentials = commandLineArgs[2];
                 Console.WriteLine("Credentials: " + _credentials);
 
-                _mCaseUrl = commandLineArgs[3] + "/Resource/Export/DataList/Configuration/";/
+                _mCaseUrl = commandLineArgs[3] + "/Resource/Export/DataList/Configuration/";
                 Console.WriteLine("Mcase Url: " + _mCaseUrl);
 
                 _outputDirectory = commandLineArgs[4];
