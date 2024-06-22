@@ -1,14 +1,7 @@
-﻿using System.Reflection.Metadata;
-using System.Runtime.InteropServices.JavaScript;
-using DemoKatan.mCase.Static;
+﻿using DemoKatan.mCase.Static;
 using Newtonsoft.Json.Linq;
 using System.Text;
-using System.Xml.Linq;
 using Extensions = DemoKatan.mCase.Static.Extensions;
-using static System.Net.Mime.MediaTypeNames;
-using System.Text.RegularExpressions;
-using Microsoft.VisualBasic.FileIO;
-using System.ComponentModel;
 
 namespace DemoKatan.mCase
 {
@@ -30,7 +23,7 @@ namespace DemoKatan.mCase
 
             sb.AppendLine( //TODO continue to add usings, as more and more validations are made
                 "using System;\nusing System.Collections.Generic;\nusing System.Linq;\nusing MCaseCustomEvents.ARFocus.DataAccess;\nusing MCaseEventsSDK;\nusing MCaseEventsSDK.Util;\nusing MCaseEventsSDK.Util.Data;\nusing System.ComponentModel;\nusing System.Reflection;");
-            sb.AppendLine($"namespace {namespace_}"); //TODO: project specific namespace
+            sb.AppendLine($"namespace {namespace_}"); //TODO: Always update project specific namespace
             sb.AppendLine("{"); //open namespace
 
             #region Dl Info Class
@@ -80,7 +73,7 @@ namespace DemoKatan.mCase
             sb.AppendLine(1.Indent() +
                           $"public {className}Entity(RecordInstanceData recordInsData, AEventHelper eventHelper)");
             sb.AppendLine(1.Indent() + "{"); //open constructor #Existing Record Instance Data
-            sb.AppendLine(2.Indent() + $"if (recordInsData.RecordInstanceID != DataListId) throw new Exception(\"RecordInstance is not of type {className}Entity\");");
+            sb.AppendLine(2.Indent() + $"if (recordInsData.DataListID != DataListId) throw new Exception(\"RecordInstance is not of type {className}Entity\");");
             sb.AppendLine(2.Indent() + "RecordInsData = recordInsData;");
             sb.AppendLine(2.Indent() + "_eventHelper = eventHelper;");
             sb.AppendLine(1.Indent() + "}"); //close constructor
@@ -680,8 +673,7 @@ namespace DemoKatan.mCase
 
             #region AddRange Default Values
 
-            sb.AppendLine(1.Indent() +
-                          $"public static int AddRangeTo<T, TEnum, TEnum2>(this T classObject, TEnum propertyEnum, List<TEnum2> value) where TEnum : Enum");
+            sb.AppendLine(1.Indent() + "public static int AddRangeTo<T, TEnum, TEnum2>(this T classObject, TEnum propertyEnum, List<TEnum2> value) where TEnum : Enum");
             sb.AppendLine(1.Indent() + "{"); //open method
             sb.AppendLine(2.Indent() + "if (value == null) return -2;");
             sb.AppendLine(2.Indent() + "if(!value.Any()) return 0;");
@@ -690,8 +682,7 @@ namespace DemoKatan.mCase
             sb.AppendLine(2.Indent() + "var propertyInfo = objectType.GetProperty(property);");
             sb.AppendLine(2.Indent() + "if (propertyInfo == null) return -2;");
             sb.AppendLine(2.Indent() + "var getMethod = propertyInfo.GetGetMethod();");
-            sb.AppendLine(2.Indent() +
-                          "if (getMethod.ReturnType != typeof(List<TEnum2>)) return -1;//Verify that the argument can be added to the property type");
+            sb.AppendLine(2.Indent() + "if (getMethod.ReturnType != typeof(List<TEnum2>)) return -1;//Verify that the argument can be added to the property type");
             sb.AppendLine(2.Indent() + "var getter = (List<TEnum2>)propertyInfo.GetValue(classObject);");
             sb.AppendLine(2.Indent() + "if (getter == null) return -2;");
             sb.AppendLine(2.Indent() + "value.RemoveAll(x => x == null);");
@@ -735,7 +726,7 @@ namespace DemoKatan.mCase
             #region Remove string
 
             sb.AppendLine(1.Indent() +
-                          $"public static int RemoveFrom<T, TEnum>(this T classObject, TEnum propertyEnum, Func<string, bool> predicate) where TEnum : Enum");
+                          "public static int RemoveFrom<T, TEnum>(this T classObject, TEnum propertyEnum, Func<string, bool> predicate) where TEnum : Enum");
             sb.AppendLine(1.Indent() + "{"); //open method
             sb.AppendLine(2.Indent() + "if (predicate == null) return -2;");
             sb.AppendLine(2.Indent() + "var property = propertyEnum.GetEnumDescription();");
@@ -743,14 +734,12 @@ namespace DemoKatan.mCase
             sb.AppendLine(2.Indent() + "var propertyInfo = objectType.GetProperty(property);");
             sb.AppendLine(2.Indent() + "if (propertyInfo == null) return -2;");
             sb.AppendLine(2.Indent() + "var propertyMethod = propertyInfo.GetGetMethod();");
-            sb.AppendLine(2.Indent() +
-                          "if (propertyMethod.ReturnType != typeof(List<string>)) return -1;//Verify that the argument can be added to the property type");
+            sb.AppendLine(2.Indent() +  "if (propertyMethod.ReturnType != typeof(List<string>)) return -1;//Verify that the argument can be added to the property type");
             sb.AppendLine(2.Indent() + "var getter = (List<string>)propertyInfo.GetValue(classObject);");
             sb.AppendLine(2.Indent() + "if(getter == null) return -2;");
             sb.AppendLine(2.Indent() + "var foundStrings = getter.Where(predicate).ToList();");
             sb.AppendLine(2.Indent() + "if (foundStrings.Count < 1) return 0;");
-            sb.AppendLine(2.Indent() +
-                          "propertyInfo.SetValue(classObject, getter.RemoveAll(x => foundStrings.Contains(x)));");
+            sb.AppendLine(2.Indent() + "propertyInfo.SetValue(classObject, getter.RemoveAll(x => foundStrings.Contains(x)));");
             sb.AppendLine(2.Indent() + "return foundStrings.Count;");
             sb.AppendLine(1.Indent() + "}"); //close method
 
@@ -935,13 +924,13 @@ namespace DemoKatan.mCase
         {
             var sb = new StringBuilder();
 
-            var distinct = fieldSet.Distinct().OrderBy(x => x).ToList();
+            var distinct = fieldSet.Distinct().OrderBy(x => x).ToList();//order enums by name
             var distinctEnums = new List<string>();
 
             if (distinct.Count == 0)
                 return sb;
 
-            var property = $"public enum {className}Enum" + "{ [Description(\"#~Invalid Selection~#\")] Invalidselection,"; //open
+            sb.Append(1.Indent() + $"public enum {className}Enum" + "{ [Description(\"#~Invalid Selection~#\")] Invalidselection,"); //open
 
             for (var i = 0; i < distinct.Count; i++)
             {
@@ -953,27 +942,24 @@ namespace DemoKatan.mCase
                 }
 
                 if (titleCase)
-                    property += $"[Description(\"{field.GetPropertyNameFromSystemName()}\")] ";
+                    sb.Append($"[Description(\"{field.GetPropertyNameFromSystemName()}\")] ");
                 else
-                    property +=
-                        $"[Description(\"{field}\")] "; //Can remain in all caps, string does not need further cleaning
+                    sb.Append($"[Description(\"{field}\")] "); //Can remain in all caps, string does not need further cleaning
 
                 var enumName = field.GetPropertyNameFromSystemName();
 
                 if (distinctEnums.Contains(enumName))
                 {
-                    property += enumName + $"_{i}_,"; //generate enum duplicate
+                    sb.Append(enumName + $"_{i}_,"); //generate enum duplicate
                 }
                 else
                 {
-                    property += enumName + ","; //generate enum 
+                    sb.Append(enumName + ","); //generate enum 
                     distinctEnums.Add(enumName);
                 }
             }
 
-            property += "}"; //close enum
-
-            sb.AppendLine(1.Indent() + property);
+            sb.Append("}"); //close enum
 
             return sb;
         }
