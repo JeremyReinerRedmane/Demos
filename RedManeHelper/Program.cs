@@ -32,8 +32,19 @@ else
     }.ToArray();
 
     var local = new SyncDlConfigs(cmd);
+    if (cmd.Length == 8)
+    {
+        //directly querying db
+        var sqlQuery = await local.DataAccess();
 
-    var sqlQuery = await local.DataAccess();
+        await local.RemoteSync(sqlQuery);
+    }
 
-    await local.RemoteSync(sqlQuery);
+    if (cmd.Length == 7)
+    {
+        //direct access to csv data
+        var data = local.DirectDataAccess();
+
+        await local.RemoteSync(data);
+    }
 }

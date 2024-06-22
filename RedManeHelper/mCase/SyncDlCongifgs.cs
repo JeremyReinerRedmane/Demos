@@ -262,18 +262,16 @@ namespace DemoKatan.mCase
 
         private StringBuilder GenerateFileData(JObject jsonObject, string className)
         {
-            var fieldSet = new HashSet<string>(); //used to track properties being set
-            var enumerableFieldSet = new HashSet<string>(); //used to enum properties being set
-            _stringBuilders = new List<StringBuilder>();//used for containing all of the enum property values in the class
             var fields = jsonObject[ListTransferFields.Fields.GetDescription()];
 
             if (fields == null)
                 return new StringBuilder();
 
-            var sb = Factory.ClassInitializer(jsonObject, className, _namespace);
-
             var requiresEnumeration = false;
-
+            var fieldSet = new HashSet<string>(); //used to track properties being set
+            var enumerableFieldSet = new HashSet<string>(); //used to enum properties being set
+            var embeddedRelatedFields = new HashSet<string>();
+            _stringBuilders = new List<StringBuilder>();//used for containing all the enum property values in the class
             var requiresEnumerationValues = new List<string>
             {
                 MCaseTypes.EmbeddedList.GetDescription(),
@@ -283,7 +281,7 @@ namespace DemoKatan.mCase
                 MCaseTypes.CascadingDynamicDropDown.GetDescription(),
             };
 
-            var embeddedRelatedFields = new HashSet<string>();
+            var sb = Factory.ClassInitializer(jsonObject, className, _namespace);
 
             foreach (var field in fields)
             {
@@ -323,7 +321,7 @@ namespace DemoKatan.mCase
 
                 sb.AppendLine(property);
 
-                fieldSet.Add(systemName);
+                fieldSet.Add(systemName);//completed field, add to list
             }
 
             if (embeddedRelatedFields.Count > 0)
