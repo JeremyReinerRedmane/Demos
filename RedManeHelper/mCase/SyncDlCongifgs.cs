@@ -322,13 +322,6 @@ namespace DemoKatan.mCase
 
             #region Static File Backing
 
-            var relationships = jsonObject[ListTransferFields.Relationships.GetDescription()];
-            
-            var relationshipEnums = Factory.GenerateRelationships(relationships);
-            
-            if(!string.IsNullOrEmpty(relationshipEnums.ToString()))
-                _stringBuilders.Add(relationshipEnums);
-            
             sb.AppendLine(0.Indent() + $"public static class {className}Static");
             sb.AppendLine(0.Indent() + "{");//open static class
             sb.AppendLine(Factory.GenerateEnums(enumerableFieldSet.ToList(), "Properties_", true).ToString());// All class property names
@@ -336,7 +329,7 @@ namespace DemoKatan.mCase
             if(embeddedRelatedFields.Count > 0)
                 sb.AppendLine(Factory.GenerateEnums(embeddedRelatedFields.ToList(), "EmbeddedOptions", false).ToString()); //enum adds Enum to name at end
 
-            var allDefaultValues = new List<string>() { "#~Invalid Selection~#", "Multi Select: False"};
+            var allDefaultValues = new List<string>() { "Multi Select: False"};
             foreach (var sbs in _stringBuilders)
             {
                 var csv = sbs.ToString();
@@ -354,7 +347,7 @@ namespace DemoKatan.mCase
             if (!string.IsNullOrEmpty(relationshipEnums.ToString()))
                 sb.Append(relationshipEnums.ToString());
 
-            if (allDefaultValues.Count > 2)
+            if (allDefaultValues.Count > 1)
             {
                 var distinctData = allDefaultValues.Distinct();
 

@@ -952,7 +952,7 @@ namespace DemoKatan.mCase
             if (distinct.Count == 0)
                 return sb;
 
-            var property = $"public enum {className}Enum" + "{"; //open
+            var property = $"public enum {className}Enum" + "{ [Description(\"#~Invalid Selection~#\")] Invalidselection,"; //open
 
             for (var i = 0; i < distinct.Count; i++)
             {
@@ -1008,8 +1008,6 @@ namespace DemoKatan.mCase
                 parentList += "};";
                 sb.AppendLine(1.Indent() + parentList);
             }
-            else
-                sb.AppendLine(1.Indent() + "public enum ParentRelationShips {}");
 
             var childRelationships =
                 relationships.ParseChildren(ListTransferFields.ChildSystemName.GetDescription());
@@ -1023,8 +1021,6 @@ namespace DemoKatan.mCase
                 childList += "};";
                 sb.AppendLine(1.Indent() + childList);
             }
-            else
-                sb.AppendLine(1.Indent() + "public enum ChildRelationShips {}");
 
             return sb;
         }
