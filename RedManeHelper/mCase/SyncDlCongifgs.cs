@@ -13,7 +13,7 @@ namespace DemoKatan.mCase
 {
     public class SyncDlConfigs
     {
-        private readonly string _dataListIdCsv;
+        private readonly string _csvData;
         private readonly string _connectionString;
         private readonly string _sqlCommand;
         private readonly string _outputDirectory;
@@ -26,32 +26,32 @@ namespace DemoKatan.mCase
 
         public SyncDlConfigs()
         {
-            _connectionString = "";
+            _connectionString = "data source=localhost;initial catalog=mCASE_ADMIN;integrated security=True;TrustServerCertificate=true;";
             Console.WriteLine("Connection string: " + _connectionString);
 
-            _sqlCommand = "";
+            _sqlCommand = "SELECT [DataListID] FROM [mCASE_ADMIN].[dbo].[DataList]";
             Console.WriteLine("Sql Command: " + _sqlCommand);
 
-            _credentials = "";//TODO add credentials username:password
+            _credentials = "lorenzo.orders:Password123!";//TODO add credentials username:password
             Console.WriteLine("Credentials: " + _credentials);
 
-            _mCaseUrl = "" + "/Resource/Export/DataList/Configuration/";
+            _mCaseUrl = "https://auusmc-arccwis-app-mcs-qa-r2.redmane-cloud.us/" + "/Resource/Export/DataList/Configuration/";
             Console.WriteLine("Mcase Url: " + _mCaseUrl);
 
 
-            _outputDirectory = @"";
+            _outputDirectory = @"C:\Users\jreiner\source\repos\AR-mCase-CustomEvents\MCaseCustomEvents\ARFocus\FactoryEntities";
             Console.WriteLine("Output Dir: " + _outputDirectory);
 
             if (!Directory.Exists(_outputDirectory))
                 Directory.CreateDirectory(_outputDirectory);
 
-            _exceptionDirectory = @"";
+            _exceptionDirectory = @"C:\Users\jreiner\Desktop\Exceptions";
             Console.WriteLine("Exception Dir: " + _exceptionDirectory);
 
             if (!Directory.Exists(_exceptionDirectory))
                 Directory.CreateDirectory(_exceptionDirectory);
 
-            _namespace = "";
+            _namespace = "MCaseCustomEvents.ARFocus.FactoryEntities";
             Console.WriteLine("Namespace: " + _namespace);
 
             _classNames = new HashSet<string>();
@@ -69,44 +69,44 @@ namespace DemoKatan.mCase
             if (commandLineArgs.Length == 8) //Recieving all SQL Id's from specified Db
             {
                 Console.WriteLine("System operation: Requesting Data from Db. Setting Parameters");
-            // [0] bin dir containing dll and exe files
-            _connectionString = commandLineArgs[1];//1
-            Console.WriteLine("Connection string: " + _connectionString);
+                // [0] bin dir containing dll and exe files
+                _connectionString = commandLineArgs[1];//1
+                Console.WriteLine("Connection string: " + _connectionString);
 
-            _sqlCommand = commandLineArgs[2];//2
-            Console.WriteLine("Sql Command: " + _sqlCommand);
+                _sqlCommand = commandLineArgs[2];//2
+                Console.WriteLine("Sql Command: " + _sqlCommand);
 
-            _credentials = commandLineArgs[3];//3
-            Console.WriteLine("Credentials: " + _credentials);
+                _credentials = commandLineArgs[3];//3
+                Console.WriteLine("Credentials: " + _credentials);
 
-            _mCaseUrl = commandLineArgs[4] + "/Resource/Export/DataList/Configuration/";//4
-            Console.WriteLine("Mcase Url: " + _mCaseUrl);
+                _mCaseUrl = commandLineArgs[4] + "/Resource/Export/DataList/Configuration/";//4
+                Console.WriteLine("Mcase Url: " + _mCaseUrl);
 
-            _outputDirectory = commandLineArgs[5];//5
-            Console.WriteLine("Output Dir: " + _outputDirectory);
-            if (!Directory.Exists(_outputDirectory))
-                Directory.CreateDirectory(_outputDirectory);
+                _outputDirectory = commandLineArgs[5];//5
+                Console.WriteLine("Output Dir: " + _outputDirectory);
+                if (!Directory.Exists(_outputDirectory))
+                    Directory.CreateDirectory(_outputDirectory);
 
-            _exceptionDirectory = commandLineArgs[6];//6
-            Console.WriteLine("Exception Dir: " + _exceptionDirectory);
-            if (!Directory.Exists(_exceptionDirectory))
-                Directory.CreateDirectory(_exceptionDirectory);
+                _exceptionDirectory = commandLineArgs[6];//6
+                Console.WriteLine("Exception Dir: " + _exceptionDirectory);
+                if (!Directory.Exists(_exceptionDirectory))
+                    Directory.CreateDirectory(_exceptionDirectory);
 
-            _namespace = commandLineArgs[7];//7
-            Console.WriteLine("Namespace: " + _namespace);
+                _namespace = commandLineArgs[7];//7
+                Console.WriteLine("Namespace: " + _namespace);
             }
 
             if (commandLineArgs.Length == 7)
             {
                 Console.WriteLine("System operation: CSV Data. Setting Parameters");
                 // [0] bin dir containing dll and exe files
-                _dataListIdCsv = commandLineArgs[1];
-                Console.WriteLine("");
+                _csvData = commandLineArgs[1];
+                Console.WriteLine("CSV data:" + _csvData);
 
                 _credentials = commandLineArgs[2];
                 Console.WriteLine("Credentials: " + _credentials);
 
-                _mCaseUrl = commandLineArgs[2] + "/Resource/Export/DataList/Configuration/";//4
+                _mCaseUrl = commandLineArgs[3] + "/Resource/Export/DataList/Configuration/";//4
                 Console.WriteLine("Mcase Url: " + _mCaseUrl);
 
                 _outputDirectory = commandLineArgs[4];
@@ -130,8 +130,6 @@ namespace DemoKatan.mCase
 
         public async Task RemoteSync(List<int>sqlResult)
         {
-            var sqlResult = await DataAccess();
-
             if (!sqlResult.Any()) return;
 
             var byteArray = Encoding.ASCII.GetBytes(_credentials);
@@ -181,7 +179,6 @@ namespace DemoKatan.mCase
             var staticPath = Path.Combine(_outputDirectory, "FactoryExtensions.cs");
 
             await File.WriteAllTextAsync(staticPath, staticFileData);
-
         }
 
         public async Task<List<int>> DataAccess()
@@ -229,9 +226,9 @@ namespace DemoKatan.mCase
 
         public List<int> DirectDataAccess()
         {
-            if(string.IsNullOrEmpty(_dataListIdCsv)) return new List<int>();
+            if(string.IsNullOrEmpty(_csvData)) return new List<int>();
 
-            var data = _dataListIdCsv.Split(',').ToList();
+            var data = _csvData.Split(',').ToList();
 
             var nums = new List<int>();
             foreach (var d in data)
@@ -240,7 +237,6 @@ namespace DemoKatan.mCase
                     nums.Add(num);
             }
 
-            Console.WriteLine($"Parsed csv data found {nums.Count} Id's");
             return nums;
         }
 
@@ -372,7 +368,7 @@ namespace DemoKatan.mCase
             sb.AppendLine(0.Indent() + "}"); //close class
 
             #region Static File Backing
-
+            
             sb.AppendLine(0.Indent() + $"public static class {className}Static");
             sb.AppendLine(0.Indent() + "{");//open static class
             sb.AppendLine(Factory.GenerateEnums(enumerableFieldSet.ToList(), "Properties_", true).ToString());// All class property names
