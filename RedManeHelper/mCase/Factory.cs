@@ -760,29 +760,6 @@ namespace DemoKatan.mCase
         public static string BuildEnumExtensions()
         {
             var sb = new StringBuilder();
-
-            ////Get Descriptions
-            //sb.AppendLine(1.Indent() + "public static List<string> GetDescriptions<TEnum>() where TEnum : Enum => Enum.GetValues(typeof(TEnum)).Cast<TEnum>().Select(e => e.GetEnumDescription()).ToList();");
-
-            ////Get Descriptions
-            //sb.AppendLine(1.Indent() + "public static List<string> GetDescriptions<TEnum>(this List<TEnum> enums) where TEnum : Enum => enums.Select(e => e.GetEnumDescription()).ToList();");
-
-            //Get Enum values
-            //sb.AppendLine(1.Indent() + "public static TEnum GetEnumValue<TEnum>(this string description) where TEnum : Enum");
-            //sb.AppendLine(1.Indent() + "{");//open method
-            //sb.AppendLine(2.Indent() + "if (string.IsNullOrEmpty(description)) return default;");
-            //sb.AppendLine(2.Indent() + "var map = Enum.GetValues(typeof(TEnum)).Cast<TEnum>().ToDictionary(e => e.GetEnumDescription());");
-            //sb.AppendLine(2.Indent() + "return map.TryGetValue(description, out var result) ? result : default;");
-            //sb.AppendLine(1.Indent() + "}");//close method
-
-            // map to enum type
-            //sb.AppendLine(1.Indent() + "public static List<TEnum> MapTo<TEnum>(this List<TEnum> mapTo, List<string> values) where TEnum : Enum");
-            //sb.AppendLine(1.Indent() + "{");//open method
-            //sb.AppendLine(2.Indent() + "var descriptions = GetDescriptions<TEnum>();");
-            //sb.AppendLine(2.Indent() + "mapTo.AddRange(from value in values where descriptions.Contains(value) select value.GetEnumValue<TEnum>());");
-            //sb.AppendLine(2.Indent() + "return mapTo;");
-            //sb.AppendLine(1.Indent() + "}");//close method
-
             
             sb.AppendLine(1.Indent() + "public static TEnum TryGetValue<TEnum>(this string value) where TEnum : struct => Enum.TryParse<TEnum>(value.GetEnumName(), out var converted) ? converted : default;");
             sb.AppendLine(1.Indent() + "public static List<TEnum> MapTo<TEnum>(this IEnumerable<string> values) where TEnum : struct => values.Select(value => value.GetEnumName().TryGetValue<TEnum>()).ToList();");
