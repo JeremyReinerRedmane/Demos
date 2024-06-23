@@ -30,6 +30,7 @@ else
     var cmd = new List<string>
     {
 
+
     }.ToArray();
 
     var local = new SyncDlConfigs(cmd);
