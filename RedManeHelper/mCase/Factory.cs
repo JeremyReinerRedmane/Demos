@@ -958,7 +958,10 @@ namespace DemoKatan.mCase
 
             }
 
-            //add range Record Instance
+            #endregion
+            #region Clear
+
+            //clear
             sb.AppendLine(1.Indent() + "/// <summary>");
             sb.AppendLine(1.Indent() + "/// Clears all existing values from list.");
             sb.AppendLine(1.Indent() + "/// </summary>");
@@ -1092,3 +1095,5 @@ namespace DemoKatan.mCase
         }
     }
 }
+
+//extract duplicate getters / setters to methods.
