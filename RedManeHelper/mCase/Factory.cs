@@ -762,9 +762,9 @@ namespace DemoKatan.mCase
             var sb = new StringBuilder();
             
             sb.AppendLine(1.Indent() + "public static TEnum TryGetValue<TEnum>(this string value) where TEnum : struct => Enum.TryParse<TEnum>(value.GetEnumName(), out var converted) ? converted : default;");
-            sb.AppendLine(1.Indent() + "public static List<TEnum> MapTo<TEnum>(this IEnumerable<string> values) where TEnum : struct => values.Select(value => value.GetEnumName().TryGetValue<TEnum>()).ToList();");
+            sb.AppendLine(1.Indent() + "public static List<TEnum> MapTo<TEnum>(this IEnumerable<string> values) where TEnum : struct => values.Select(value => value.TryGetValue<TEnum>()).ToList();");
            
-            sb.AppendLine(1.Indent() + "public static string GetEnumName(this string input)");
+            sb.AppendLine(1.Indent() + "private static string GetEnumName(this string input)");
             sb.AppendLine(1.Indent() + "{");//open method
             sb.AppendLine(2.Indent() + "input = Regex.Replace(input, @\"[^\\w]\", \"\");");
             sb.AppendLine(2.Indent() + "if (int.TryParse(input, out _)) return \"f_\" + input;");
