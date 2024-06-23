@@ -18,7 +18,7 @@ namespace DemoKatan.mCase
             var sb = new StringBuilder();
 
             var id = jObject.ParseJson(ListTransferFields.Id.GetDescription());
-            var sysName = jObject.ParseJson(ListTransferFields.SystemName.GetDescription());
+            var sysName = jObject.ParseJson(ListTransferFields.SystemName.GetDescription()); 
             var dtNow = DateTime.Now.ToString(Extensions.MCaseDateTimeStorageFormat);
 
             sb.AppendLine( //TODO continue to add usings, as more and more validations are made
