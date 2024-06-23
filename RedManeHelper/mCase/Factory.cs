@@ -799,10 +799,7 @@ namespace DemoKatan.mCase
             sb.AppendLine(2.Indent() + $"var sysName = {embeddedMap}[embeddedEnum];");
             sb.AppendLine(2.Indent() + "if(string.IsNullOrEmpty(sysName)) return new  List<RecordInstanceData>();");
             sb.AppendLine(2.Indent() + "var childDataListId = _eventHelper.GetDataListID(sysName);");
-            sb.AppendLine(3.Indent() +
-                          "return _eventHelper.GetActiveChildRecordsByParentRecId(RecordInsData.RecordInstanceID)");
-            sb.AppendLine(4.Indent() + ".Where(x => x.DataListID == childDataListId)");
-            sb.AppendLine(4.Indent() + ".ToList();");
+            sb.AppendLine(2.Indent() + "return _eventHelper.GetActiveChildRecordsByParentRecId(RecordInsData.RecordInstanceID).Where(x => x.DataListID == childDataListId).ToList();");
             sb.AppendLine(1.Indent() + "}"); //close class
 
             return sb.ToString();
