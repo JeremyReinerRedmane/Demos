@@ -9,7 +9,7 @@ namespace DemoKatan.mCase
     {
         private static List<MCaseTypes> _stringCheck => new()
         {
-            MCaseTypes.Boolean, MCaseTypes.EmailAddress, MCaseTypes.Number,
+            MCaseTypes.EmailAddress, MCaseTypes.Number,
             MCaseTypes.Phone, MCaseTypes.Time, MCaseTypes.URL
         };
 
@@ -343,11 +343,6 @@ namespace DemoKatan.mCase
 
             switch (type)
             {
-                case MCaseTypes.Boolean:
-                    sb.AppendLine(3.Indent() +
-                                  "if(MCaseEventConstants.TrueValues.Contains(value?.Trim().ToLowerInvariant())) value = \"1\";");
-                    sb.AppendLine(3.Indent() + "else value = \"0\";");
-                    break;
                 case MCaseTypes.EmailAddress:
                     sb.AppendLine(3.Indent() + "if(!value.Contains(\"@\")) value = \"-1\";");
                     break;

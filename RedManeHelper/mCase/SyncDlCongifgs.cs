@@ -127,9 +127,11 @@ namespace DemoKatan.mCase
                         if (!string.IsNullOrEmpty(path))
                         {
                             Console.ForegroundColor = ConsoleColor.DarkGreen;
-                            Console.WriteLine("Received data from path: " + path);
+                            Console.WriteLine($"Received data [{id}]. Sent to location: " + path);
                         }
                     }
+
+                    //TODO: Generate file for dictionaries. Mappers for enum to string, string to enum
                 }
                 catch (Exception ex)
                 {
