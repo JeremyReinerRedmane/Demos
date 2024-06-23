@@ -767,8 +767,8 @@ namespace DemoKatan.mCase
             sb.AppendLine(1.Indent() + "private static string GetEnumName(this string input)");
             sb.AppendLine(1.Indent() + "{");//open method
             sb.AppendLine(2.Indent() + "input = Regex.Replace(input, @\"[^\\w]\", \"\");");
-            sb.AppendLine(2.Indent() + "if (int.TryParse(input, out _)) return \"f_\" + input;");
-            sb.AppendLine(2.Indent() + "if (int.TryParse(input[0].ToString(), out _)) input = \"f_\" + input;");
+            sb.AppendLine(2.Indent() + "if (int.TryParse(input, out _)) return \"F_\" + input;");
+            sb.AppendLine(2.Indent() + "if (int.TryParse(input[0].ToString(), out _)) input = \"F_\" + input;");
             sb.AppendLine(2.Indent() + "char.TryParse(input[0].ToString().ToUpperInvariant(), out var cap);");
             sb.AppendLine(2.Indent() + "var lowerCase = input.Substring(1).ToLower();");
             sb.AppendLine(2.Indent() + "return cap + lowerCase;");
