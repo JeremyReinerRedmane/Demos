@@ -13,7 +13,7 @@ namespace DemoKatan.mCase
 {
     public class SyncDlConfigs
     {
-        private readonly string _csvData;
+        private readonly string _csvData = string.Empty;
         private readonly string _connectionString;
         private readonly string _sqlCommand;
         private readonly string _outputDirectory;
@@ -143,11 +143,14 @@ namespace DemoKatan.mCase
                 Console.ForegroundColor = ConsoleColor.DarkGray;
             }
 
-            var staticFileData = Factory.GenerateStaticFile(_namespace);
+            if (string.IsNullOrEmpty(_csvData))
+            {
+                var staticFileData = Factory.GenerateStaticFile(_namespace);
 
-            var staticPath = Path.Combine(_outputDirectory, "FactoryExtensions.cs");
+                var staticPath = Path.Combine(_outputDirectory, "FactoryExtensions.cs");
 
-            await File.WriteAllTextAsync(staticPath, staticFileData);
+                await File.WriteAllTextAsync(staticPath, staticFileData);
+            }
         }
 
         public async Task<List<int>> DataAccess()

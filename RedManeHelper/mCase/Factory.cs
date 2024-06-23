@@ -538,11 +538,39 @@ namespace DemoKatan.mCase
             sb.Append(BuildAddRangeMethods());
 
             sb.Append(BuildRemoveFromMethods());
-
+            
+            sb.Append(BuildClearMethods());
+            
             return sb.ToString();
         }
 
-        private static string BuildAddMethods()
+        private static StringBuilder BuildClearMethods()
+        {
+            var sb = new StringBuilder();
+
+            #region Clear
+
+            sb.AppendLine(1.Indent() + "public static int Clear<T, TEnum>(this T classObject, string property) where TEnum : Enum");
+            sb.AppendLine(1.Indent() + "{"); //open method
+            sb.AppendLine(2.Indent() + "var objectType = classObject.GetType();");
+            sb.AppendLine(2.Indent() + "var propertyInfo = objectType.GetProperty(property);");
+            sb.AppendLine(2.Indent() + "if (propertyInfo == null) return -2;");
+            sb.AppendLine(2.Indent() + "var getMethod = propertyInfo.GetGetMethod();");
+            sb.AppendLine(2.Indent() + "if(getMethod == null) return -2;");
+            sb.AppendLine(2.Indent() + "if (getMethod.ReturnType == typeof(List<string>)) propertyInfo.SetValue(classObject, new List<string>());");
+            sb.AppendLine(2.Indent() + "else if (getMethod.ReturnType == typeof(List<TEnum>)) propertyInfo.SetValue(classObject, new List<TEnum>());");
+            sb.AppendLine(2.Indent() + "else if (getMethod.ReturnType == typeof(List<RecordInstanceData>)) propertyInfo.SetValue(classObject, new List<RecordInstanceData>());");
+            sb.AppendLine(2.Indent() + "else return -1;");
+            sb.AppendLine(2.Indent() + "return 0;");
+            sb.AppendLine(1.Indent() + "}"); //close method
+
+
+            #endregion
+
+            return sb;
+        }
+
+        private static StringBuilder BuildAddMethods()
         {
             var sb = new StringBuilder();
 
@@ -607,10 +635,10 @@ namespace DemoKatan.mCase
 
             #endregion
 
-            return sb.ToString();
+            return sb;
         }
 
-        private static string BuildAddRangeMethods()
+        private static StringBuilder BuildAddRangeMethods()
         {
             var sb = new StringBuilder();
 
@@ -685,10 +713,10 @@ namespace DemoKatan.mCase
 
             #endregion
 
-            return sb.ToString();
+            return sb;
         }
 
-        private static string BuildRemoveFromMethods()
+        private static StringBuilder BuildRemoveFromMethods()
         {
             var sb = new StringBuilder();
 
@@ -754,10 +782,10 @@ namespace DemoKatan.mCase
 
             #endregion
 
-            return sb.ToString();
+            return sb;
         }
 
-        public static string BuildEnumExtensions()
+        public static StringBuilder BuildEnumExtensions()
         {
             var sb = new StringBuilder();
             
@@ -775,7 +803,7 @@ namespace DemoKatan.mCase
             sb.AppendLine(1.Indent() + "}");// close method
 
 
-            return sb.ToString();
+            return sb;
         }
 
         #endregion
@@ -809,6 +837,7 @@ namespace DemoKatan.mCase
         {
             var sb = new StringBuilder();
 
+            var entity = $"{className}Entity";
             var staticProperties = $"{className}Static.Properties_Enum";
             var defaultValues = $"{className}Static.DefaultValuesEnum";
             var propertyMap = $"{className}Static.Properties_Map";
@@ -928,6 +957,15 @@ namespace DemoKatan.mCase
                 sb.AppendLine(1.Indent() + $"public int AddRangeTo({staticProperties} propertyEnum, List<{defaultValues}> param) => this.AddRangeTo({propertyMap}[propertyEnum], param);");
 
             }
+
+            //add range Record Instance
+            sb.AppendLine(1.Indent() + "/// <summary>");
+            sb.AppendLine(1.Indent() + "/// Clears all existing values from list.");
+            sb.AppendLine(1.Indent() + "/// </summary>");
+            sb.AppendLine(1.Indent() + "/// <param name=\"propertyEnum\">Class public property name</param>");
+            sb.AppendLine(1.Indent() + "/// <returns>Cleared list = 0. Type errors: -1. null errors: -2.</returns>");
+            sb.AppendLine(1.Indent() + $"public int Clear({staticProperties} propertyEnum) => this.Clear<{entity}, {staticProperties}>({propertyMap}[propertyEnum]);");
+
             #endregion
             return sb.ToString();
         }
