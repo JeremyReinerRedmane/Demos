@@ -435,7 +435,7 @@ namespace DemoKatan.mCase
             sb.AppendLine(1.Indent() + $"/// [Available options can be found in {defaultOptionsName}]");
 
             sb.AppendLine(1.Indent() + "/// [Getting: Returns the list of field labels]");
-            sb.AppendLine(1.Indent() + "/// [Updating: Requires use of either AddTo(), or RemoveFrom()]");
+            sb.AppendLine(1.Indent() + "/// [Updating: Requires AddTo(), RemoveFrom(), MapTo()]");
             sb.AppendLine(1.Indent() + "/// </summary>");
 
             if (string.Equals(multiSelect, "True"))
@@ -455,7 +455,8 @@ namespace DemoKatan.mCase
             sb.AppendLine(2.Indent() + "get");
             sb.AppendLine(2.Indent() + "{"); //open Getter
             sb.AppendLine(3.Indent() + $"if({privateName} != null) return {privateName};");
-            sb.AppendLine(3.Indent() + $"{privateName} = RecordInsData.GetMultiSelectFieldValue(\"{sysName}\").Select(x => x.GetEnumValue<{staticName}>()).ToList();");
+            sb.AppendLine(3.Indent() + $"var storedValue = RecordInsData.GetMultiSelectFieldValue(\"{sysName}\");");
+            sb.AppendLine(3.Indent() + $"{privateName} = !storedValue.Any() ? new List<{staticName}>() : storedValue.Select(x => x.GetEnumValue<{staticName}>()).ToList();");
             sb.AppendLine(3.Indent() + $"return {privateName};");
             sb.AppendLine(2.Indent() + "}"); //close Getter
             sb.AppendLine(2.Indent() + "set");
@@ -473,7 +474,6 @@ namespace DemoKatan.mCase
                 raised = true;
                 sb.AppendLine(4.Indent() + $"if (value.Count > 1) value = new List<{staticName}>() " + "{" + $"{staticName}.Multiselectfalse" + "};");
             }
-
             sb.AppendLine(4.Indent() + $"{privateName} = value;");
             sb.AppendLine(3.Indent() + "}"); //close if
             sb.AppendLine(3.Indent() + "else//value could be null or empty. Set to new list"); //open single else
