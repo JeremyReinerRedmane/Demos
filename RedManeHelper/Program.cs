@@ -29,14 +29,7 @@ else
 {
     var cmd = new List<string>
     {
-        "",
-        "data source=localhost;initial catalog=mCASE_ADMIN;integrated security=True;TrustServerCertificate=true;",
-        "SELECT [DataListID] FROM [mCASE_ADMIN].[dbo].[DataList]",
-        "lorenzo.orders:Password123!",
-        "https://auusmc-arccwis-app-mcs-qa-r2.redmane-cloud.us/",
-        @"C:\Users\jreiner\source\repos\AR-mCase-CustomEvents\MCaseCustomEvents\ARFocus\FactoryEntities",
-        @"C:\Users\jreiner\Desktop\Exceptions",
-        "MCaseCustomEvents.ARFocus.FactoryEntities"
+
     }.ToArray();
 
     var local = new SyncDlConfigs(cmd);
