@@ -1002,17 +1002,16 @@ namespace DemoKatan.mCase
         {
             var sb = new StringBuilder();
 
-            var distinct = fieldSet.Distinct().OrderBy(x => x).ToList();//order enums by name
             var distinctEnums = new List<string>();
 
-            if (distinct.Count == 0)
+            if (fieldSet.Count == 0)
                 return sb;
 
             sb.Append(1.Indent() + $"public enum {className}Enum" + "{ Invalidselection,"); //open
 
-            for (var i = 0; i < distinct.Count; i++)
+            for (var i = 0; i < fieldSet.Count; i++)
             {
-                var field = distinct[i];
+                var field = fieldSet[i];
 
                 if (field.Contains("\""))
                 {
@@ -1041,19 +1040,18 @@ namespace DemoKatan.mCase
         {
             var sb = new StringBuilder();
 
-            var distinct = fieldSet.Distinct().OrderBy(x => x).ToList();//order enums by name
             var distinctEnums = new List<string>();
 
-            if (distinct.Count == 0)
+            if (fieldSet.Count == 0)
                 return sb;
 
             var staticClass = $"{className}Enum";
 
             sb.Append(1.Indent() + $"public static Dictionary<{staticClass}, string> {className}Map => new Dictionary<{staticClass}, string>()" + "{ {"+$"{staticClass}.Invalidselection, \"#~Invalid Selection~#\"" + "},"); //open
 
-            for (var i = 0; i < distinct.Count; i++)
+            for (var i = 0; i < fieldSet.Count; i++)
             {
-                var field = distinct[i];
+                var field = fieldSet[i];
 
                 if (field.Contains("\""))
                 {
