@@ -938,22 +938,22 @@ namespace DemoKatan.mCase
             }
 
             #endregion
-            #region Clear
-
-            //clear
-            sb.AppendLine(1.Indent() + "/// <summary>");
-            sb.AppendLine(1.Indent() + "/// Clears all existing values from list.");
-            sb.AppendLine(1.Indent() + "/// </summary>");
-            sb.AppendLine(1.Indent() + "/// <param name=\"propertyEnum\">Class public property name</param>");
-            sb.AppendLine(1.Indent() + "/// <returns>Cleared list = 0. Type errors: -1. null errors: -2.</returns>");
-            sb.AppendLine(1.Indent() + $"public int Clear({staticProperties} propertyEnum) => this.Clear<{entity}, {defaultValues}>({propertyMap}[propertyEnum]);");
-
-            #endregion
 
             #region private method extractions
 
             if (addDefaults)
             {
+                #region Clear With Default Values
+
+                //clear
+                sb.AppendLine(1.Indent() + "/// <summary>");
+                sb.AppendLine(1.Indent() + "/// Clears all existing values from list.");
+                sb.AppendLine(1.Indent() + "/// </summary>");
+                sb.AppendLine(1.Indent() + "/// <param name=\"propertyEnum\">Class public property name</param>");
+                sb.AppendLine(1.Indent() + "/// <returns>Cleared list = 0. Type errors: -1. null errors: -2.</returns>");
+                sb.AppendLine(1.Indent() + $"public int Clear({staticProperties} propertyEnum) => this.Clear<{entity}, {defaultValues}>({propertyMap}[propertyEnum]);");
+
+                #endregion
                 //add MultiSelectValue
                 sb.AppendLine(1.Indent() + $"private List<{defaultValues}> GetMultiSelectValue(string sysName)");
                 sb.AppendLine(1.Indent() + "{");//open method
@@ -968,6 +968,20 @@ namespace DemoKatan.mCase
                 sb.AppendLine(2.Indent() + $"if (value == new List<{defaultValues}>() " + "{ " + defaultValues + ".Multiselectfalse }) return value;");
                 sb.AppendLine(2.Indent() + $"return invalidValues ? new List<{defaultValues}>()" + "{ " + defaultValues + ".Invalidselection } : value;");
                 sb.AppendLine(1.Indent() + "}");//close method
+            }
+            else
+            {
+                #region Clear Without DefaultValues
+
+                //clear
+                sb.AppendLine(1.Indent() + "/// <summary>");
+                sb.AppendLine(1.Indent() + "/// Clears all existing values from list.");
+                sb.AppendLine(1.Indent() + "/// </summary>");
+                sb.AppendLine(1.Indent() + "/// <param name=\"propertyEnum\">Class public property name</param>");
+                sb.AppendLine(1.Indent() + "/// <returns>Cleared list = 0. Type errors: -1. null errors: -2.</returns>");
+                sb.AppendLine(1.Indent() + $"public int Clear({staticProperties} propertyEnum) => this.Clear<{entity}, {staticProperties}>({propertyMap}[propertyEnum]);");
+
+                #endregion
             }
 
             #endregion
