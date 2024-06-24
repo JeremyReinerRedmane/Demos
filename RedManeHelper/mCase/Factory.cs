@@ -201,8 +201,7 @@ namespace DemoKatan.mCase
             sb.AppendLine(2.Indent() + "get");
             sb.AppendLine(2.Indent() + "{"); //open Getter
             sb.AppendLine(3.Indent() + $"if({privateSysName} != DateTime.MinValue) return {privateSysName};");
-            sb.AppendLine(3.Indent() + $"var canParse = DateTime.TryParse(RecordInsData.GetFieldValue(\"{sysName}\"), out var dt);");
-            sb.AppendLine(3.Indent() + $"{privateSysName} = canParse ? dt : DateTime.MinValue;");
+            sb.AppendLine(3.Indent() + $"{privateSysName} = DateTime.TryParse(RecordInsData.GetFieldValue(\""+ sysName +"\"), out var dt) ? dt : DateTime.MinValue;");
             sb.AppendLine(3.Indent() + $"return {privateSysName};");
             sb.AppendLine(2.Indent() + "}"); //close Getter
 
@@ -457,8 +456,7 @@ namespace DemoKatan.mCase
             sb.AppendLine(2.Indent() + "get");
             sb.AppendLine(2.Indent() + "{"); //open Getter
             sb.AppendLine(3.Indent() + $"if({privateName} != null) return {privateName};");
-            sb.AppendLine(3.Indent() + $"var storedValue = RecordInsData.GetMultiSelectFieldValue(\"{sysName}\");");
-            sb.AppendLine(3.Indent() + $"{privateName} = !storedValue.Any() ? new List<{staticName}>() : storedValue.Select(x => x.TryGetValue<{staticName}>()).ToList();");
+            sb.AppendLine(3.Indent() + $"{privateName} = GetMultiSelectValue(\"" + sysName + "\");");
             sb.AppendLine(3.Indent() + $"return {privateName};");
             sb.AppendLine(2.Indent() + "}"); //close Getter
             sb.AppendLine(2.Indent() + "set");
@@ -538,9 +536,9 @@ namespace DemoKatan.mCase
             sb.Append(BuildAddRangeMethods());
 
             sb.Append(BuildRemoveFromMethods());
-            
+
             sb.Append(BuildClearMethods());
-            
+
             return sb.ToString();
         }
 
@@ -788,10 +786,10 @@ namespace DemoKatan.mCase
         public static StringBuilder BuildEnumExtensions()
         {
             var sb = new StringBuilder();
-            
+
             sb.AppendLine(1.Indent() + "public static TEnum TryGetValue<TEnum>(this string value) where TEnum : struct => Enum.TryParse<TEnum>(value.GetEnumName(), out var converted) ? converted : default;");
             sb.AppendLine(1.Indent() + "public static List<TEnum> MapTo<TEnum>(this IEnumerable<string> values) where TEnum : struct => values.Select(value => value.TryGetValue<TEnum>()).ToList();");
-           
+
             sb.AppendLine(1.Indent() + "private static string GetEnumName(this string input)");
             sb.AppendLine(1.Indent() + "{");//open method
             sb.AppendLine(2.Indent() + "input = Regex.Replace(input, @\"[^\\w]\", \"\");");
@@ -970,6 +968,20 @@ namespace DemoKatan.mCase
             sb.AppendLine(1.Indent() + $"public int Clear({staticProperties} propertyEnum) => this.Clear<{entity}, {staticProperties}>({propertyMap}[propertyEnum]);");
 
             #endregion
+
+            #region private method extractions
+
+            if (addMap)
+            {
+                //add MultiSelectValue
+                sb.AppendLine(1.Indent() + $"private List<{defaultValues}> GetMultiSelectValue(string sysName)");
+                sb.AppendLine(1.Indent() + "{");
+                sb.AppendLine(2.Indent() + "var storedValue = RecordInsData.GetMultiSelectFieldValue(sysName);");
+                sb.AppendLine(2.Indent() + $"return !storedValue.Any() ? new List<{defaultValues}>() : storedValue.Select(x => x.TryGetValue<{defaultValues}>()).ToList();");
+                sb.AppendLine(1.Indent() + "}");
+            }
+
+            #endregion
             return sb.ToString();
         }
 
@@ -1087,7 +1099,7 @@ namespace DemoKatan.mCase
                 relationships.ParseChildren(ListTransferFields.ChildSystemName.GetDescription());
 
             if (!childRelationships.Any()) return sb;
-            
+
             var distinctChildRelationships = childRelationships.Distinct();
             sb.AppendLine(GenerateEnums(distinctChildRelationships.ToList(), "ChildRelationships", false).ToString());
 

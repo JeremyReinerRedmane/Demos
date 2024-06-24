@@ -24,7 +24,7 @@ namespace DemoKatan.mCase
         private HashSet<string> _classNames;
         private List<StringBuilder> _stringBuilders;
 
-        public SyncDlConfigs(string[] commandLineArgs )
+        public SyncDlConfigs(string[] commandLineArgs)
         {
             if (commandLineArgs.Length != 8 && commandLineArgs.Length != 7)//requires query, or csv
             {
@@ -89,13 +89,13 @@ namespace DemoKatan.mCase
                 _namespace = commandLineArgs[6];
                 Console.WriteLine("Namespace: " + _namespace);
             }
-            
+
             Console.WriteLine("All parameters have been completed. Moving to next step");
 
             _classNames = new HashSet<string>();
         }
 
-        public async Task RemoteSync(List<int>sqlResult)
+        public async Task RemoteSync(List<int> sqlResult)
         {
             if (!sqlResult.Any()) return;
 
@@ -198,14 +198,14 @@ namespace DemoKatan.mCase
 
         public List<int> DirectDataAccess()
         {
-            if(string.IsNullOrEmpty(_csvData)) return new List<int>();
+            if (string.IsNullOrEmpty(_csvData)) return new List<int>();
 
             var data = _csvData.Split(',').ToList();
 
             var nums = new List<int>();
             foreach (var d in data)
             {
-                if(int.TryParse(d, out var num))
+                if (int.TryParse(d, out var num))
                     nums.Add(num);
             }
 
@@ -338,19 +338,25 @@ namespace DemoKatan.mCase
             sb.AppendLine(0.Indent() + "}"); //close class
 
             #region Static File Backing
-            
+
             sb.AppendLine(0.Indent() + $"public static class {className}Static");
             sb.AppendLine(0.Indent() + "{");//open static class
-            sb.AppendLine(Factory.GenerateEnums(enumerableFieldSet.ToList(), "Properties_", true).ToString());// All class property names
-            
-            if(embeddedRelatedFields.Count > 0)
-                sb.AppendLine(Factory.GenerateEnums(embeddedRelatedFields.ToList(), "EmbeddedOptions", false).ToString()); //enum adds Enum to name at end
+            if (enumerableFieldSet.Any())
+            {
+                sb.AppendLine(Factory.GenerateEnums(enumerableFieldSet.ToList(), "Properties_", true).ToString());// All class property names
+            }
 
-            var allDefaultValues = new List<string>() { "Multi Select: False"};
+            if (embeddedRelatedFields.Count > 0)
+            {
+                sb.AppendLine(Factory.GenerateEnums(embeddedRelatedFields.ToList(), "EmbeddedOptions", false).ToString()); //enum adds Enum to name at end
+            }
+
+            var allDefaultValues = new List<string>() { "Multi Select: False" };
+
             foreach (var sbs in _stringBuilders)
             {
                 var csv = sbs.ToString();
-                if (string.IsNullOrEmpty(csv)) 
+                if (string.IsNullOrEmpty(csv))
                     continue;
                 var data = csv.Split("$~*@*~$");
                 allDefaultValues.AddRange(data);
@@ -370,7 +376,7 @@ namespace DemoKatan.mCase
 
                 sb.AppendLine(Factory.GenerateEnums(distinctData.ToList(), "DefaultValues", false).ToString()); //enum adds Enum to name at end
             }
-            
+
             sb.AppendLine(0.Indent() + "}"); //close static class
 
             #endregion
@@ -393,7 +399,7 @@ namespace DemoKatan.mCase
                 case MCaseTypes.CascadingDynamicDropDown:
                     //Item 1 = property, Item 2 = Enum
                     var values = Factory.EnumerableFactory(jToken, typeEnum, propertyName, sysName, type, className); //multiselect?
-                    if(!string.IsNullOrEmpty(values.Item2.ToString())) //if there are enum values
+                    if (!string.IsNullOrEmpty(values.Item2.ToString())) //if there are enum values
                         _stringBuilders.Add(values.Item2);
                     return values.Item1;
                 case MCaseTypes.String:
