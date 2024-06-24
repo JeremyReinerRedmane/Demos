@@ -831,7 +831,7 @@ namespace DemoKatan.mCase
             return sb.ToString();
         }
 
-        public static string AddEnumerableExtensions(string className, bool addMap)
+        public static string AddEnumerableExtensions(string className, bool addDefaults)
         {
             var sb = new StringBuilder();
 
@@ -841,7 +841,7 @@ namespace DemoKatan.mCase
             var propertyMap = $"{className}Static.Properties_Map";
             var defaultMap = $"{className}Static.DefaultValuesMap";
 
-            if (addMap)
+            if (addDefaults)
             {
                 // Map To Enum
                 sb.AppendLine(1.Indent() + "/// <summary>");
@@ -905,7 +905,7 @@ namespace DemoKatan.mCase
             sb.AppendLine(1.Indent() + "/// <returns>Amount of values removed. Type errors: -1. Null errors: -2. RecordInstance not Created: -5.</returns>");
             sb.AppendLine(1.Indent() + $"public int AddTo({staticProperties} propertyEnum, RecordInstanceData param) => this.AddTo({propertyMap}[propertyEnum], param);");
 
-            if (addMap)
+            if (addDefaults)
             {
                 //add default value (Enum)
                 sb.AppendLine(1.Indent() + "/// <summary>");
@@ -942,7 +942,7 @@ namespace DemoKatan.mCase
             sb.AppendLine(1.Indent() + $"public int AddRangeTo({staticProperties} propertyEnum, List<RecordInstanceData> param) => this.AddRangeTo({propertyMap}[propertyEnum], param);");
 
 
-            if (addMap)
+            if (addDefaults)
             {
                 //add default value range (Enum)
                 sb.AppendLine(1.Indent() + "/// <summary>");
@@ -971,7 +971,7 @@ namespace DemoKatan.mCase
 
             #region private method extractions
 
-            if (addMap)
+            if (addDefaults)
             {
                 //add MultiSelectValue
                 sb.AppendLine(1.Indent() + $"private List<{defaultValues}> GetMultiSelectValue(string sysName)");
