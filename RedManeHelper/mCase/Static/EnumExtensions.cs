@@ -28,11 +28,5 @@ namespace DemoKatan.mCase.Static
 
             return default;
         }
-
-        public static List<string> GetEnumDescriptions<TEnum>() where TEnum : Enum =>
-            Enum.GetValues(typeof(TEnum))
-                .Cast<TEnum>()
-                .Select(e => e.GetDescription())
-                .ToList();
     }
 }

@@ -965,7 +965,7 @@ namespace DemoKatan.mCase
             sb.AppendLine(1.Indent() + "/// </summary>");
             sb.AppendLine(1.Indent() + "/// <param name=\"propertyEnum\">Class public property name</param>");
             sb.AppendLine(1.Indent() + "/// <returns>Cleared list = 0. Type errors: -1. null errors: -2.</returns>");
-            sb.AppendLine(1.Indent() + $"public int Clear({staticProperties} propertyEnum) => this.Clear<{entity}, {staticProperties}>({propertyMap}[propertyEnum]);");
+            sb.AppendLine(1.Indent() + $"public int Clear({staticProperties} propertyEnum) => this.Clear<{entity}, {defaultValues}>({propertyMap}[propertyEnum]);");
 
             #endregion
 
