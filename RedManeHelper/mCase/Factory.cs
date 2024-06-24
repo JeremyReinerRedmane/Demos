@@ -407,15 +407,15 @@ namespace DemoKatan.mCase
         }
 
         private static StringBuilder GenerateDDWithDefaultValues(string propertyName, string sysName, string fieldType,
-            string privateName, string multiSelect, bool notAbleToSelectManyValues, List<string> defaultValues
-            , string staticName, string defaultOptionsName, string map)
+            string privateName, string multiSelect, bool notAbleToSelectManyValues, List<string> defaultValues, 
+            string staticName, string defaultOptionsName, string map)
         {
             var sb = new StringBuilder();
 
             #region private property
 
             var defaultAggregate = defaultValues.Aggregate(
-                $"private List<{staticName}> {defaultOptionsName} = new List<{staticName}>()" + "{", (current, child) => current + $"{staticName}.{child.GetPropertyNameFromSystemName()},");
+                $"private List<{staticName}> {defaultOptionsName} = new List<{staticName}>() " + "{", (current, child) => current + $"{staticName}.{child.GetPropertyNameFromSystemName()},");
 
             defaultAggregate += "};";
 
@@ -462,31 +462,12 @@ namespace DemoKatan.mCase
             sb.AppendLine(2.Indent() + "set");
             sb.AppendLine(2.Indent() + "{"); //open Setter
             sb.AppendLine(3.Indent() + $"if({privateName} == null) {privateName} = new List<{staticName}>();");
-
-            bool raised = false; //if list does not have default values, we still wnt to raise the notAbleToSelectManyValues flage
-
-
-            sb.AppendLine(3.Indent() + "if (value != null && value.Any())");
-            sb.AppendLine(3.Indent() + "{// check that all values being set exist in default values enum"); //open if
-            sb.AppendLine(4.Indent() + $"if (value.Any(x => !{defaultOptionsName}.Contains(x))) value = new List<{staticName}>() " + "{" + $"{staticName}.Invalidselection" + "};");
             if (notAbleToSelectManyValues)
             {
-                raised = true;
-                sb.AppendLine(4.Indent() + $"if (value.Count > 1) value = new List<{staticName}>() " + "{" + $"{staticName}.Multiselectfalse" + "};");
-            }
-            sb.AppendLine(4.Indent() + $"{privateName} = value;");
-            sb.AppendLine(3.Indent() + "}"); //close if
-            sb.AppendLine(3.Indent() + "else//value could be null or empty. Set to new list"); //open single else
-            sb.AppendLine(4.Indent() + $"{privateName} = new List<{staticName}>();");
-
-            if (!raised)
-            {
-                if (notAbleToSelectManyValues)
-                {
-                    sb.AppendLine(3.Indent() + $"if (value.Count > 1) value = new List<{staticName}>() " + "{" + $"{staticName}.Multiselectfalse" + "};");
-                }
+                sb.AppendLine(3.Indent() + $"if (value.Count > 1) value = new List<{staticName}>() " + "{" + $"{staticName}.Multiselectfalse" + "};");
             }
 
+            sb.AppendLine(3.Indent() + $"{privateName} = SetDefaultList(value, value.Any(x => !{privateName}.Contains(x)));");
             sb.AppendLine(3.Indent() + $"RecordInsData.SetValue(\"{sysName}\", string.Join(MCaseEventConstants.MultiDropDownDelimiter, {privateName}.Select(x => {map}[x])));");
             sb.AppendLine(2.Indent() + "}"); //close Setter
             sb.AppendLine(1.Indent() + "}"); //close Property
@@ -975,10 +956,18 @@ namespace DemoKatan.mCase
             {
                 //add MultiSelectValue
                 sb.AppendLine(1.Indent() + $"private List<{defaultValues}> GetMultiSelectValue(string sysName)");
-                sb.AppendLine(1.Indent() + "{");
+                sb.AppendLine(1.Indent() + "{");//open method
                 sb.AppendLine(2.Indent() + "var storedValue = RecordInsData.GetMultiSelectFieldValue(sysName);");
                 sb.AppendLine(2.Indent() + $"return !storedValue.Any() ? new List<{defaultValues}>() : storedValue.Select(x => x.TryGetValue<{defaultValues}>()).ToList();");
-                sb.AppendLine(1.Indent() + "}");
+                sb.AppendLine(1.Indent() + "}");//close method
+
+                //Set Default values
+                sb.AppendLine(1.Indent() + $"private List<{defaultValues}> SetDefaultList(List<{defaultValues}> value, bool invalidValues)");
+                sb.AppendLine(1.Indent() + "{");//open method
+                sb.AppendLine(2.Indent() + $"if (value == null || !value.Any()) return new List<{defaultValues}>();");
+                sb.AppendLine(2.Indent() + $"if (value == new List<{defaultValues}>() " + "{ " + defaultValues + ".Multiselectfalse }) return value;");
+                sb.AppendLine(2.Indent() + $"return invalidValues ? new List<{defaultValues}>()" + "{ " + defaultValues + ".Invalidselection } : value;");
+                sb.AppendLine(1.Indent() + "}");//close method
             }
 
             #endregion
