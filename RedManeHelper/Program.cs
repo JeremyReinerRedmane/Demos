@@ -23,14 +23,12 @@ if (commandLineArgs.Length > 1)
 
         await cmd.RemoteSync(data);
     }
-    
+
 }
 else
 {
     var cmd = new List<string>
     {
-
-
     }.ToArray();
 
     var local = new SyncDlConfigs(cmd);
