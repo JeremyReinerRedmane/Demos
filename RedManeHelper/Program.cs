@@ -1,4 +1,4 @@
-﻿using DemoKatan.mCase;
+﻿using mCASE_ADMIN.DataAccess.mCase;//DemoKatan.mCase;
 
 var commandLineArgs = Environment.GetCommandLineArgs();
 
@@ -9,9 +9,9 @@ if (commandLineArgs.Length > 1)
         //directly querying db for datalist id's
         var cmd = new SyncDlConfigs(commandLineArgs);
 
-        var sqlQuery = await cmd.DataAccess();
+        var sqlQuery = cmd.DataAccess().Result;
 
-        await cmd.RemoteSync(sqlQuery);
+        cmd.RemoteSync(sqlQuery);
     }
 
     if (commandLineArgs.Length == 7)
@@ -21,7 +21,7 @@ if (commandLineArgs.Length > 1)
 
         var data = cmd.DirectDataAccess();
 
-        await cmd.RemoteSync(data);
+        cmd.RemoteSync(data);
     }
     
 }
@@ -30,13 +30,13 @@ else
     var cmd = new List<string>
     {
         "",
-        //"1250,744,726",
+        //"1250,744,726, 1195",
         "data source=localhost;initial catalog=mCASE_ADMIN;integrated security=True;TrustServerCertificate=true;",
         "SELECT [DataListID] FROM [mCASE_ADMIN].[dbo].[DataList]",
         "lorenzo.orders:Password123!",
-        //"http://localhost:64762/",
-        "https://auusmc-arccwis-app-mcs-qa-r2.redmane-cloud.us/",
-        @"C:\Users\jreiner\source\repos\AR-mCase-CustomEvents\MCaseCustomEvents\ARFocus\FactoryEntities",
+        //"http://localhost:64762",
+        "https://auusmc-arccwis-app-mcs-qa-r2.redmane-cloud.us",
+        @"C:\Users\jreiner\Desktop\FactoryEntities",
         @"C:\Users\jreiner\Desktop\Exceptions",
         "MCaseCustomEvents.ARFocus.FactoryEntities"
     }.ToArray();
@@ -47,7 +47,7 @@ else
         //directly querying db
         var sqlQuery = await local.DataAccess();
 
-        await local.RemoteSync(sqlQuery);
+        local.RemoteSync(sqlQuery);
     }
 
     if (cmd.Length == 7)
@@ -55,6 +55,6 @@ else
         //direct access to csv data
         var data = local.DirectDataAccess();
 
-        await local.RemoteSync(data);
+        local.RemoteSync(data);
     }
 }

@@ -1,14 +1,16 @@
-﻿using DemoKatan.mCase.Static;
-using Newtonsoft.Json.Linq;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Text;
-using System.Text.RegularExpressions;
-using Extensions = DemoKatan.mCase.Static.Extensions;
+using mCASE_ADMIN.DataAccess.mCase.Static;
+using Newtonsoft.Json.Linq;
+using Extensions = mCASE_ADMIN.DataAccess.mCase.Static.Extensions;
 
-namespace DemoKatan.mCase
+namespace mCASE_ADMIN.DataAccess.mCase
 {
     public static class Factory
     {
-        private static List<MCaseTypes> _stringCheck => new()
+        private static List<MCaseTypes> _stringCheck => new List<MCaseTypes>()
         {
             MCaseTypes.EmailAddress, MCaseTypes.Number,
             MCaseTypes.Phone, MCaseTypes.Time, MCaseTypes.URL
@@ -29,9 +31,7 @@ namespace DemoKatan.mCase
 
             #region Dl Info Class
 
-            sb.AppendLine(0.Indent() + "/// <summary>");
-            sb.AppendLine(0.Indent() + $"/// Synchronized data list [{id}][{sysName}] on {dtNow}");
-            sb.AppendLine(0.Indent() + "/// </summary>");
+            sb.AppendLine(0.Indent() + $"/// <summary>  Synchronized data list [{id}][{sysName}] on {dtNow} </summary>");
             sb.AppendLine(0.Indent() + $"public class {className}DlInfo");
             sb.AppendLine(0.Indent() + "{"); //open class
             sb.AppendLine(1.Indent() + "private AEventHelper _eventHelper;");
@@ -41,9 +41,7 @@ namespace DemoKatan.mCase
             sb.AppendLine(1.Indent() + "}"); //close constructor
             sb.AppendLine(1.Indent() + $"public string SystemName => \"{sysName}\";");
             sb.AppendLine(1.Indent() + "private int _dataListId = -1;");
-            sb.AppendLine(1.Indent() + "/// <summary>");
-            sb.AppendLine(1.Indent() + "/// Data list identifier is -1 if not found");
-            sb.AppendLine(1.Indent() + "/// </summary>");
+            sb.AppendLine(1.Indent() + "/// <summary> Data list identifier is -1 if not found </summary>");
             sb.AppendLine(1.Indent() + "public int DataListId");
             sb.AppendLine(1.Indent() + "{"); //open Property
             sb.AppendLine(2.Indent() + "get");
@@ -60,22 +58,18 @@ namespace DemoKatan.mCase
 
             #region Entity
 
-            sb.AppendLine(0.Indent() + "/// <summary>");
-            sb.AppendLine(0.Indent() + $"/// Synchronized data list [{id}][{sysName}] on {dtNow}");
-            sb.AppendLine(0.Indent() + "/// </summary>");
+            sb.AppendLine(0.Indent() + $"/// <summary> Synchronized data list [{id}][{sysName}] on {dtNow} </summary>");
             sb.AppendLine(0.Indent() + $"public class {className}Entity");
             sb.AppendLine(0.Indent() + "{"); //open class
             sb.AppendLine(1.Indent() + "public RecordInstanceData RecordInsData;");
             sb.AppendLine(1.Indent() + "private readonly AEventHelper _eventHelper;");
 
-            sb.AppendLine(1.Indent() + "/// <summary>");
-            sb.AppendLine(1.Indent() + "/// Class for Updating Existing RecordInstanceData. To create a new REcordInstance data, initialize with the appropriate datalist ID.");
-            sb.AppendLine(1.Indent() + "/// </summary>");
+            sb.AppendLine(1.Indent() + "/// <summary> Class for Updating Existing RecordInstanceData. To create a new RecordInstance data, initialize with the appropriate datalist ID. </summary>");
             sb.AppendLine(1.Indent() +
                           $"public {className}Entity(RecordInstanceData recordInsData, AEventHelper eventHelper)");
             sb.AppendLine(1.Indent() + "{"); //open constructor #Existing Record Instance Data
             sb.AppendLine(2.Indent() + "_eventHelper = eventHelper;");
-            sb.AppendLine(2.Indent() + $"if (recordInsData.DataListID != DataListId) throw new Exception(\"RecordInstance is not of type {className}Entity\");");
+            sb.AppendLine(2.Indent() + $"if (recordInsData.DataListID != DataListId) throw new Exception(\"RecordInstance is not of type {sysName}\");");
             sb.AppendLine(2.Indent() + "RecordInsData = recordInsData;");
             sb.AppendLine(1.Indent() + "}"); //close constructor
 
@@ -95,10 +89,10 @@ namespace DemoKatan.mCase
             sb.AppendLine(2.Indent() + "}"); //close Getter
             sb.AppendLine(1.Indent() + "}"); //close Property
             sb.AppendLine(1.Indent() + "public void SaveRecord() =>_eventHelper.SaveRecord(RecordInsData);");
-            sb.AppendLine(1.Indent() + $"public void LogDebug(string log) => _eventHelper.AddDebugLog($\"[{className}Entity Record][{{RecordInsData.RecordInstanceID}}]: {{log}}\");");
-            sb.AppendLine(1.Indent() + $"public void LogInfo(string log) => _eventHelper.AddInfoLog($\"[{className}Entity Record][{{RecordInsData.RecordInstanceID}}]: {{log}}\");");
-            sb.AppendLine(1.Indent() + $"public void LogWarning(string log) => _eventHelper.AddWarningLog($\"[{className}Entity Record][{{RecordInsData.RecordInstanceID}}]: {{log}}\");");
-            sb.AppendLine(1.Indent() + $"public void LogError(string log) => _eventHelper.AddErrorLog($\"[{className}Entity Record][{{RecordInsData.RecordInstanceID}}]: {{log}}\");");
+            sb.AppendLine(1.Indent() + $"public void LogDebug(string log) => _eventHelper.AddDebugLog($\"[{className} Record][{{RecordInsData.RecordInstanceID}}]: {{log}}\");");
+            sb.AppendLine(1.Indent() + $"public void LogInfo(string log) => _eventHelper.AddInfoLog($\"[{className} Record][{{RecordInsData.RecordInstanceID}}]: {{log}}\");");
+            sb.AppendLine(1.Indent() + $"public void LogWarning(string log) => _eventHelper.AddWarningLog($\"[{className} Record][{{RecordInsData.RecordInstanceID}}]: {{log}}\");");
+            sb.AppendLine(1.Indent() + $"public void LogError(string log) => _eventHelper.AddErrorLog($\"[{className} Record][{{RecordInsData.RecordInstanceID}}]: {{log}}\");");
 
 
             #endregion
@@ -117,14 +111,18 @@ namespace DemoKatan.mCase
             var mirroredField = jToken.IsMirrorField();
 
             sb.AppendLine(1.Indent() + $"private string {privateSysName} = string.Empty;");
-            sb.AppendLine(1.Indent() + "/// <summary>");
-            sb.AppendLine(1.Indent() + $"/// [mCase data type: {type}]");
+
+            //single line
+            sb.Append(1.Indent() + $"/// <summary> [mCase data type: {type}] ");
             if (mirroredField)
-                sb.AppendLine(1.Indent() + "/// This is a Mirrored field. No setting / updating allowed.");
-            sb.AppendLine(1.Indent() + "/// </summary>");
+                sb.Append("This is a Mirrored field. No setting / updating allowed.");
+            sb.Append("</summary>\r\n");
+            //end single line
+
             if (_stringCheck.Contains(enumType) && !mirroredField)
                 sb.AppendLine(1.Indent() +
                               "/// <returns>\"-1 if string does not pass mCase data type validation.\"</returns>");
+
             sb.AppendLine(1.Indent() + $"public string {propertyName}");
             sb.AppendLine(1.Indent() + "{"); //open Property
             sb.AppendLine(2.Indent() + "get");
@@ -151,17 +149,14 @@ namespace DemoKatan.mCase
             return sb.ToString();
         }
 
-        public static string LongFactory(JToken jToken, string propertyName, string sysName, string type)
+        public static string LongFactory(string propertyName, string sysName, string type)
         {
             var sb = new StringBuilder();
 
             var privateSysName = $"_{propertyName.ToLower()}";
 
             sb.AppendLine(1.Indent() + $"private string {privateSysName} = string.Empty;");
-            sb.AppendLine(1.Indent() + "/// <summary>");
-            sb.AppendLine(1.Indent() + $"/// [mCase data type: {type}]");
-            sb.AppendLine(1.Indent() + "/// Gets value, and sets long value");
-            sb.AppendLine(1.Indent() + "/// </summary>");
+            sb.AppendLine(1.Indent() + $"/// <summary> [mCase data type: {type}] Gets value, and sets long value </summary>");
             sb.AppendLine(1.Indent() + $"public string {propertyName}");
             sb.AppendLine(1.Indent() + "{"); //open Property
             sb.AppendLine(2.Indent() + "get");
@@ -188,20 +183,24 @@ namespace DemoKatan.mCase
             var privateSysName = $"_{propertyName.ToLower()}";
             var mirroredField = jToken.IsMirrorField();
             sb.AppendLine(1.Indent() + $"private DateTime {privateSysName} = DateTime.MinValue;");
-            sb.AppendLine(1.Indent() + "/// <summary>");
-            sb.AppendLine(1.Indent() + $"/// [mCase data type: {type}]");
+
+            //single line
+            sb.Append(1.Indent() + $"/// <summary> [mCase data type: {type}] ");
             if (mirroredField)
-                sb.AppendLine(1.Indent() + "/// This is a Mirrored field. No setting / updating allowed.");
-            sb.AppendLine(1.Indent() + "/// </summary>");
-            if (_stringCheck.Contains(enumType) && !mirroredField)
+                sb.Append("This is a Mirrored field. No setting / updating allowed.");
+            sb.Append("</summary>\r\n");
+            //end single line
+
+            if (!mirroredField)
                 sb.AppendLine(1.Indent() +
-                              "/// <returns>\"-1 if Datetime does not pass mCase data type validation.\"</returns>");
+                              "/// <returns>\"If unable to parse string to datetime, datetime will be set to DateTime.MinValue\"</returns>");
+
             sb.AppendLine(1.Indent() + $"public DateTime {propertyName}");
             sb.AppendLine(1.Indent() + "{"); //open Property
             sb.AppendLine(2.Indent() + "get");
             sb.AppendLine(2.Indent() + "{"); //open Getter
             sb.AppendLine(3.Indent() + $"if({privateSysName} != DateTime.MinValue) return {privateSysName};");
-            sb.AppendLine(3.Indent() + $"{privateSysName} = DateTime.TryParse(RecordInsData.GetFieldValue(\""+ sysName +"\"), out var dt) ? dt : DateTime.MinValue;");
+            sb.AppendLine(3.Indent() + $"{privateSysName} = DateTime.TryParse(RecordInsData.GetFieldValue(\"" + sysName + "\"), out var dt) ? dt : DateTime.MinValue;");
             sb.AppendLine(3.Indent() + $"return {privateSysName};");
             sb.AppendLine(2.Indent() + "}"); //close Getter
 
@@ -230,14 +229,7 @@ namespace DemoKatan.mCase
             var sb = new StringBuilder();
 
             sb.AppendLine(1.Indent() + $"private List<RecordInstanceData> {privateName} = null;");
-            sb.AppendLine(1.Indent() + "/// <summary>");
-            sb.AppendLine(1.Indent() + $"/// [mCase data type: {fieldType}]");
-            sb.AppendLine(1.Indent() + $"/// [Multi Select: {multiSelect}]");
-            sb.AppendLine(1.Indent() + $"/// [Dynamic Source: {dynamicData}]");
-            sb.AppendLine(1.Indent() + "/// [Setting: Requires a RecordInstancesData]");
-            sb.AppendLine(1.Indent() + "/// [Getting: Returns the list of RecordInstancesData's]");
-            sb.AppendLine(1.Indent() + "/// [Updating: Requires use of either AddTo(), or RemoveFrom()]");
-            sb.AppendLine(1.Indent() + "/// </summary>");
+            sb.AppendLine(1.Indent() + $"/// <summary> [mCase data type: {fieldType}] [Multi Select: {multiSelect}] [Dynamic Source: {dynamicData}] [Setting: Requires a RecordInstancesData] [Getting: Returns the list of RecordInstancesData's] [Updating: Requires use of either AddTo(), or RemoveFrom()] </summary>");
             sb.AppendLine(1.Indent() + $"public List<RecordInstanceData> {propertyName}");
             sb.AppendLine(1.Indent() + "{"); //open Property
             sb.AppendLine(2.Indent() + "get");
@@ -310,8 +302,7 @@ namespace DemoKatan.mCase
             var dynamicData = jToken.ParseDynamicData(ListTransferFields.DynamicData.GetDescription());
 
             var privateName = $"_{propertyName.ToLower()}";
-            var notAbleToSelectManyValues = fieldOptions.Contains("\"Able to Select Multiple values\"" + ":" + "\"No\"",
-                StringComparison.OrdinalIgnoreCase);
+            var notAbleToSelectManyValues = fieldOptions.ToLowerInvariant().Contains("\"Able to Select Multiple values\"" + ":" + "\"No\"".ToLowerInvariant());
             var multiSelect = notAbleToSelectManyValues ? "False" : "True";
 
             switch (type)
@@ -377,17 +368,13 @@ namespace DemoKatan.mCase
             var sb = new StringBuilder();
 
             sb.AppendLine(1.Indent() + $"private List<string> {privateName}= null;");
-            sb.AppendLine(1.Indent() + "/// <summary>");
-            sb.AppendLine(1.Indent() + $"/// [mCase data type: {fieldType}]");
-            sb.AppendLine(1.Indent() + $"/// [Multi Select: {multiSelect}]");
-            sb.AppendLine(1.Indent() + "/// [Getting: Returns the list of field labels]");
-            sb.AppendLine(1.Indent() + "/// [Updating: Requires use of either AddTo(), AddRangeTo() or RemoveFrom()]");
-            sb.AppendLine(1.Indent() + "/// </summary>");
+            sb.AppendLine(1.Indent() + $"/// <summary> [mCase data type: {fieldType}] [Multi Select: {multiSelect}] [Getting: Returns the list of field labels] [Updating: AddTo(), AddRangeTo(), RemoveFrom()] </summary>");
 
-            if (string.Equals(multiSelect, "True"))
+            if (!string.Equals(multiSelect, "True"))
             {
-                sb.AppendLine(1.Indent() + "/// <returns> If multi select is false and more than one item found in list, then the new value will return: Multi Select: False</returns>");
+                sb.AppendLine(1.Indent() + "/// <returns>If multi select is set to false, and more than one value in list. List will be set to a single item of MultiSelect = false</returns>");
             }
+
             sb.AppendLine(1.Indent() + $"public List<string> {propertyName}");
             sb.AppendLine(1.Indent() + "{");//open property
             sb.AppendLine(2.Indent() + "get");
@@ -398,7 +385,12 @@ namespace DemoKatan.mCase
             sb.AppendLine(2.Indent() + "}");//close getter
             sb.AppendLine(2.Indent() + "set");
             sb.AppendLine(2.Indent() + "{");//open setter
-            sb.AppendLine(3.Indent() + $"if({privateName} == null) {privateName} = new List<string>();");
+            sb.AppendLine(3.Indent() + "if(value == null)  value = new List<string>();");
+            if (!string.Equals(multiSelect, "True"))
+            {
+                sb.AppendLine(3.Indent() + "if(value.Count > 1) value = new List<string>()" + "{ \" MultiSelect = false\" };");
+            }
+            sb.AppendLine(3.Indent() + $"{privateName} = value;");
             sb.AppendLine(3.Indent() + $"RecordInsData.SetValue(\"{systemName}\", string.Join(MCaseEventConstants.MultiDropDownDelimiter, {privateName}));");
             sb.AppendLine(2.Indent() + "}");//close setter
             sb.AppendLine(1.Indent() + "}");//close property
@@ -407,7 +399,7 @@ namespace DemoKatan.mCase
         }
 
         private static StringBuilder GenerateDDWithDefaultValues(string propertyName, string sysName, string fieldType,
-            string privateName, string multiSelect, bool notAbleToSelectManyValues, List<string> defaultValues, 
+            string privateName, string multiSelect, bool notAbleToSelectManyValues, List<string> defaultValues,
             string staticName, string defaultOptionsName, string map)
         {
             var sb = new StringBuilder();
@@ -427,24 +419,11 @@ namespace DemoKatan.mCase
 
             #region Summary
 
-            sb.AppendLine(1.Indent() + "/// <summary>");
-            sb.AppendLine(1.Indent() + $"/// [mCase data type: {fieldType}]");
-            sb.AppendLine(1.Indent() + $"/// [Multi Select: {multiSelect}]");
+            sb.AppendLine(1.Indent() + $"/// <summary> [mCase data type: {fieldType}] [Multi Select: {multiSelect}] [Default field values can be found in {staticName}] [Available options can be found in {defaultOptionsName}] [Getting: Returns the list of \"{staticName}'s\"] [Updating: AddTo(), RemoveFrom(), MapTo()] </summary>");
 
-
-            sb.AppendLine(1.Indent() + $"/// [Default field values can be found in {staticName}]");
-            sb.AppendLine(1.Indent() + $"/// [Available options can be found in {defaultOptionsName}]");
-
-            sb.AppendLine(1.Indent() + "/// [Getting: Returns the list of field labels]");
-            sb.AppendLine(1.Indent() + "/// [Updating: Requires AddTo(), RemoveFrom(), MapTo()]");
-            sb.AppendLine(1.Indent() + "/// </summary>");
-
-            if (string.Equals(multiSelect, "True"))
+            if (!string.Equals(multiSelect, "True"))
             {
-                sb.AppendLine(1.Indent() + "/// <returns>");
-                sb.AppendLine(1.Indent() + $"/// If value not found in {defaultOptionsName}. New value will return: #~Invalid Selection~#");
-                sb.AppendLine(1.Indent() + "/// If multi select is false and more than one item found in list, then the new value will return: Multi Select: False");
-                sb.AppendLine(1.Indent() + "/// </returns>");
+                sb.AppendLine(1.Indent() + $"/// <returns> List of {defaultOptionsName}. If multi select is false and value count is greater than one. New value will return: \"Multi Select: False\" </returns>");
             }
 
             #endregion
@@ -467,7 +446,7 @@ namespace DemoKatan.mCase
                 sb.AppendLine(3.Indent() + $"if (value.Count > 1) value = new List<{staticName}>() " + "{" + $"{staticName}.Multiselectfalse" + "};");
             }
 
-            sb.AppendLine(3.Indent() + $"{privateName} = SetDefaultList(value, value.Any(x => !{privateName}.Contains(x)));");
+            sb.AppendLine(3.Indent() + $"{privateName} = SetDefaultList(value, value.Any(x => !{defaultOptionsName}.Contains(x)));");
             sb.AppendLine(3.Indent() + $"RecordInsData.SetValue(\"{sysName}\", string.Join(MCaseEventConstants.MultiDropDownDelimiter, {privateName}.Select(x => {map}[x])));");
             sb.AppendLine(2.Indent() + "}"); //close Setter
             sb.AppendLine(1.Indent() + "}"); //close Property
@@ -793,11 +772,7 @@ namespace DemoKatan.mCase
             var embeddedEnum = $"{className}Static.EmbeddedOptionsEnum";
             var embeddedMap = $"{className}Static.EmbeddedOptionsMap";
 
-            sb.AppendLine(1.Indent() + "/// <summary>");
-            sb.AppendLine(1.Indent() + "/// [mCase data type] Embedded List.");
-            sb.AppendLine(1.Indent() + "/// Requires the Datalist Id from one of the following Embedded Data lists:");
-            sb.AppendLine(1.Indent() + $"/// Refer to {embeddedEnum} for embedded options");
-            sb.AppendLine(1.Indent() + "/// </summary>");
+            sb.AppendLine(1.Indent() + $"/// <summary> [mCase data type] Embedded List. Requires the Datalist Id from one of the following Embedded Data lists: Refer to {embeddedEnum} for embedded options </summary>");
             sb.AppendLine(1.Indent() + "/// <param name=\"embeddedEnum\"> Enum built for this specific method</param>");
             sb.AppendLine(1.Indent() + "/// <returns>Related children from selected data list</returns>");
             sb.AppendLine(1.Indent() +
@@ -825,18 +800,14 @@ namespace DemoKatan.mCase
             if (addDefaults)
             {
                 // Map To Enum
-                sb.AppendLine(1.Indent() + "/// <summary>");
-                sb.AppendLine(1.Indent() + "/// Maps a list of enums, to the next enum type");
-                sb.AppendLine(1.Indent() + "/// </summary>");
+                sb.AppendLine(1.Indent() + "/// <summary>  Maps a list of enums, to the next enum type </summary>");
                 sb.AppendLine(1.Indent() + "/// <typeparam name=\"TEnum\">The enum you are mapping to</typeparam>");
                 sb.AppendLine(1.Indent() + "/// <param name=\"values\">Enum Values to convert</param>");
                 sb.AppendLine(1.Indent() + "/// <returns>Returns the converted list of enums, or default values if not found</returns>");
                 sb.AppendLine(1.Indent() + $"public List<TEnum> MapToEnum<TEnum>(List<{className}Static.DefaultValuesEnum> values) where TEnum : struct => values.Select(x => {defaultMap}[x]).MapTo<TEnum>();");
 
                 //remove by enum predicate 
-                sb.AppendLine(1.Indent() + "/// <summary>");
-                sb.AppendLine(1.Indent() + "/// Remove all data from enumerable class property that matches predicate");
-                sb.AppendLine(1.Indent() + "/// </summary>");
+                sb.AppendLine(1.Indent() + "/// <summary> Remove all data from enumerable class property that matches predicate </summary>");
                 sb.AppendLine(1.Indent() + "/// <param name=\"propertyEnum\">Class public property name</param>");
                 sb.AppendLine(1.Indent() + "/// <param name=\"predicate\">Default value to remove</param>");
                 sb.AppendLine(1.Indent() + "/// <returns>Amount of values removed. Type errors: -1. null errors: -2</returns>");
@@ -845,18 +816,14 @@ namespace DemoKatan.mCase
 
             #region Remove by predicate Predicate
             // remove value by Record instance predicate
-            sb.AppendLine(1.Indent() + "/// <summary>");
-            sb.AppendLine(1.Indent() + "/// Remove all data from enumerable class property that matches predicate");
-            sb.AppendLine(1.Indent() + "/// </summary>");
+            sb.AppendLine(1.Indent() + "/// <summary>  Remove all data from enumerable class property that matches predicate </summary>");
             sb.AppendLine(1.Indent() + "/// <param name=\"propertyEnum\">Class public property name</param>");
             sb.AppendLine(1.Indent() + "/// <param name=\"predicate\">Record instance value to remove</param>");
             sb.AppendLine(1.Indent() + "/// <returns>Amount of values removed. Type errors: -1. null errors: -2</returns>");
             sb.AppendLine(1.Indent() + $"public int RemoveFrom({staticProperties} propertyEnum, Func<RecordInstanceData, bool> predicate) => this.RemoveFrom({propertyMap}[propertyEnum], predicate);");
 
             //remove by string predicate
-            sb.AppendLine(1.Indent() + "/// <summary>");
-            sb.AppendLine(1.Indent() + "/// Remove all data from enumerable class property that matches predicate");
-            sb.AppendLine(1.Indent() + "/// </summary>");
+            sb.AppendLine(1.Indent() + "/// <summary> Remove all data from enumerable class property that matches predicate </summary>");
             sb.AppendLine(1.Indent() + "/// <param name=\"propertyEnum\">Class public property name</param>");
             sb.AppendLine(1.Indent() + "/// <param name=\"predicate\">String value to remove</param>");
             sb.AppendLine(1.Indent() + "/// <returns>Amount of values removed. Type errors: -1. null errors: -2</returns>");
@@ -867,9 +834,7 @@ namespace DemoKatan.mCase
             #region Add To
 
             // add single
-            sb.AppendLine(1.Indent() + "/// <summary>");
-            sb.AppendLine(1.Indent() + "/// Add data onto enumerable class property.");
-            sb.AppendLine(1.Indent() + "/// </summary>");
+            sb.AppendLine(1.Indent() + "/// <summary> Add data onto enumerable class property. </summary>");
             sb.AppendLine(1.Indent() + "/// <param name=\"propertyEnum\">Class public property name</param>");
             sb.AppendLine(1.Indent() + "/// <param name=\"param\">Value added to Class</param>");
             sb.AppendLine(1.Indent() +
@@ -878,9 +843,7 @@ namespace DemoKatan.mCase
                           $"public int AddTo({staticProperties} propertyEnum, string param) => this.AddTo({propertyMap}[propertyEnum], param);");
 
             //add single Record Instance
-            sb.AppendLine(1.Indent() + "/// <summary>");
-            sb.AppendLine(1.Indent() + "/// Add data onto enumerable class property.");
-            sb.AppendLine(1.Indent() + "/// </summary>");
+            sb.AppendLine(1.Indent() + "/// <summary> Add data onto enumerable class property. </summary>");
             sb.AppendLine(1.Indent() + "/// <param name=\"propertyEnum\">Class public property name</param>");
             sb.AppendLine(1.Indent() + "/// <param name=\"param\">Value added to Class</param>");
             sb.AppendLine(1.Indent() + "/// <returns>Amount of values removed. Type errors: -1. Null errors: -2. RecordInstance not Created: -5.</returns>");
@@ -889,9 +852,7 @@ namespace DemoKatan.mCase
             if (addDefaults)
             {
                 //add default value (Enum)
-                sb.AppendLine(1.Indent() + "/// <summary>");
-                sb.AppendLine(1.Indent() + "/// Add data onto enumerable class property.");
-                sb.AppendLine(1.Indent() + "/// </summary>");
+                sb.AppendLine(1.Indent() + "/// <summary> Add data onto enumerable class property. </summary>");
                 sb.AppendLine(1.Indent() + "/// <param name=\"propertyEnum\">Class public property name</param>");
                 sb.AppendLine(1.Indent() + "/// <param name=\"param\">Value added to Class</param>");
                 sb.AppendLine(1.Indent() + "/// <returns>Amount of values added. Type errors: -1. null errors: -2.</returns>");
@@ -903,20 +864,14 @@ namespace DemoKatan.mCase
             #region Add Range
 
             //add range string
-            sb.AppendLine(1.Indent() + "/// <summary>");
-            sb.AppendLine(1.Indent() + "/// Add data onto enumerable class property.");
-            sb.AppendLine(1.Indent() + "/// List of string's");
-            sb.AppendLine(1.Indent() + "/// </summary>");
+            sb.AppendLine(1.Indent() + "/// <summary> Add data onto enumerable class property. List of string's </summary>");
             sb.AppendLine(1.Indent() + "/// <param name=\"propertyEnum\">Class public property name</param>");
             sb.AppendLine(1.Indent() + "/// <param name=\"param\">Value added to Class</param>");
             sb.AppendLine(1.Indent() + "/// <returns>Amount of values added. Type errors: -1. null errors: -2.</returns>");
             sb.AppendLine(1.Indent() + $"public int AddRangeTo({staticProperties} propertyEnum, List<string> param) => this.AddRangeTo({propertyMap}[propertyEnum], param);");
 
             //add range Record Instance
-            sb.AppendLine(1.Indent() + "/// <summary>");
-            sb.AppendLine(1.Indent() + "/// Add data onto enumerable class property.");
-            sb.AppendLine(1.Indent() + "/// List of RecordInstanceData's");
-            sb.AppendLine(1.Indent() + "/// </summary>");
+            sb.AppendLine(1.Indent() + "/// <summary> Add data onto enumerable class property. List of RecordInstanceData's </summary>");
             sb.AppendLine(1.Indent() + "/// <param name=\"propertyEnum\">Class public property name</param>");
             sb.AppendLine(1.Indent() + "/// <param name=\"param\">Value added to Class</param>");
             sb.AppendLine(1.Indent() + "/// <returns>Amount of values added. Type errors: -1. null errors: -2. RecordInstance not Created: -5</returns>");
@@ -926,10 +881,7 @@ namespace DemoKatan.mCase
             if (addDefaults)
             {
                 //add default value range (Enum)
-                sb.AppendLine(1.Indent() + "/// <summary>");
-                sb.AppendLine(1.Indent() + "/// Add data onto enumerable class property.");
-                sb.AppendLine(1.Indent() + $"/// List of {defaultValues}'s");
-                sb.AppendLine(1.Indent() + "/// </summary>");
+                sb.AppendLine(1.Indent() + $"/// <summary>  Add data onto enumerable class property. List of {defaultValues}'s </summary>");
                 sb.AppendLine(1.Indent() + "/// <param name=\"propertyEnum\">Class public property name</param>");
                 sb.AppendLine(1.Indent() + "/// <param name=\"param\">Value added to Class</param>");
                 sb.AppendLine(1.Indent() + "/// <returns>Amount of values added. Type errors: -1. null errors: -2.</returns>");
@@ -946,14 +898,14 @@ namespace DemoKatan.mCase
                 #region Clear With Default Values
 
                 //clear
-                sb.AppendLine(1.Indent() + "/// <summary>");
-                sb.AppendLine(1.Indent() + "/// Clears all existing values from list.");
-                sb.AppendLine(1.Indent() + "/// </summary>");
+                sb.AppendLine(1.Indent() + "/// <summary> Clears all existing values from list. </summary>");
                 sb.AppendLine(1.Indent() + "/// <param name=\"propertyEnum\">Class public property name</param>");
                 sb.AppendLine(1.Indent() + "/// <returns>Cleared list = 0. Type errors: -1. null errors: -2.</returns>");
                 sb.AppendLine(1.Indent() + $"public int Clear({staticProperties} propertyEnum) => this.Clear<{entity}, {defaultValues}>({propertyMap}[propertyEnum]);");
 
                 #endregion
+                
+                sb.AppendLine(1.Indent() + "#region Private");
                 //add MultiSelectValue
                 sb.AppendLine(1.Indent() + $"private List<{defaultValues}> GetMultiSelectValue(string sysName)");
                 sb.AppendLine(1.Indent() + "{");//open method
@@ -968,6 +920,8 @@ namespace DemoKatan.mCase
                 sb.AppendLine(2.Indent() + $"if (value == new List<{defaultValues}>() " + "{ " + defaultValues + ".Multiselectfalse }) return value;");
                 sb.AppendLine(2.Indent() + $"return invalidValues ? new List<{defaultValues}>()" + "{ " + defaultValues + ".Invalidselection } : value;");
                 sb.AppendLine(1.Indent() + "}");//close method
+
+                sb.AppendLine(1.Indent() + "#endregion");
             }
             else
             {
@@ -1050,7 +1004,7 @@ namespace DemoKatan.mCase
 
             var staticClass = $"{className}Enum";
 
-            sb.Append(1.Indent() + $"public static Dictionary<{staticClass}, string> {className}Map => new Dictionary<{staticClass}, string>()" + "{ {"+$"{staticClass}.Invalidselection, \"#~Invalid Selection~#\"" + "},"); //open
+            sb.Append(1.Indent() + $"public static Dictionary<{staticClass}, string> {className}Map => new Dictionary<{staticClass}, string>()" + "{ {" + $"{staticClass}.Invalidselection, \"#~Invalid Selection~#\"" + "},"); //open
 
             for (var i = 0; i < fieldSet.Count; i++)
             {
@@ -1080,7 +1034,7 @@ namespace DemoKatan.mCase
             return sb;
         }
 
-        public static StringBuilder GenerateRelationships(JToken? relationships)
+        public static StringBuilder GenerateRelationships(JToken relationships)
         {
             var sb = new StringBuilder();
 

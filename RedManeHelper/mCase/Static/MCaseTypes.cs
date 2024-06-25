@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel;
 
-namespace DemoKatan.mCase.Static
+namespace mCASE_ADMIN.DataAccess.mCase.Static
 {
     public enum MCaseTypes
     {

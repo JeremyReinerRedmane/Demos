@@ -1,9 +1,10 @@
-﻿using Newtonsoft.Json.Linq;
-using System.ComponentModel;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Text.RegularExpressions;
-using static System.Net.Mime.MediaTypeNames;
+using Newtonsoft.Json.Linq;
 
-namespace DemoKatan.mCase.Static
+namespace mCASE_ADMIN.DataAccess.mCase.Static
 {
     public static class Extensions
     {
@@ -166,7 +167,7 @@ namespace DemoKatan.mCase.Static
         {
             var defaultValue = jToken.ParseToken(ListTransferFields.DefaultValue.GetDescription());
 
-            var isCoalesce = !string.IsNullOrEmpty(defaultValue) && defaultValue.Contains("COALESCE", StringComparison.OrdinalIgnoreCase);
+            var isCoalesce = !string.IsNullOrEmpty(defaultValue) && defaultValue.ToLower().Contains("coalesce");//, StringComparison.OrdinalIgnoreCase);
 
             return isCoalesce;
         }

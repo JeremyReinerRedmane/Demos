@@ -1,15 +1,11 @@
-﻿using System.Data.SqlClient;
-using System.Diagnostics;
-using System.Net.Http.Headers;
-using System.Reflection.Metadata.Ecma335;
-using System.Runtime.CompilerServices;
+﻿using System.Net.Http.Headers;
 using System.Text;
-using DemoKatan.mCase.Static;
+using mCASE_ADMIN.DataAccess.mCase.Static;
 using Microsoft.Data.SqlClient;
 using Newtonsoft.Json.Linq;
-using Extensions = DemoKatan.mCase.Static.Extensions;
+using Extensions = mCASE_ADMIN.DataAccess.mCase.Static.Extensions;
 
-namespace DemoKatan.mCase
+namespace mCASE_ADMIN.DataAccess.mCase
 {
     public class SyncDlConfigs
     {
@@ -21,7 +17,6 @@ namespace DemoKatan.mCase
         private readonly string _credentials;
         private readonly string _mCaseUrl;
         private readonly string _namespace;
-        private HashSet<string> _classNames;
         private List<StringBuilder> _stringBuilders;
 
         public SyncDlConfigs(string[] commandLineArgs)
@@ -91,11 +86,9 @@ namespace DemoKatan.mCase
             }
 
             Console.WriteLine("All parameters have been completed. Moving to next step");
-
-            _classNames = new HashSet<string>();
         }
 
-        public async Task RemoteSync(List<int> sqlResult)
+        public void RemoteSync(List<int> sqlResult)
         {
             if (!sqlResult.Any()) return;
 
@@ -116,13 +109,13 @@ namespace DemoKatan.mCase
                 Console.WriteLine($"Attempting to reach url: {url}");
                 try
                 {
-                    var clientResult = await client.GetAsync(new Uri(url));
+                    var clientResult = client.GetAsync(new Uri(url)).Result;
 
-                    var content = await clientResult.Content.ReadAsStringAsync();
+                    var content = clientResult.Content.ReadAsStringAsync().Result;
 
                     if (!string.IsNullOrEmpty(content))
                     {
-                        var path = await Sync(content);
+                        var path = Sync(content, id);
 
                         if (!string.IsNullOrEmpty(path))
                         {
@@ -138,7 +131,7 @@ namespace DemoKatan.mCase
                     Console.ForegroundColor = ConsoleColor.DarkRed;
                     Console.WriteLine("Unaccessable API Endpoint: " + url);
                     var path = Path.Combine(_exceptionDirectory, $"Endpoint-{id}-{DateTime.Now.ToString(Extensions.TimeFormat)}.cs");
-                    await File.WriteAllTextAsync(path, ex.ToString());
+                    File.WriteAllText(path, ex.ToString());
                 }
                 Console.ForegroundColor = ConsoleColor.DarkGray;
             }
@@ -149,7 +142,7 @@ namespace DemoKatan.mCase
 
                 var staticPath = Path.Combine(_outputDirectory, "FactoryExtensions.cs");
 
-                await File.WriteAllTextAsync(staticPath, staticFileData);
+                File.WriteAllText(staticPath, staticFileData);
             }
         }
 
@@ -190,7 +183,7 @@ namespace DemoKatan.mCase
                 Console.ForegroundColor = ConsoleColor.DarkRed;
                 Console.WriteLine($"Sql Exception: " + ex);
                 var path = Path.Combine(_exceptionDirectory, $"Sql Exception {DateTime.Now.ToString(Extensions.TimeFormat)}.cs");
-                await File.WriteAllTextAsync(path, ex.ToString());
+                File.WriteAllText(path, ex.ToString());
                 Console.ForegroundColor = ConsoleColor.DarkGray;
                 return new List<int>();
             }
@@ -216,7 +209,7 @@ namespace DemoKatan.mCase
         /// Using List transfer we can catch the structure of our DL's from the db, and reconstruct a C# object. used for custom events
         /// </summary>
         /// <param name="data"></param>
-        private async Task<string> Sync(string data)
+        private string Sync(string data, int id)
         {
             var closing = data.LastIndexOf(']');
 
@@ -229,28 +222,18 @@ namespace DemoKatan.mCase
 
             var jsonObject = JObject.Parse(result);
 
-            var className = jsonObject.ParseClassName(ListTransferFields.Name.GetDescription()).GetPropertyNameFromSystemName();
+            var className = jsonObject.ParseClassName(ListTransferFields.Name.GetDescription()).GetPropertyNameFromSystemName() + id;
 
             if (string.IsNullOrEmpty(className)) return string.Empty;
 
-            var count = _classNames.Count(x => string.Equals(x, className, StringComparison.OrdinalIgnoreCase));
-
-            if (count > 0)
-            {
-                className += $"_{count}";
-            }
             try
             {
                 var sb = GenerateFileData(jsonObject, className);
 
-                var path = Path.Combine(_outputDirectory, $"{className}Entity.cs");
+                var path = Path.Combine(_outputDirectory, className + ".cs");
 
-                await File.WriteAllTextAsync(path, sb.ToString());
+                File.WriteAllText(path, sb.ToString());
 
-                if (!string.IsNullOrEmpty(path))
-                {
-                    _classNames.Add(className);
-                }
                 return path;
             }
             catch (Exception ex)
@@ -258,7 +241,7 @@ namespace DemoKatan.mCase
                 Console.ForegroundColor = ConsoleColor.DarkRed;
                 Console.WriteLine($"{className}: " + ex);
                 var path = Path.Combine(_exceptionDirectory, $"{className}Entity.cs");
-                await File.WriteAllTextAsync(path, ex.ToString());
+                File.WriteAllText(path, ex.ToString());
                 Console.ForegroundColor = ConsoleColor.DarkGray;
             }
 
@@ -286,7 +269,7 @@ namespace DemoKatan.mCase
                 MCaseTypes.CascadingDynamicDropDown.GetDescription(),
             };
 
-            var sb = Factory.ClassInitializer(jsonObject, className, _namespace);
+            var sb = Factory.ClassInitializer(jsonObject, className, _namespace); // 1: Open namespace / class
 
             foreach (var field in fields)
             {
@@ -319,7 +302,7 @@ namespace DemoKatan.mCase
                 if (requiresEnumerationValues.Contains(type))
                     requiresEnumeration = true;
 
-                var property = AddProperties(field, type, systemName, className);//Magic happens here
+                var property = AddProperties(field, type, systemName, className);// 2: Add properties. Magic happens here
 
                 if (string.IsNullOrEmpty(property))
                     continue;
@@ -330,14 +313,14 @@ namespace DemoKatan.mCase
             }
 
             if (embeddedRelatedFields.Count > 0)
-                sb.AppendLine(Factory.GetEmbeddedOptions(className));
+                sb.AppendLine(Factory.GetEmbeddedOptions(className)); // 3: Add class methods
 
             if (requiresEnumeration)
-                sb.AppendLine(Factory.AddEnumerableExtensions(className, _stringBuilders.Any()));
+                sb.AppendLine(Factory.AddEnumerableExtensions(className, _stringBuilders.Any())); // 3: Add class methods
 
-            sb.AppendLine(0.Indent() + "}"); //close class
+            sb.AppendLine(0.Indent() + "}"); // 4: close class
 
-            #region Static File Backing
+            #region 5: Static File Backing
 
             sb.AppendLine(0.Indent() + $"public static class {className}Static");
             sb.AppendLine(0.Indent() + "{");//open static class
@@ -358,7 +341,10 @@ namespace DemoKatan.mCase
                 var csv = sbs.ToString();
                 if (string.IsNullOrEmpty(csv))
                     continue;
-                var data = csv.Split("$~*@*~$");
+                //Split("$~*@*~$")
+                //var data = csv.Split('$', '~', '*', '@', '*', '~', '$').Where(x => !string.IsNullOrEmpty(x));
+                var delimiter = "$~*@*~$";
+                var data = csv.Split(new[] { delimiter }, StringSplitOptions.None).Where(x => !string.IsNullOrEmpty(x));
                 allDefaultValues.AddRange(data);
                 allDefaultValues = allDefaultValues.Distinct().ToList();
             }
@@ -380,7 +366,7 @@ namespace DemoKatan.mCase
             sb.AppendLine(0.Indent() + "}"); //close static class
 
             #endregion
-            sb.AppendLine("}"); //close namespace
+            sb.AppendLine("}"); // 6: close namespace
             return sb;
         }
 
@@ -416,7 +402,7 @@ namespace DemoKatan.mCase
                 case MCaseTypes.Address:
                     return Factory.StringFactory(jToken, propertyName, sysName, type);
                 case MCaseTypes.Attachment:
-                    return Factory.LongFactory(jToken, propertyName, sysName, type);
+                    return Factory.LongFactory(propertyName, sysName, type);
                 case MCaseTypes.Date:
                 case MCaseTypes.DateTime:
                     return Factory.DateFactory(jToken, propertyName, sysName, type);

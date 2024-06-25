@@ -1,6 +1,8 @@
-﻿using System.ComponentModel;
+﻿using System;
+using System.ComponentModel;
+using System.Linq;
 
-namespace DemoKatan.mCase.Static
+namespace mCASE_ADMIN.DataAccess.mCase.Static
 {
     public static class EnumExtensions
     {
