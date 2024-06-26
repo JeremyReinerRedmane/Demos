@@ -8,6 +8,7 @@ using System.Net.Http.Headers;
 using System.Text;
 using System.Threading.Tasks;
 using mCASE_ADMIN.DataAccess.mCase.Static;
+using Microsoft.Data.SqlClient;
 using Newtonsoft.Json.Linq;
 using Extensions = mCASE_ADMIN.DataAccess.mCase.Static.Extensions;
 
@@ -232,7 +233,7 @@ namespace mCASE_ADMIN.DataAccess.mCase
 
             var jsonObject = JObject.Parse(result);
 
-            var className = jsonObject.ParseClassName(ListTransferFields.Name.GetDescription()).GetPropertyNameFromSystemName();
+            var className = jsonObject.ParseClassName(ListTransferFields.Name.GetDescription()).GetPropertyNameFromSystemName() + id.ToString();
 
             if (string.IsNullOrEmpty(className)) return string.Empty;
 
@@ -240,7 +241,7 @@ namespace mCASE_ADMIN.DataAccess.mCase
             {
                 var sb = GenerateFileData(jsonObject, className);
 
-                var path = Path.Combine(_outputDirectory, className + id + ".cs");
+                var path = Path.Combine(_outputDirectory, className + ".cs");
 
                 File.WriteAllText(path, sb.ToString());
 

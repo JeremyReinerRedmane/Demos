@@ -16,7 +16,7 @@ namespace mCASE_ADMIN.DataAccess.mCase
             MCaseTypes.Phone, MCaseTypes.Time, MCaseTypes.URL
         };
 
-        public static StringBuilder ClassInitializer(JObject jObject, string className, string namespace_)
+        public static StringBuilder ClassInitializer(JObject jObject, string className, string nameSpace)
         {
             var sb = new StringBuilder();
 
@@ -26,7 +26,7 @@ namespace mCASE_ADMIN.DataAccess.mCase
 
             sb.AppendLine( //TODO continue to add usings, as more and more validations are made
                 "using System;\nusing System.Collections.Generic;\nusing System.Linq;\nusing MCaseCustomEvents.ARFocus.DataAccess;\nusing MCaseEventsSDK;\nusing MCaseEventsSDK.Util;\nusing MCaseEventsSDK.Util.Data;\nusing System.ComponentModel;\nusing System.Reflection;");
-            sb.AppendLine($"namespace {namespace_}"); //TODO: Always update project specific namespace
+            sb.AppendLine($"namespace {nameSpace}"); 
             sb.AppendLine("{"); //open namespace
 
             #region Dl Info Class
@@ -485,7 +485,6 @@ namespace mCASE_ADMIN.DataAccess.mCase
         /// same as the type passed into the method. This is done by fetching the methodinfo using GetGetMethod().Return type and then comparing that to the incoming
         /// value. If both the property return type, and the argument type are the same we can begin checks for setting the value.
         /// </summary>
-        /// <param name="className"></param>
         /// <returns></returns>
         private static string AddStaticEnumerableExtensions()
         {
