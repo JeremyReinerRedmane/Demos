@@ -88,7 +88,6 @@ namespace mCASE_ADMIN.DataAccess.mCase
             sb.AppendLine(3.Indent() + "return _dataListId;");
             sb.AppendLine(2.Indent() + "}"); //close Getter
             sb.AppendLine(1.Indent() + "}"); //close Property
-            sb.AppendLine(1.Indent() + "public void SaveRecord() =>_eventHelper.SaveRecord(RecordInsData);");
             sb.AppendLine(1.Indent() + $"public void LogDebug(string log) => _eventHelper.AddDebugLog($\"[{className} Record][{{RecordInsData.RecordInstanceID}}]: {{log}}\");");
             sb.AppendLine(1.Indent() + $"public void LogInfo(string log) => _eventHelper.AddInfoLog($\"[{className} Record][{{RecordInsData.RecordInstanceID}}]: {{log}}\");");
             sb.AppendLine(1.Indent() + $"public void LogWarning(string log) => _eventHelper.AddWarningLog($\"[{className} Record][{{RecordInsData.RecordInstanceID}}]: {{log}}\");");
@@ -795,6 +794,8 @@ namespace mCASE_ADMIN.DataAccess.mCase
             var defaultValues = $"{className}Static.DefaultValuesEnum";
             var propertyMap = $"{className}Static.Properties_Map";
             var defaultMap = $"{className}Static.DefaultValuesMap";
+            var sysNames = $"{className}Static.SystemNamesEnum";
+            var sysNamesMap = $"{className}Static.SystemNamesMap";
 
             if (addDefaults)
             {
@@ -888,6 +889,24 @@ namespace mCASE_ADMIN.DataAccess.mCase
 
             }
 
+            sb.AppendLine(1.Indent() + "public void SaveRecord()");
+            sb.AppendLine(1.Indent() + "{");//open method
+            sb.AppendLine(2.Indent() + "//validate additional required fields are set");
+            sb.AppendLine(2.Indent() + "_eventHelper.SaveRecord(RecordInsData);");
+            sb.AppendLine(1.Indent() + "}");//close method
+
+            sb.AppendLine(1.Indent() + "/// <summary> Creates a raw sql query filter for the specified property, based off the filter params passed through</summary>");
+            sb.AppendLine(1.Indent() + $"public DirectSQLFieldFilterData CreateFilter({sysNames} fieldSysName, List<string> filters ) => " +
+                          $"new DirectSQLFieldFilterData(_eventHelper.GetFieldID(DataListId, {sysNamesMap}[fieldSysName]) ?? 0, filters);");
+
+            sb.AppendLine(1.Indent() + "/// <summary> Creates a raw sql query filter for the specified property, based off the filter params passed through</summary>");
+            sb.AppendLine(1.Indent() + $"public DirectSQLFieldFilterData CreateFilter({sysNames} fieldSysName, string min, string max) => " +
+                          $"new DirectSQLFieldFilterData(_eventHelper.GetFieldID(DataListId, {sysNamesMap}[fieldSysName]) ?? 0, min, max);");
+
+            sb.AppendLine(1.Indent() + "/// <summary> Generate the filtered query, using a list of filtered query items.</summary>");
+            sb.AppendLine(1.Indent() + $"public List<{className}> CreateQuery(List<DirectSQLFieldFilterData> filters) => _eventHelper.SearchSingleDataListSQLProcess(DataListId, filters).Select(x => new {className}(x, _eventHelper)).ToList();");
+
+
             #endregion
 
             #region private method extractions
@@ -936,6 +955,7 @@ namespace mCASE_ADMIN.DataAccess.mCase
 
                 #endregion
             }
+
 
             #endregion
             return sb.ToString();

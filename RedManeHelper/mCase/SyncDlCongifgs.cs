@@ -340,6 +340,8 @@ namespace mCASE_ADMIN.DataAccess.mCase
                 sb.AppendLine(Factory.GenerateEnums(enumerableFieldSet.ToList(), "Properties_", true).ToString());// All class property names
             }
 
+            sb.AppendLine(Factory.GenerateEnums(fieldSet.ToList(), "SystemNames", false).ToString());// All class property names
+
             if (embeddedRelatedFields.Count > 0)
             {
                 sb.AppendLine(Factory.GenerateEnums(embeddedRelatedFields.ToList(), "EmbeddedOptions", false).ToString()); //enum adds Enum to name at end
