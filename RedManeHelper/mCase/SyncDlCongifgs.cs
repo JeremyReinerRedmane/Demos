@@ -1,7 +1,13 @@
-﻿using System.Net.Http.Headers;
+﻿using System;
+using System.Collections.Generic;
+using System.Data.SqlClient;
+using System.IO;
+using System.Linq;
+using System.Net.Http;
+using System.Net.Http.Headers;
 using System.Text;
+using System.Threading.Tasks;
 using mCASE_ADMIN.DataAccess.mCase.Static;
-using Microsoft.Data.SqlClient;
 using Newtonsoft.Json.Linq;
 using Extensions = mCASE_ADMIN.DataAccess.mCase.Static.Extensions;
 
@@ -146,6 +152,10 @@ namespace mCASE_ADMIN.DataAccess.mCase
             }
         }
 
+        /// <summary>
+        /// required for bat script pipeline app. 
+        /// </summary>
+        /// <returns></returns>
         public async Task<List<int>> DataAccess()
         {
             var ids = new List<int>();
@@ -222,7 +232,7 @@ namespace mCASE_ADMIN.DataAccess.mCase
 
             var jsonObject = JObject.Parse(result);
 
-            var className = jsonObject.ParseClassName(ListTransferFields.Name.GetDescription()).GetPropertyNameFromSystemName() + id;
+            var className = jsonObject.ParseClassName(ListTransferFields.Name.GetDescription()).GetPropertyNameFromSystemName();
 
             if (string.IsNullOrEmpty(className)) return string.Empty;
 
@@ -230,7 +240,7 @@ namespace mCASE_ADMIN.DataAccess.mCase
             {
                 var sb = GenerateFileData(jsonObject, className);
 
-                var path = Path.Combine(_outputDirectory, className + ".cs");
+                var path = Path.Combine(_outputDirectory, className + id + ".cs");
 
                 File.WriteAllText(path, sb.ToString());
 
@@ -341,10 +351,8 @@ namespace mCASE_ADMIN.DataAccess.mCase
                 var csv = sbs.ToString();
                 if (string.IsNullOrEmpty(csv))
                     continue;
-                //Split("$~*@*~$")
-                //var data = csv.Split('$', '~', '*', '@', '*', '~', '$').Where(x => !string.IsNullOrEmpty(x));
-                var delimiter = "$~*@*~$";
-                var data = csv.Split(new[] { delimiter }, StringSplitOptions.None).Where(x => !string.IsNullOrEmpty(x));
+
+                var data = csv.Split(new[] { "$~*@*~$" }, StringSplitOptions.None).Where(x => !string.IsNullOrEmpty(x));
                 allDefaultValues.AddRange(data);
                 allDefaultValues = allDefaultValues.Distinct().ToList();
             }

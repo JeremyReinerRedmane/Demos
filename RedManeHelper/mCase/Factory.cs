@@ -32,10 +32,10 @@ namespace mCASE_ADMIN.DataAccess.mCase
             #region Dl Info Class
 
             sb.AppendLine(0.Indent() + $"/// <summary>  Synchronized data list [{id}][{sysName}] on {dtNow} </summary>");
-            sb.AppendLine(0.Indent() + $"public class {className}DlInfo");
+            sb.AppendLine(0.Indent() + $"public class {className}Info");
             sb.AppendLine(0.Indent() + "{"); //open class
             sb.AppendLine(1.Indent() + "private AEventHelper _eventHelper;");
-            sb.AppendLine(1.Indent() + $"public {className}DlInfo(AEventHelper eventHelper)");
+            sb.AppendLine(1.Indent() + $"public {className}Info(AEventHelper eventHelper)");
             sb.AppendLine(1.Indent() + "{"); //open constructor
             sb.AppendLine(2.Indent() + "_eventHelper = eventHelper;");
             sb.AppendLine(1.Indent() + "}"); //close constructor
@@ -59,14 +59,14 @@ namespace mCASE_ADMIN.DataAccess.mCase
             #region Entity
 
             sb.AppendLine(0.Indent() + $"/// <summary> Synchronized data list [{id}][{sysName}] on {dtNow} </summary>");
-            sb.AppendLine(0.Indent() + $"public class {className}Entity");
+            sb.AppendLine(0.Indent() + $"public class {className}");
             sb.AppendLine(0.Indent() + "{"); //open class
             sb.AppendLine(1.Indent() + "public RecordInstanceData RecordInsData;");
             sb.AppendLine(1.Indent() + "private readonly AEventHelper _eventHelper;");
 
             sb.AppendLine(1.Indent() + "/// <summary> Class for Updating Existing RecordInstanceData. To create a new RecordInstance data, initialize with the appropriate datalist ID. </summary>");
             sb.AppendLine(1.Indent() +
-                          $"public {className}Entity(RecordInstanceData recordInsData, AEventHelper eventHelper)");
+                          $"public {className}(RecordInstanceData recordInsData, AEventHelper eventHelper)");
             sb.AppendLine(1.Indent() + "{"); //open constructor #Existing Record Instance Data
             sb.AppendLine(2.Indent() + "_eventHelper = eventHelper;");
             sb.AppendLine(2.Indent() + $"if (recordInsData.DataListID != DataListId) throw new Exception(\"RecordInstance is not of type {sysName}\");");
@@ -791,7 +791,7 @@ namespace mCASE_ADMIN.DataAccess.mCase
         {
             var sb = new StringBuilder();
 
-            var entity = $"{className}Entity";
+            var entity = $"{className}";
             var staticProperties = $"{className}Static.Properties_Enum";
             var defaultValues = $"{className}Static.DefaultValuesEnum";
             var propertyMap = $"{className}Static.Properties_Map";
