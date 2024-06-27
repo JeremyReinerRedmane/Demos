@@ -153,12 +153,29 @@ namespace mCASE_ADMIN.DataAccess.mCase
             }
         }
 
+        private void DeleteAllFiles()
+        {
+            var dir = new DirectoryInfo(_outputDirectory);
+
+            if (dir.GetFiles().Length == 0) return;
+
+            var files = dir.GetFiles();
+
+            foreach (var file in files)
+            {
+                file.Delete();
+            }
+        }
+
         /// <summary>
         /// required for bat script pipeline app. 
         /// </summary>
         /// <returns></returns>
         public async Task<List<int>> DataAccess()
         {
+            if (Directory.Exists(_outputDirectory))
+                DeleteAllFiles();
+
             var ids = new List<int>();
             try
             {
