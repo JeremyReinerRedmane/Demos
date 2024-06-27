@@ -108,6 +108,8 @@ namespace mCASE_ADMIN.DataAccess.mCase.Static
         [Description("Name")]
         Name,
         [Description("Value")]
-        Value
+        Value,
+        [Description("Required")]
+        Required
     }
 }
