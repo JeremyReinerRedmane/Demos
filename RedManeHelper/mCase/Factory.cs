@@ -26,35 +26,8 @@ namespace mCASE_ADMIN.DataAccess.mCase
 
             sb.AppendLine( //TODO continue to add usings, as more and more validations are made
                 "using System;\nusing System.Collections.Generic;\nusing System.Linq;\nusing MCaseCustomEvents.ARFocus.DataAccess;\nusing MCaseEventsSDK;\nusing MCaseEventsSDK.Util;\nusing MCaseEventsSDK.Util.Data;\nusing System.ComponentModel;\nusing System.Reflection;");
-            sb.AppendLine($"namespace {nameSpace}"); 
+            sb.AppendLine($"namespace {nameSpace}");
             sb.AppendLine("{"); //open namespace
-
-            #region Dl Info Class
-
-            sb.AppendLine(0.Indent() + $"/// <summary>  Synchronized data list [{id}][{sysName}] on {dtNow} </summary>");
-            sb.AppendLine(0.Indent() + $"public class {className}Info");
-            sb.AppendLine(0.Indent() + "{"); //open class
-            sb.AppendLine(1.Indent() + "private AEventHelper _eventHelper;");
-            sb.AppendLine(1.Indent() + $"public {className}Info(AEventHelper eventHelper)");
-            sb.AppendLine(1.Indent() + "{"); //open constructor
-            sb.AppendLine(2.Indent() + "_eventHelper = eventHelper;");
-            sb.AppendLine(1.Indent() + "}"); //close constructor
-            sb.AppendLine(1.Indent() + $"public string SystemName => \"{sysName}\";");
-            sb.AppendLine(1.Indent() + "private int _dataListId = -1;");
-            sb.AppendLine(1.Indent() + "/// <summary> Data list identifier is -1 if not found </summary>");
-            sb.AppendLine(1.Indent() + "public int DataListId");
-            sb.AppendLine(1.Indent() + "{"); //open Property
-            sb.AppendLine(2.Indent() + "get");
-            sb.AppendLine(2.Indent() + "{"); //open Getter
-            sb.AppendLine(3.Indent() + "if(_dataListId != -1) return _dataListId;");
-            sb.AppendLine(3.Indent() + "var id = _eventHelper.GetDataListID(SystemName);");
-            sb.AppendLine(3.Indent() + "if(id.HasValue && id.Value > 0) _dataListId = id.Value;");
-            sb.AppendLine(3.Indent() + "return _dataListId;");
-            sb.AppendLine(2.Indent() + "}"); //close Getter
-            sb.AppendLine(1.Indent() + "}"); //close Property
-            sb.AppendLine(0.Indent() + "}"); //close class
-
-            #endregion
 
             #region Entity
 
@@ -99,24 +72,90 @@ namespace mCASE_ADMIN.DataAccess.mCase
             return sb;
         }
 
+        public static StringBuilder BuildInfoClass(JObject jObject, string className, bool hasFields)
+        {
+            var sb = new StringBuilder();
+
+            var id = jObject.ParseJson(ListTransferFields.Id.GetDescription());
+            var sysName = jObject.ParseJson(ListTransferFields.SystemName.GetDescription());
+            var dtNow = DateTime.Now.ToString(Extensions.MCaseDateTimeStorageFormat);
+
+            #region Dl Info Class
+
+            sb.AppendLine(0.Indent() + $"/// <summary>  Synchronized data list [{id}][{sysName}] on {dtNow} </summary>");
+            sb.AppendLine(0.Indent() + $"public class {className}Info");
+            sb.AppendLine(0.Indent() + "{"); //open class
+            sb.AppendLine(1.Indent() + "private AEventHelper _eventHelper;");
+            sb.AppendLine(1.Indent() + $"public {className}Info(AEventHelper eventHelper)");
+            sb.AppendLine(1.Indent() + "{"); //open constructor
+            sb.AppendLine(2.Indent() + "_eventHelper = eventHelper;");
+            sb.AppendLine(1.Indent() + "}"); //close constructor
+            sb.AppendLine(1.Indent() + $"public string SystemName => \"{sysName}\";");
+            sb.AppendLine(1.Indent() + "private int _dataListId = -1;");
+            sb.AppendLine(1.Indent() + "/// <summary> Data list identifier is -1 if not found </summary>");
+            sb.AppendLine(1.Indent() + "public int DataListId");
+            sb.AppendLine(1.Indent() + "{"); //open Property
+            sb.AppendLine(2.Indent() + "get");
+            sb.AppendLine(2.Indent() + "{"); //open Getter
+            sb.AppendLine(3.Indent() + "if(_dataListId != -1) return _dataListId;");
+            sb.AppendLine(3.Indent() + "var id = _eventHelper.GetDataListID(SystemName);");
+            sb.AppendLine(3.Indent() + "if(id.HasValue && id.Value > 0) _dataListId = id.Value;");
+            sb.AppendLine(3.Indent() + "return _dataListId;");
+            sb.AppendLine(2.Indent() + "}"); //close Getter
+            sb.AppendLine(1.Indent() + "}"); //close Property
+
+
+            if (hasFields)
+            {
+                #region SQL Query
+
+                var sysNames = $"{className}Static.SystemNamesEnum";
+                var sysNamesMap = $"{className}Static.SystemNamesMap";
+
+                sb.AppendLine(1.Indent() + "/// <summary> Creates a raw sql query filter for the specified property, based off the filter params passed through</summary>");
+                sb.AppendLine(1.Indent() + $"/// <param name=\"fieldSysName\">Use {sysNames} to find the field system name </param>");
+                sb.AppendLine(1.Indent() + "/// <param name=\"filters\">Any string query for filteration. Sql will index '%%' query search</param>");
+                sb.AppendLine(1.Indent() + "/// <returns>DirectSQLFieldFilterData object </returns>");
+                sb.AppendLine(1.Indent() + $"public DirectSQLFieldFilterData CreateFilter({sysNames} fieldSysName, List<string> filters ) => " +
+                              $"new DirectSQLFieldFilterData(_eventHelper.GetFieldID(DataListId, {sysNamesMap}[fieldSysName]) ?? 0, filters);");
+
+                sb.AppendLine(1.Indent() + "/// <summary> Creates a raw sql query filter for the specified property, based off the filter params passed through</summary>");
+                sb.AppendLine(1.Indent() + $"/// <param name=\"fieldSysName\">Use {sysNames} to find the field system name </param>");
+                sb.AppendLine(1.Indent() + "/// <param name=\"min\">Minimum value for range index querying. Ex: DateTime.Min, or '0'</param>");
+                sb.AppendLine(1.Indent() + "/// <param name=\"max\">Maximum value for range index querying. Ex: DateTime.Max, or '100'</param>");
+                sb.AppendLine(1.Indent() + "/// <returns>DirectSQLFieldFilterData object </returns>");
+                sb.AppendLine(1.Indent() + $"public DirectSQLFieldFilterData CreateFilter({sysNames} fieldSysName, string min, string max) => " +
+                              $"new DirectSQLFieldFilterData(_eventHelper.GetFieldID(DataListId, {sysNamesMap}[fieldSysName]) ?? 0, min, max);");
+
+                sb.AppendLine(1.Indent() + "/// <summary> Generate the filtered query, using a list of filtered query items.</summary>");
+                sb.AppendLine(1.Indent() + "/// <param name=\"filters\"> List of filter data objects. Advised to use CreateFilter() method to generate filters</param>");
+                sb.AppendLine(1.Indent() + $"/// <returns>List of {className} objects that match with all filter queries. Query is && operator not by || operator</returns>");
+                sb.AppendLine(1.Indent() + $"public List<{className}> CreateQuery(List<DirectSQLFieldFilterData> filters) => _eventHelper.SearchSingleDataListSQLProcess(DataListId, filters).Select(x => new {className}(x, _eventHelper)).ToList();");
+
+                #endregion
+            }
+
+            sb.AppendLine(0.Indent() + "}"); //close class
+
+            #endregion
+
+            return sb;
+        }
+
         #region Factories
 
-        public static string StringFactory(JToken jToken, string propertyName, string sysName, string type)
+        public static string StringFactory(JToken jToken, string propertyName, string sysName, string type, bool required)
         {
             var sb = new StringBuilder();
             var enumType = type.GetEnumValue<MCaseTypes>();
 
             var privateSysName = $"_{propertyName.ToLower()}";
             var mirroredField = jToken.IsMirrorField();
+            var mirroredString = mirroredField ? "[ Mirrored field. No setting / updating allowed.] " : string.Empty;
+            var requiredString = required ? "[Required Field] " : string.Empty;
 
             sb.AppendLine(1.Indent() + $"private string {privateSysName} = string.Empty;");
-
-            //single line
-            sb.Append(1.Indent() + $"/// <summary> [mCase data type: {type}] ");
-            if (mirroredField)
-                sb.Append("This is a Mirrored field. No setting / updating allowed.");
-            sb.Append("</summary>\r\n");
-            //end single line
+            sb.AppendLine(1.Indent() + $"/// <summary> [mCase data type: {type}] {requiredString}{mirroredString}</summary>");
 
             if (_stringCheck.Contains(enumType) && !mirroredField)
                 sb.AppendLine(1.Indent() +
@@ -148,14 +187,17 @@ namespace mCASE_ADMIN.DataAccess.mCase
             return sb.ToString();
         }
 
-        public static string LongFactory(string propertyName, string sysName, string type)
+        public static string LongFactory(string propertyName, string sysName, string type, bool required)
         {
             var sb = new StringBuilder();
 
             var privateSysName = $"_{propertyName.ToLower()}";
 
+            var requiredString = required ? "[Required Field] " : string.Empty;
             sb.AppendLine(1.Indent() + $"private string {privateSysName} = string.Empty;");
-            sb.AppendLine(1.Indent() + $"/// <summary> [mCase data type: {type}] Gets value, and sets long value </summary>");
+
+            sb.AppendLine(1.Indent() + $"/// <summary> [mCase data type: {type}] {requiredString}Gets value, and sets long value </summary>");
+
             sb.AppendLine(1.Indent() + $"public string {propertyName}");
             sb.AppendLine(1.Indent() + "{"); //open Property
             sb.AppendLine(2.Indent() + "get");
@@ -174,21 +216,19 @@ namespace mCASE_ADMIN.DataAccess.mCase
             return sb.ToString();
         }
 
-        public static string DateFactory(JToken jToken, string propertyName, string sysName, string type)
+        public static string DateFactory(JToken jToken, string propertyName, string sysName, string type, bool required)
         {
             var sb = new StringBuilder();
             var enumType = type.GetEnumValue<MCaseTypes>();
 
             var privateSysName = $"_{propertyName.ToLower()}";
             var mirroredField = jToken.IsMirrorField();
+            var requiredString = required ? "[Required Field] " : string.Empty;
+            var mirroredString = mirroredField ? "[Mirrored field. No setting / updating allowed.] " : string.Empty;
+
             sb.AppendLine(1.Indent() + $"private DateTime {privateSysName} = DateTime.MinValue;");
 
-            //single line
-            sb.Append(1.Indent() + $"/// <summary> [mCase data type: {type}] ");
-            if (mirroredField)
-                sb.Append("This is a Mirrored field. No setting / updating allowed.");
-            sb.Append("</summary>\r\n");
-            //end single line
+            sb.AppendLine(1.Indent() + $"/// <summary> [mCase data type: {type}] {requiredString}{mirroredString}</summary>");
 
             if (!mirroredField)
                 sb.AppendLine(1.Indent() +
@@ -223,12 +263,13 @@ namespace mCASE_ADMIN.DataAccess.mCase
         }
 
         private static string DynamicDropDownFactory(string propertyName, string sysName, string fieldType,
-            string privateName, string multiSelect, string dynamicData, bool notAbleToSelectManyValues)
+            string privateName, string multiSelect, string dynamicData, bool notAbleToSelectManyValues, bool required)
         {
+            var requiredString = required ? "[Required Field] " : string.Empty;
             var sb = new StringBuilder();
 
             sb.AppendLine(1.Indent() + $"private List<RecordInstanceData> {privateName} = null;");
-            sb.AppendLine(1.Indent() + $"/// <summary> [mCase data type: {fieldType}] [Multi Select: {multiSelect}] [Dynamic Source: {dynamicData}] [Setting: Requires a RecordInstancesData] [Getting: Returns the list of RecordInstancesData's] [Updating: Requires use of either AddTo(), or RemoveFrom()] </summary>");
+            sb.AppendLine(1.Indent() + $"/// <summary> [mCase data type: {fieldType}] [Multi Select: {multiSelect}] {requiredString}[Dynamic Source: {dynamicData}] [Setting: Requires a RecordInstancesData] [Getting: Returns the list of RecordInstancesData's] [Updating: Requires use of either AddTo(), or RemoveFrom()] </summary>");
             sb.AppendLine(1.Indent() + $"public List<RecordInstanceData> {propertyName}");
             sb.AppendLine(1.Indent() + "{"); //open Property
             sb.AppendLine(2.Indent() + "get");
@@ -259,18 +300,20 @@ namespace mCASE_ADMIN.DataAccess.mCase
         }
 
         private static Tuple<string, StringBuilder> DropDownFactory(JToken jToken, string propertyName, string sysName,
-            string fieldType, string privateName, string multiSelect, bool notAbleToSelectManyValues, string className)
+            string fieldType, string privateName, string multiSelect, bool notAbleToSelectManyValues, string className, bool required)
         {
             var defaultValues = jToken.ParseDefaultData(ListTransferFields.FieldValues.GetDescription());
             var staticName = $"{className}Static.DefaultValuesEnum";
             var defaultMap = $"{className}Static.DefaultValuesMap";
             var defaultOptionsName = $"{privateName}Values";
+            var requiredString = required ? "[Required Field] " : string.Empty;
+
             var enumValues = new StringBuilder();
             var returnValue = new StringBuilder();
 
             if (defaultValues.Any())
             {
-                returnValue = GenerateDDWithDefaultValues(propertyName, sysName, fieldType, privateName, multiSelect, notAbleToSelectManyValues, defaultValues, staticName, defaultOptionsName, defaultMap);
+                returnValue = GenerateDDWithDefaultValues(propertyName, sysName, fieldType, privateName, multiSelect, notAbleToSelectManyValues, defaultValues, staticName, defaultOptionsName, defaultMap, requiredString);
 
                 var enums = new StringBuilder();
                 enums.Append(string.Join("$~*@*~$", defaultValues));
@@ -278,7 +321,7 @@ namespace mCASE_ADMIN.DataAccess.mCase
             }
             else
             {
-                returnValue = NoDefaultValues(propertyName, sysName, privateName, fieldType, multiSelect);
+                returnValue = NoDefaultValues(propertyName, sysName, privateName, fieldType, multiSelect, requiredString);
             }
 
 
@@ -295,7 +338,7 @@ namespace mCASE_ADMIN.DataAccess.mCase
         /// <param name="fieldType"></param>
         /// <returns>Property, Enum</returns>
         public static Tuple<string, StringBuilder> EnumerableFactory(JToken jToken, MCaseTypes type,
-            string propertyName, string sysName, string fieldType, string className)
+            string propertyName, string sysName, string fieldType, string className, bool required)
         {
             var fieldOptions = jToken.ParseToken(ListTransferFields.FieldOptions.GetDescription());
             var dynamicData = jToken.ParseDynamicData(ListTransferFields.DynamicData.GetDescription());
@@ -309,7 +352,7 @@ namespace mCASE_ADMIN.DataAccess.mCase
                 case MCaseTypes.CascadingDropDown:
                 case MCaseTypes.DropDownList:
                     var dropDownValues = DropDownFactory(jToken, propertyName, sysName, fieldType, privateName,
-                        multiSelect, notAbleToSelectManyValues, className);// has default values. Values are strings
+                        multiSelect, notAbleToSelectManyValues, className, required);// has default values. Values are strings
 
                     //Item 1 = property, Item 2 = Enum
                     return new Tuple<string, StringBuilder>(dropDownValues.Item1, dropDownValues.Item2);
@@ -317,7 +360,7 @@ namespace mCASE_ADMIN.DataAccess.mCase
                 case MCaseTypes.CascadingDynamicDropDown:
                 case MCaseTypes.DynamicDropDown:
                     var dynamicValues = DynamicDropDownFactory(propertyName, sysName, fieldType, privateName,
-                        multiSelect, dynamicData, notAbleToSelectManyValues);//does not have default values. Values are RecordInstances (pointers)
+                        multiSelect, dynamicData, notAbleToSelectManyValues, required);//does not have default values. Values are RecordInstances (pointers)
                     return new Tuple<string, StringBuilder>(dynamicValues, new StringBuilder());
 
                 default:
@@ -362,12 +405,12 @@ namespace mCASE_ADMIN.DataAccess.mCase
             return sb.ToString();
         }
 
-        private static StringBuilder NoDefaultValues(string propertyName, string systemName, string privateName, string fieldType, string multiSelect)
+        private static StringBuilder NoDefaultValues(string propertyName, string systemName, string privateName, string fieldType, string multiSelect, string required)
         {
             var sb = new StringBuilder();
 
             sb.AppendLine(1.Indent() + $"private List<string> {privateName}= null;");
-            sb.AppendLine(1.Indent() + $"/// <summary> [mCase data type: {fieldType}] [Multi Select: {multiSelect}] [Getting: Returns the list of field labels] [Updating: AddTo(), AddRangeTo(), RemoveFrom()] </summary>");
+            sb.AppendLine(1.Indent() + $"/// <summary> [mCase data type: {fieldType}] [Multi Select: {multiSelect}] {required}[Getting: Returns the list of field labels] [Updating: AddTo(), AddRangeTo(), RemoveFrom()] </summary>");
 
             if (!string.Equals(multiSelect, "True"))
             {
@@ -399,7 +442,7 @@ namespace mCASE_ADMIN.DataAccess.mCase
 
         private static StringBuilder GenerateDDWithDefaultValues(string propertyName, string sysName, string fieldType,
             string privateName, string multiSelect, bool notAbleToSelectManyValues, List<string> defaultValues,
-            string staticName, string defaultOptionsName, string map)
+            string staticName, string defaultOptionsName, string map, string required)
         {
             var sb = new StringBuilder();
 
@@ -418,7 +461,7 @@ namespace mCASE_ADMIN.DataAccess.mCase
 
             #region Summary
 
-            sb.AppendLine(1.Indent() + $"/// <summary> [mCase data type: {fieldType}] [Multi Select: {multiSelect}] [Default field values can be found in {staticName}] [Available options can be found in {defaultOptionsName}] [Getting: Returns the list of \"{staticName}'s\"] [Updating: AddTo(), RemoveFrom(), MapTo()] </summary>");
+            sb.AppendLine(1.Indent() + $"/// <summary> [mCase data type: {fieldType}] [Multi Select: {multiSelect}] {required}[Default field values can be found in {staticName}] [Available options can be found in {defaultOptionsName}] [Getting: Returns the list of \"{staticName}'s\"] [Updating: AddTo(), RemoveFrom(), MapTo()] </summary>");
 
             if (!string.Equals(multiSelect, "True"))
             {
@@ -466,6 +509,7 @@ namespace mCASE_ADMIN.DataAccess.mCase
                 "using System;\nusing System.Collections.Generic;\nusing System.ComponentModel;\nusing System.Linq;\nusing MCaseEventsSDK.Util;\nusing MCaseEventsSDK.Util.Data;\nusing System.Text.RegularExpressions;");
             sb.AppendLine($"namespace {namespace_}"); //TODO: project specific namespace
             sb.AppendLine("{"); //Open class
+            sb.AppendLine(0.Indent() + "/// <summary> Much to learn, this static extension still has. Powerful tool it can be. But remember, foresee the consequences of your code you must. With caution, use this extension you should. </summary>"); //static class
             sb.AppendLine(0.Indent() + "public static class FactoryExtensions"); //static class
             sb.AppendLine(0.Indent() + "{"); //open class
             sb.Append(BuildEnumExtensions());
@@ -785,7 +829,7 @@ namespace mCASE_ADMIN.DataAccess.mCase
             return sb.ToString();
         }
 
-        public static string AddEnumerableExtensions(string className, bool addDefaults)
+        public static string AddEnumerableExtensions(string className, bool addDefaults, List<Tuple<string, string>> requiredFields)
         {
             var sb = new StringBuilder();
 
@@ -794,8 +838,6 @@ namespace mCASE_ADMIN.DataAccess.mCase
             var defaultValues = $"{className}Static.DefaultValuesEnum";
             var propertyMap = $"{className}Static.Properties_Map";
             var defaultMap = $"{className}Static.DefaultValuesMap";
-            var sysNames = $"{className}Static.SystemNamesEnum";
-            var sysNamesMap = $"{className}Static.SystemNamesMap";
 
             if (addDefaults)
             {
@@ -889,26 +931,27 @@ namespace mCASE_ADMIN.DataAccess.mCase
 
             }
 
+            #endregion
+
+            #region Save Record
+
+            var requiredFieldSummary = requiredFields.Select(x => x.Item2.GetPropertyNameFromSystemName());
+
+            // save record
+            sb.AppendLine(1.Indent() + $"/// <summary> Verify that ALL required fields have been entered: {string.Join(", ", requiredFieldSummary)}</summary>");
             sb.AppendLine(1.Indent() + "public void SaveRecord()");
             sb.AppendLine(1.Indent() + "{");//open method
-            sb.AppendLine(2.Indent() + "//validate additional required fields are set");
+            foreach (var required in requiredFields)
+            {
+                var check = AddSaveRecordCheckForRequiredProperty(required);
+
+                if (!string.IsNullOrEmpty(check))
+                    sb.AppendLine(2.Indent() + check);
+            }
             sb.AppendLine(2.Indent() + "_eventHelper.SaveRecord(RecordInsData);");
             sb.AppendLine(1.Indent() + "}");//close method
 
-            sb.AppendLine(1.Indent() + "/// <summary> Creates a raw sql query filter for the specified property, based off the filter params passed through</summary>");
-            sb.AppendLine(1.Indent() + $"public DirectSQLFieldFilterData CreateFilter({sysNames} fieldSysName, List<string> filters ) => " +
-                          $"new DirectSQLFieldFilterData(_eventHelper.GetFieldID(DataListId, {sysNamesMap}[fieldSysName]) ?? 0, filters);");
-
-            sb.AppendLine(1.Indent() + "/// <summary> Creates a raw sql query filter for the specified property, based off the filter params passed through</summary>");
-            sb.AppendLine(1.Indent() + $"public DirectSQLFieldFilterData CreateFilter({sysNames} fieldSysName, string min, string max) => " +
-                          $"new DirectSQLFieldFilterData(_eventHelper.GetFieldID(DataListId, {sysNamesMap}[fieldSysName]) ?? 0, min, max);");
-
-            sb.AppendLine(1.Indent() + "/// <summary> Generate the filtered query, using a list of filtered query items.</summary>");
-            sb.AppendLine(1.Indent() + $"public List<{className}> CreateQuery(List<DirectSQLFieldFilterData> filters) => _eventHelper.SearchSingleDataListSQLProcess(DataListId, filters).Select(x => new {className}(x, _eventHelper)).ToList();");
-
-
             #endregion
-
             #region private method extractions
 
             if (addDefaults)
@@ -922,7 +965,7 @@ namespace mCASE_ADMIN.DataAccess.mCase
                 sb.AppendLine(1.Indent() + $"public int Clear({staticProperties} propertyEnum) => this.Clear<{entity}, {defaultValues}>({propertyMap}[propertyEnum]);");
 
                 #endregion
-                
+
                 sb.AppendLine(1.Indent() + "#region Private");
                 //add MultiSelectValue
                 sb.AppendLine(1.Indent() + $"private List<{defaultValues}> GetMultiSelectValue(string sysName)");
@@ -946,9 +989,7 @@ namespace mCASE_ADMIN.DataAccess.mCase
                 #region Clear Without DefaultValues
 
                 //clear
-                sb.AppendLine(1.Indent() + "/// <summary>");
-                sb.AppendLine(1.Indent() + "/// Clears all existing values from list.");
-                sb.AppendLine(1.Indent() + "/// </summary>");
+                sb.AppendLine(1.Indent() + "/// <summary>  Clears all existing values from list. </summary>");
                 sb.AppendLine(1.Indent() + "/// <param name=\"propertyEnum\">Class public property name</param>");
                 sb.AppendLine(1.Indent() + "/// <returns>Cleared list = 0. Type errors: -1. null errors: -2.</returns>");
                 sb.AppendLine(1.Indent() + $"public int Clear({staticProperties} propertyEnum) => this.Clear<{entity}, {staticProperties}>({propertyMap}[propertyEnum]);");
@@ -956,9 +997,62 @@ namespace mCASE_ADMIN.DataAccess.mCase
                 #endregion
             }
 
-
             #endregion
             return sb.ToString();
+        }
+
+        private static string AddSaveRecordCheckForRequiredProperty(Tuple<string, string> required)
+        {
+            var type = required.Item1.GetEnumValue<MCaseTypes>();
+            var privateName = "_" + required.Item2.GetPropertyNameFromSystemName().ToLower();
+
+            switch (type)
+            {
+                //case mCaseTypes.EmbeddedList: Processed after loop completion
+                case MCaseTypes.CascadingDropDown:
+                case MCaseTypes.DropDownList:
+                case MCaseTypes.DynamicDropDown:
+                case MCaseTypes.CascadingDynamicDropDown:
+                    return $"if({privateName}.Count == 0) throw new Exception(\"This is a required property\");";
+                case MCaseTypes.String:
+                case MCaseTypes.LongString:
+                case MCaseTypes.EmailAddress:
+                case MCaseTypes.Phone:
+                case MCaseTypes.URL:
+                case MCaseTypes.Number:
+                case MCaseTypes.Money:
+                case MCaseTypes.Time:
+                case MCaseTypes.Boolean:
+                case MCaseTypes.ReadonlyField:
+                case MCaseTypes.User:
+                case MCaseTypes.Address:
+                case MCaseTypes.Attachment:
+                    return $"if(string.IsNullOrEmpty({privateName})) throw new Exception(\"This is a required property\");";
+                case MCaseTypes.Date:
+                case MCaseTypes.DateTime:
+                    return $"if({privateName} == DateTime.MinValue) throw new Exception(\"This is a required property\");";
+                case MCaseTypes.Section: //need in ce's?
+                case MCaseTypes.Narrative: //need in ce's?
+                case MCaseTypes.Header: //need in ce's?
+                case MCaseTypes.UserRoleSecurityRestrict: //not required in CE's
+                case MCaseTypes.DynamicCalculatedField: //not required in CE's
+                case MCaseTypes.CalculatedField: // not required in CE's 
+                case MCaseTypes.UniqueIdentifier: //not required in CE's
+                case MCaseTypes.EmbeddedDocument: // blob?
+                case MCaseTypes.HiddenField: //not required in CE's
+                case MCaseTypes.LineBreak: //not required in CE's
+                case MCaseTypes.Position0: //not required in CE's
+                case MCaseTypes.Score1: //not required in CE's
+                case MCaseTypes.Score2: //not required in CE's
+                case MCaseTypes.Score3: //not required in CE's
+                case MCaseTypes.Score4: //not required in CE's
+                case MCaseTypes.Score5: //not required in CE's
+                case MCaseTypes.Score6: //not required in CE's
+                default:
+                    {
+                        return string.Empty;
+                    }
+            }
         }
 
         public static StringBuilder GenerateEnums(List<string> fieldSet, string className, bool titleCase)

@@ -271,6 +271,7 @@ namespace mCASE_ADMIN.DataAccess.mCase
             var enumerableFieldSet = new HashSet<string>(); //used to enum properties being set
             var embeddedRelatedFields = new HashSet<string>();
             _stringBuilders = new List<StringBuilder>();//used for containing all the enum property values in the class
+            var requiredFields = new List<Tuple<string, string>>();
             var requiresEnumerationValues = new List<string>
             {
                 MCaseTypes.EmbeddedList.GetDescription(),
@@ -293,6 +294,17 @@ namespace mCASE_ADMIN.DataAccess.mCase
                 if (string.IsNullOrEmpty(systemName) || fieldSet.Contains(systemName))
                     continue; //if property is already in field list then continue, no need to duplicate
 
+                var requiredString = field.ParseToken(ListTransferFields.Required.GetDescription());
+
+                var required = false;
+
+                if (string.Equals("true", requiredString, StringComparison.OrdinalIgnoreCase))
+                {
+                    required = true;
+
+                    requiredFields.Add(new Tuple<string, string>(type, systemName));
+                }
+
                 if (requiresEnumerationValues.Any(x => string.Equals(x, type, StringComparison.OrdinalIgnoreCase)))
                 {
                     enumerableFieldSet.Add(systemName);
@@ -300,12 +312,16 @@ namespace mCASE_ADMIN.DataAccess.mCase
                     if (string.Equals(requiresEnumerationValues[0], type, StringComparison.OrdinalIgnoreCase))
                     {
                         var fieldName = field.ParseDynamicData(ListTransferFields.DynamicData.GetDescription());
+
                         if (string.IsNullOrEmpty(fieldName))
                             continue;//weird but true. DL: TDM-Signatures Field: TDMSIGNATURES
 
                         var entityName = fieldName.GetPropertyNameFromSystemName();
+
                         embeddedRelatedFields.Add(entityName);
+
                         fieldSet.Add(systemName);
+
                         continue;
                     }
                 }
@@ -313,7 +329,7 @@ namespace mCASE_ADMIN.DataAccess.mCase
                 if (requiresEnumerationValues.Contains(type))
                     requiresEnumeration = true;
 
-                var property = AddProperties(field, type, systemName, className);// 2: Add properties. Magic happens here
+                var property = AddProperties(field, type, systemName, className, required);// 2: Add properties. Magic happens here
 
                 if (string.IsNullOrEmpty(property))
                     continue;
@@ -327,22 +343,24 @@ namespace mCASE_ADMIN.DataAccess.mCase
                 sb.AppendLine(Factory.GetEmbeddedOptions(className)); // 3: Add class methods
 
             if (requiresEnumeration)
-                sb.AppendLine(Factory.AddEnumerableExtensions(className, _stringBuilders.Any())); // 3: Add class methods
+                sb.AppendLine(Factory.AddEnumerableExtensions(className, _stringBuilders.Any(), requiredFields)); // 3: Add class methods
 
             sb.AppendLine(0.Indent() + "}"); // 4: close class
 
             #region 5: Static File Backing
 
             sb.AppendLine(0.Indent() + $"public static class {className}Static");
+
             sb.AppendLine(0.Indent() + "{");//open static class
-            if (enumerableFieldSet.Any())
+
+            if (enumerableFieldSet.Any())//generate our property values
             {
                 sb.AppendLine(Factory.GenerateEnums(enumerableFieldSet.ToList(), "Properties_", true).ToString());// All class property names
             }
 
             sb.AppendLine(Factory.GenerateEnums(fieldSet.ToList(), "SystemNames", false).ToString());// All class property names
 
-            if (embeddedRelatedFields.Count > 0)
+            if (embeddedRelatedFields.Count > 0)//embedded list options
             {
                 sb.AppendLine(Factory.GenerateEnums(embeddedRelatedFields.ToList(), "EmbeddedOptions", false).ToString()); //enum adds Enum to name at end
             }
@@ -352,11 +370,14 @@ namespace mCASE_ADMIN.DataAccess.mCase
             foreach (var sbs in _stringBuilders)
             {
                 var csv = sbs.ToString();
+
                 if (string.IsNullOrEmpty(csv))
                     continue;
 
                 var data = csv.Split(new[] { "$~*@*~$" }, StringSplitOptions.None).Where(x => !string.IsNullOrEmpty(x));
+
                 allDefaultValues.AddRange(data);
+
                 allDefaultValues = allDefaultValues.Distinct().ToList();
             }
 
@@ -377,11 +398,18 @@ namespace mCASE_ADMIN.DataAccess.mCase
             sb.AppendLine(0.Indent() + "}"); //close static class
 
             #endregion
-            sb.AppendLine("}"); // 6: close namespace
+
+            #region 6: Info Class
+
+            sb.Append(Factory.BuildInfoClass(jsonObject, className, requiresEnumeration));
+
+            #endregion
+
+            sb.AppendLine("}"); // 7: close namespace
             return sb;
         }
 
-        private string AddProperties(JToken jToken, string type, string sysName, string className)//sysname is uppercase
+        private string AddProperties(JToken jToken, string type, string sysName, string className, bool required)//sysname is uppercase
         {
             var typeEnum = type.GetEnumValue<MCaseTypes>();
 
@@ -395,9 +423,11 @@ namespace mCASE_ADMIN.DataAccess.mCase
                 case MCaseTypes.DynamicDropDown:
                 case MCaseTypes.CascadingDynamicDropDown:
                     //Item 1 = property, Item 2 = Enum
-                    var values = Factory.EnumerableFactory(jToken, typeEnum, propertyName, sysName, type, className); //multiselect?
+                    var values = Factory.EnumerableFactory(jToken, typeEnum, propertyName, sysName, type, className, required); //multiselect?
+
                     if (!string.IsNullOrEmpty(values.Item2.ToString())) //if there are enum values
                         _stringBuilders.Add(values.Item2);
+
                     return values.Item1;
                 case MCaseTypes.String:
                 case MCaseTypes.LongString:
@@ -411,12 +441,12 @@ namespace mCASE_ADMIN.DataAccess.mCase
                 case MCaseTypes.ReadonlyField:
                 case MCaseTypes.User:
                 case MCaseTypes.Address:
-                    return Factory.StringFactory(jToken, propertyName, sysName, type);
+                    return Factory.StringFactory(jToken, propertyName, sysName, type, required);
                 case MCaseTypes.Attachment:
-                    return Factory.LongFactory(propertyName, sysName, type);
+                    return Factory.LongFactory(propertyName, sysName, type, required);
                 case MCaseTypes.Date:
                 case MCaseTypes.DateTime:
-                    return Factory.DateFactory(jToken, propertyName, sysName, type);
+                    return Factory.DateFactory(jToken, propertyName, sysName, type, required);
                 case MCaseTypes.Section: //need in ce's?
                 case MCaseTypes.Narrative: //need in ce's?
                 case MCaseTypes.Header: //need in ce's?
