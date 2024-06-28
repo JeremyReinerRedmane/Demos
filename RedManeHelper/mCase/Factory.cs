@@ -25,7 +25,7 @@ namespace mCASE_ADMIN.DataAccess.mCase
             var dtNow = DateTime.Now.ToString(Extensions.MCaseDateTimeStorageFormat);
 
             sb.AppendLine( //TODO continue to add usings, as more and more validations are made
-                "using System;\nusing System.Collections.Generic;\nusing System.Linq;\nusing MCaseCustomEvents.ARFocus.DataAccess;\nusing MCaseEventsSDK;\nusing MCaseEventsSDK.Util;\nusing MCaseEventsSDK.Util.Data;\nusing System.ComponentModel;\nusing System.Reflection;");
+                "using System;\nusing System.Collections.Generic;\nusing System.Linq;\nusing MCaseCustomEvents.ARFocus.DataAccess;\nusing MCaseEventsSDK;\nusing MCaseEventsSDK.Util;\nusing MCaseEventsSDK.Util.Data;\nusing System.ComponentModel;\nusing System.Reflection;\nusing MCase.Core.Event;");
             sb.AppendLine($"namespace {nameSpace}");
             sb.AppendLine("{"); //open namespace
 
@@ -129,7 +129,7 @@ namespace mCASE_ADMIN.DataAccess.mCase
 
                 sb.AppendLine(1.Indent() + "/// <summary> Generate the filtered query, using a list of filtered query items.</summary>");
                 sb.AppendLine(1.Indent() + "/// <param name=\"filters\"> List of filter data objects. Advised to use CreateFilter() method to generate filters</param>");
-                sb.AppendLine(1.Indent() + $"/// <returns>List of {className} objects that match with all filter queries. Query is && operator not by || operator</returns>");
+                sb.AppendLine(1.Indent() + $"/// <returns>List of {className} objects that match with all filter queries. Query is 'and' operator not by 'or' operator</returns>");
                 sb.AppendLine(1.Indent() + $"public List<{className}> CreateQuery(List<DirectSQLFieldFilterData> filters) => _eventHelper.SearchSingleDataListSQLProcess(DataListId, filters).Select(x => new {className}(x, _eventHelper)).ToList();");
 
                 #endregion
@@ -152,11 +152,11 @@ namespace mCASE_ADMIN.DataAccess.mCase
             var privateSysName = $"_{propertyName.ToLower()}";
             var mirroredField = jToken.IsMirrorField();
             var mirroredString = mirroredField ? "[ Mirrored field. No setting / updating allowed.] " : string.Empty;
-            var requiredString = required ? "[Required Field] " : string.Empty;
+            var requiredString = required ? "[Required Field] ": string.Empty;
 
             sb.AppendLine(1.Indent() + $"private string {privateSysName} = string.Empty;");
             sb.AppendLine(1.Indent() + $"/// <summary> [mCase data type: {type}] {requiredString}{mirroredString}</summary>");
-
+            
             if (_stringCheck.Contains(enumType) && !mirroredField)
                 sb.AppendLine(1.Indent() +
                               "/// <returns>\"-1 if string does not pass mCase data type validation.\"</returns>");
@@ -197,7 +197,7 @@ namespace mCASE_ADMIN.DataAccess.mCase
             sb.AppendLine(1.Indent() + $"private string {privateSysName} = string.Empty;");
 
             sb.AppendLine(1.Indent() + $"/// <summary> [mCase data type: {type}] {requiredString}Gets value, and sets long value </summary>");
-
+            
             sb.AppendLine(1.Indent() + $"public string {propertyName}");
             sb.AppendLine(1.Indent() + "{"); //open Property
             sb.AppendLine(2.Indent() + "get");
@@ -838,6 +838,8 @@ namespace mCASE_ADMIN.DataAccess.mCase
             var defaultValues = $"{className}Static.DefaultValuesEnum";
             var propertyMap = $"{className}Static.Properties_Map";
             var defaultMap = $"{className}Static.DefaultValuesMap";
+            var sysNames = $"{className}Static.SystemNamesEnum";
+            var sysNamesMap = $"{className}Static.SystemNamesMap";
 
             if (addDefaults)
             {
@@ -933,14 +935,18 @@ namespace mCASE_ADMIN.DataAccess.mCase
 
             #endregion
 
-            #region Save Record
+            #region Save
 
-            var requiredFieldSummary = requiredFields.Select(x => x.Item2.GetPropertyNameFromSystemName());
+            var requiredFieldSummary =
+                requiredFields.Select(x => x.Item2.GetPropertyNameFromSystemName());
 
-            // save record
-            sb.AppendLine(1.Indent() + $"/// <summary> Verify that ALL required fields have been entered: {string.Join(", ", requiredFieldSummary)}</summary>");
-            sb.AppendLine(1.Indent() + "public void SaveRecord()");
+            // Can save record
+            sb.AppendLine(1.Indent() + "/// <summary>Checks all required fields in Datalist</summary>");
+            sb.AppendLine(1.Indent() + "/// <returns>All required fields that have yet been filled in.</returns>");
+            sb.AppendLine(1.Indent() + "public List<string> CanSave()");
             sb.AppendLine(1.Indent() + "{");//open method
+            sb.AppendLine(2.Indent() + "var requiredFields = new List<string>();");
+
             foreach (var required in requiredFields)
             {
                 var check = AddSaveRecordCheckForRequiredProperty(required);
@@ -948,10 +954,23 @@ namespace mCASE_ADMIN.DataAccess.mCase
                 if (!string.IsNullOrEmpty(check))
                     sb.AppendLine(2.Indent() + check);
             }
+            sb.AppendLine(2.Indent() + "return requiredFields;");
+            sb.AppendLine(1.Indent() + "}");//close method
+
+
+            
+            // save save record
+            sb.AppendLine(1.Indent() + "/// <summary> If all required fields have been filled in. This will save the RecordInstanceData</summary>");
+            sb.AppendLine(1.Indent() + "/// <returns>Event status code for failure or success</returns>");
+            sb.AppendLine(1.Indent() + "public EventStatusCode SaveRecord()");
+            sb.AppendLine(1.Indent() + "{");//open method
+            sb.AppendLine(2.Indent() + "if(CanSave().Count > 0) return EventStatusCode.Failure;");
             sb.AppendLine(2.Indent() + "_eventHelper.SaveRecord(RecordInsData);");
+            sb.AppendLine(2.Indent() + "return EventStatusCode.Success;");
             sb.AppendLine(1.Indent() + "}");//close method
 
             #endregion
+
             #region private method extractions
 
             if (addDefaults)
@@ -965,7 +984,7 @@ namespace mCASE_ADMIN.DataAccess.mCase
                 sb.AppendLine(1.Indent() + $"public int Clear({staticProperties} propertyEnum) => this.Clear<{entity}, {defaultValues}>({propertyMap}[propertyEnum]);");
 
                 #endregion
-
+                
                 sb.AppendLine(1.Indent() + "#region Private");
                 //add MultiSelectValue
                 sb.AppendLine(1.Indent() + $"private List<{defaultValues}> GetMultiSelectValue(string sysName)");
@@ -1005,6 +1024,7 @@ namespace mCASE_ADMIN.DataAccess.mCase
         {
             var type = required.Item1.GetEnumValue<MCaseTypes>();
             var privateName = "_" + required.Item2.GetPropertyNameFromSystemName().ToLower();
+            var propertyName = required.Item2.GetPropertyNameFromSystemName();
 
             switch (type)
             {
@@ -1013,7 +1033,7 @@ namespace mCASE_ADMIN.DataAccess.mCase
                 case MCaseTypes.DropDownList:
                 case MCaseTypes.DynamicDropDown:
                 case MCaseTypes.CascadingDynamicDropDown:
-                    return $"if({privateName}.Count == 0) throw new Exception(\"This is a required property\");";
+                    return $"if({privateName}.Count == 0) requiredFields.Add(\"{propertyName}\");";
                 case MCaseTypes.String:
                 case MCaseTypes.LongString:
                 case MCaseTypes.EmailAddress:
@@ -1027,10 +1047,10 @@ namespace mCASE_ADMIN.DataAccess.mCase
                 case MCaseTypes.User:
                 case MCaseTypes.Address:
                 case MCaseTypes.Attachment:
-                    return $"if(string.IsNullOrEmpty({privateName})) throw new Exception(\"This is a required property\");";
+                    return $"if(string.IsNullOrEmpty({privateName})) requiredFields.Add(\"{propertyName}\");";
                 case MCaseTypes.Date:
                 case MCaseTypes.DateTime:
-                    return $"if({privateName} == DateTime.MinValue) throw new Exception(\"This is a required property\");";
+                    return $"if({privateName} == DateTime.MinValue) requiredFields.Add(\"{propertyName}\");";
                 case MCaseTypes.Section: //need in ce's?
                 case MCaseTypes.Narrative: //need in ce's?
                 case MCaseTypes.Header: //need in ce's?
@@ -1049,9 +1069,9 @@ namespace mCASE_ADMIN.DataAccess.mCase
                 case MCaseTypes.Score5: //not required in CE's
                 case MCaseTypes.Score6: //not required in CE's
                 default:
-                    {
-                        return string.Empty;
-                    }
+                {
+                    return string.Empty;
+                }
             }
         }
 

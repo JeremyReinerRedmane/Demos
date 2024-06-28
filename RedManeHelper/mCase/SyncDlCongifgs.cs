@@ -122,7 +122,7 @@ namespace mCASE_ADMIN.DataAccess.mCase
 
                     if (!string.IsNullOrEmpty(content))
                     {
-                        var path = Sync(content, id);
+                        var path = Sync(content);
 
                         if (!string.IsNullOrEmpty(path))
                         {
@@ -150,20 +150,6 @@ namespace mCASE_ADMIN.DataAccess.mCase
                 var staticPath = Path.Combine(_outputDirectory, "FactoryExtensions.cs");
 
                 File.WriteAllText(staticPath, staticFileData);
-            }
-        }
-
-        private void DeleteAllFiles()
-        {
-            var dir = new DirectoryInfo(_outputDirectory);
-
-            if (dir.GetFiles().Length == 0) return;
-
-            var files = dir.GetFiles();
-
-            foreach (var file in files)
-            {
-                file.Delete();
             }
         }
 
@@ -217,6 +203,20 @@ namespace mCASE_ADMIN.DataAccess.mCase
             }
         }
 
+        private void DeleteAllFiles()
+        {
+            var dir = new DirectoryInfo(_outputDirectory);
+
+            if (dir.GetFiles().Length == 0) return;
+
+            var files = dir.GetFiles();
+
+            foreach (var file in files)
+            {
+                file.Delete();
+            }
+        }
+
         public List<int> DirectDataAccess()
         {
             if (string.IsNullOrEmpty(_csvData)) return new List<int>();
@@ -237,7 +237,7 @@ namespace mCASE_ADMIN.DataAccess.mCase
         /// Using List transfer we can catch the structure of our DL's from the db, and reconstruct a C# object. used for custom events
         /// </summary>
         /// <param name="data"></param>
-        private string Sync(string data, int id)
+        private string Sync(string data)
         {
             var closing = data.LastIndexOf(']');
 
@@ -250,7 +250,7 @@ namespace mCASE_ADMIN.DataAccess.mCase
 
             var jsonObject = JObject.Parse(result);
 
-            var className = jsonObject.ParseClassName(ListTransferFields.Name.GetDescription()).GetPropertyNameFromSystemName() + id.ToString();
+            var className = jsonObject.ParseJson(ListTransferFields.SystemName.GetDescription()).GetPropertyNameFromSystemName();
 
             if (string.IsNullOrEmpty(className)) return string.Empty;
 
@@ -300,8 +300,10 @@ namespace mCASE_ADMIN.DataAccess.mCase
 
             var sb = Factory.ClassInitializer(jsonObject, className, _namespace); // 1: Open namespace / class
 
-            foreach (var field in fields)
+            for (var i=0;i<fields.Count();i++)
             {
+                var field = fields[i];
+
                 var type = field.ParseToken(ListTransferFields.Type.GetDescription());
 
                 if (string.IsNullOrEmpty(type)) continue;
@@ -310,6 +312,11 @@ namespace mCASE_ADMIN.DataAccess.mCase
 
                 if (string.IsNullOrEmpty(systemName) || fieldSet.Contains(systemName))
                     continue; //if property is already in field list then continue, no need to duplicate
+
+                if (string.Equals(systemName, className, StringComparison.OrdinalIgnoreCase))
+                {
+                    systemName = "F_" + systemName + $"_{i}";
+                }
 
                 var requiredString = field.ParseToken(ListTransferFields.Required.GetDescription());
 
@@ -441,10 +448,10 @@ namespace mCASE_ADMIN.DataAccess.mCase
                 case MCaseTypes.CascadingDynamicDropDown:
                     //Item 1 = property, Item 2 = Enum
                     var values = Factory.EnumerableFactory(jToken, typeEnum, propertyName, sysName, type, className, required); //multiselect?
-
+                    
                     if (!string.IsNullOrEmpty(values.Item2.ToString())) //if there are enum values
                         _stringBuilders.Add(values.Item2);
-
+                    
                     return values.Item1;
                 case MCaseTypes.String:
                 case MCaseTypes.LongString:
