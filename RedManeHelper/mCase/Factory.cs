@@ -155,7 +155,7 @@ namespace mCASE_ADMIN.DataAccess.mCase
             var requiredString = required ? "[Required Field] ": string.Empty;
 
             sb.AppendLine(1.Indent() + $"private string {privateSysName} = string.Empty;");
-            sb.AppendLine(1.Indent() + $"/// <summary> [mCase data type: {type}] {requiredString}{mirroredString}</summary>");
+            sb.AppendLine(1.Indent() + $"/// <summary>{requiredString}[mCase data type: {type}] {mirroredString}</summary>");
             
             if (_stringCheck.Contains(enumType) && !mirroredField)
                 sb.AppendLine(1.Indent() +
@@ -196,7 +196,7 @@ namespace mCASE_ADMIN.DataAccess.mCase
             var requiredString = required ? "[Required Field] " : string.Empty;
             sb.AppendLine(1.Indent() + $"private string {privateSysName} = string.Empty;");
 
-            sb.AppendLine(1.Indent() + $"/// <summary> [mCase data type: {type}] {requiredString}Gets value, and sets long value </summary>");
+            sb.AppendLine(1.Indent() + $"/// <summary> {requiredString}[mCase data type: {type}] Gets value, and sets long value </summary>");
             
             sb.AppendLine(1.Indent() + $"public string {propertyName}");
             sb.AppendLine(1.Indent() + "{"); //open Property
@@ -228,7 +228,7 @@ namespace mCASE_ADMIN.DataAccess.mCase
 
             sb.AppendLine(1.Indent() + $"private DateTime {privateSysName} = DateTime.MinValue;");
 
-            sb.AppendLine(1.Indent() + $"/// <summary> [mCase data type: {type}] {requiredString}{mirroredString}</summary>");
+            sb.AppendLine(1.Indent() + $"/// <summary> {requiredString}[mCase data type: {type}] {mirroredString}</summary>");
 
             if (!mirroredField)
                 sb.AppendLine(1.Indent() +
@@ -268,31 +268,31 @@ namespace mCASE_ADMIN.DataAccess.mCase
             var requiredString = required ? "[Required Field] " : string.Empty;
             var sb = new StringBuilder();
 
-            sb.AppendLine(1.Indent() + $"private List<RecordInstanceData> {privateName} = null;");
-            sb.AppendLine(1.Indent() + $"/// <summary> [mCase data type: {fieldType}] [Multi Select: {multiSelect}] {requiredString}[Dynamic Source: {dynamicData}] [Setting: Requires a RecordInstancesData] [Getting: Returns the list of RecordInstancesData's] [Updating: Requires use of either AddTo(), or RemoveFrom()] </summary>");
-            sb.AppendLine(1.Indent() + $"public List<RecordInstanceData> {propertyName}");
+            sb.AppendLine(1.Indent() + $"private List<{dynamicData}> {privateName} = null;");
+            sb.AppendLine(1.Indent() + $"/// <summary> {requiredString}[mCase data type: {fieldType}] [Multi Select: {multiSelect}] [Getting: Returns the list of RecordInstancesData's] [Updating: Requires use of either AddTo(), or RemoveFrom()] </summary>");
+            sb.AppendLine(1.Indent() + $"public List<{dynamicData}> {propertyName}");
             sb.AppendLine(1.Indent() + "{"); //open Property
             sb.AppendLine(2.Indent() + "get");
             sb.AppendLine(2.Indent() + "{"); //open Getter
             sb.AppendLine(3.Indent() + $"if({privateName}!=null) return {privateName};");
             sb.AppendLine(3.Indent() +
-                          $"{privateName}=_eventHelper.GetDynamicDropdownRecords(RecordInsData.RecordInstanceID, \"{sysName}\").ToList();");
+                          $"{privateName}=_eventHelper.GetDynamicDropdownRecords(RecordInsData.RecordInstanceID, \"{sysName}\").Select(x => new {dynamicData}(x, _eventHelper)).ToList();");
             sb.AppendLine(3.Indent() + $"return {privateName};");
             sb.AppendLine(2.Indent() + "}"); //close Getter
             sb.AppendLine(2.Indent() + "set");
             sb.AppendLine(2.Indent() + "{"); //open Setter
             sb.AppendLine(3.Indent() +
-                          $"if({privateName} == null || value == null || !value.Any()) {privateName} = new List<RecordInstanceData>();");
+                          $"if({privateName} == null || value == null || !value.Any()) {privateName} = new List<{dynamicData}>();");
             sb.AppendLine(3.Indent() +
                           "if (value != null && value.Any(x => x == null)) value.RemoveAll(x => x == null);");
             sb.AppendLine(3.Indent() +
-                          $"if(value == null || !value.Any()) {privateName} = new List<RecordInstanceData>();");
+                          $"if(value == null || !value.Any()) {privateName} = new List<{dynamicData}>();");
             if (notAbleToSelectManyValues)
                 sb.AppendLine(3.Indent() +
                               $"if (value != null && value.Count > 1) throw new Exception(\"[Multi Select is Disabled] {sysName} only accepts a list length of 1.\");");
             sb.AppendLine(3.Indent() + $"else {privateName} = value;");
             sb.AppendLine(3.Indent() +
-                          $"RecordInsData.SetValue(\"{sysName}\", string.Join(MCaseEventConstants.MultiDropDownDelimiter, {privateName}.Select(x => x.RecordInstanceID)));");
+                          $"RecordInsData.SetValue(\"{sysName}\", string.Join(MCaseEventConstants.MultiDropDownDelimiter, {privateName}.Select(x => x.RecordInsData.RecordInstanceID)));");
             sb.AppendLine(2.Indent() + "}"); //close Setter
             sb.AppendLine(1.Indent() + "}"); //close Property
 
@@ -826,7 +826,7 @@ namespace mCASE_ADMIN.DataAccess.mCase
 
             }
 
-            sb.AppendLine(1.Indent() + "#endregion");
+            sb.AppendLine(1.Indent() + "#endregion Embedded");
             return sb.ToString();
         }
 
@@ -840,7 +840,7 @@ namespace mCASE_ADMIN.DataAccess.mCase
             var propertyMap = $"{className}Static.Properties_Map";
             var defaultMap = $"{className}Static.DefaultValuesMap";
             
-            sb.AppendLine(1.Indent() + "#region Enumerable Methods");
+            sb.AppendLine(1.Indent() + "#region Methods");
 
             if (addDefaults)
             {
@@ -966,7 +966,7 @@ namespace mCASE_ADMIN.DataAccess.mCase
                 sb.AppendLine(2.Indent() + $"return invalidValues ? new List<{defaultValues}>()" + "{ " + defaultValues + ".Invalidselection } : value;");
                 sb.AppendLine(1.Indent() + "}");//close method
 
-                sb.AppendLine(1.Indent() + "#endregion");
+                sb.AppendLine(1.Indent() + "#endregion Private");
             }
             else
             {
@@ -980,7 +980,7 @@ namespace mCASE_ADMIN.DataAccess.mCase
 
                 #endregion
             }
-            sb.AppendLine(1.Indent() + "#endregion");//enumerable methods
+            sb.AppendLine(1.Indent() + "#endregion Methods");//enumerable methods
 
             #region Save
 
@@ -1015,7 +1015,7 @@ namespace mCASE_ADMIN.DataAccess.mCase
             sb.AppendLine(2.Indent() + "return EventStatusCode.Success;");
             sb.AppendLine(1.Indent() + "}");//close method
 
-            sb.AppendLine(1.Indent() + "#endregion");//enumerable methods
+            sb.AppendLine(1.Indent() + "#endregion Save");//enumerable methods
 
             #endregion
 

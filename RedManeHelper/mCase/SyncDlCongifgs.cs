@@ -284,6 +284,7 @@ namespace mCASE_ADMIN.DataAccess.mCase
                 return new StringBuilder();
 
             var requiresEnumeration = false;
+            var hasDateTimes = false;
             var fieldSet = new HashSet<string>(); //used to track properties being set
             var enumerableFieldSet = new HashSet<string>(); //used to enum properties being set
             var embeddedRelatedFields = new HashSet<string>();
@@ -300,6 +301,8 @@ namespace mCASE_ADMIN.DataAccess.mCase
 
             var sb = Factory.ClassInitializer(jsonObject, className, _namespace); // 1: Open namespace / class
 
+            sb.AppendLine(1.Indent() + "#region Fields");
+            
             for (var i=0;i<fields.Count();i++)
             {
                 var field = fields[i];
@@ -363,6 +366,7 @@ namespace mCASE_ADMIN.DataAccess.mCase
                 fieldSet.Add(systemName);//completed field, add to list
             }
 
+            sb.AppendLine(1.Indent() + "#endregion Fields");
             if (embeddedRelatedFields.Count > 0)
             {
                 sb.AppendLine(Factory.GetEmbeddedOptions(className, embeddedRelatedFields)); // 3: Add class methods
