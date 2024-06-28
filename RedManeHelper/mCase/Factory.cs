@@ -812,6 +812,7 @@ namespace mCASE_ADMIN.DataAccess.mCase
         {
             var sb = new StringBuilder();
 
+            sb.AppendLine(1.Indent() + "#region Embedded");
             foreach (var value in embedded)
             {
                 sb.AppendLine(1.Indent() + $"/// <summary> Gets all active embedded {value} from {className}</summary>");
@@ -825,6 +826,7 @@ namespace mCASE_ADMIN.DataAccess.mCase
 
             }
 
+            sb.AppendLine(1.Indent() + "#endregion");
             return sb.ToString();
         }
 
@@ -837,8 +839,8 @@ namespace mCASE_ADMIN.DataAccess.mCase
             var defaultValues = $"{className}Static.DefaultValuesEnum";
             var propertyMap = $"{className}Static.Properties_Map";
             var defaultMap = $"{className}Static.DefaultValuesMap";
-            var sysNames = $"{className}Static.SystemNamesEnum";
-            var sysNamesMap = $"{className}Static.SystemNamesMap";
+            
+            sb.AppendLine(1.Indent() + "#region Enumerable Methods");
 
             if (addDefaults)
             {
@@ -934,42 +936,6 @@ namespace mCASE_ADMIN.DataAccess.mCase
 
             #endregion
 
-            #region Save
-
-            var requiredFieldSummary =
-                requiredFields.Select(x => x.Item2.GetPropertyNameFromSystemName());
-
-            // Can save record
-            sb.AppendLine(1.Indent() + "/// <summary>Checks all required fields in Datalist</summary>");
-            sb.AppendLine(1.Indent() + "/// <returns>All required fields that have yet been filled in.</returns>");
-            sb.AppendLine(1.Indent() + "public List<string> CanSave()");
-            sb.AppendLine(1.Indent() + "{");//open method
-            sb.AppendLine(2.Indent() + "var requiredFields = new List<string>();");
-
-            foreach (var required in requiredFields)
-            {
-                var check = AddSaveRecordCheckForRequiredProperty(required);
-
-                if (!string.IsNullOrEmpty(check))
-                    sb.AppendLine(2.Indent() + check);
-            }
-            sb.AppendLine(2.Indent() + "return requiredFields;");
-            sb.AppendLine(1.Indent() + "}");//close method
-
-
-            
-            // save save record
-            sb.AppendLine(1.Indent() + "/// <summary> If all required fields have been filled in. This will save the RecordInstanceData</summary>");
-            sb.AppendLine(1.Indent() + "/// <returns>Event status code for failure or success</returns>");
-            sb.AppendLine(1.Indent() + "public EventStatusCode SaveRecord()");
-            sb.AppendLine(1.Indent() + "{");//open method
-            sb.AppendLine(2.Indent() + "if(CanSave().Count > 0) return EventStatusCode.Failure;");
-            sb.AppendLine(2.Indent() + "_eventHelper.SaveRecord(RecordInsData);");
-            sb.AppendLine(2.Indent() + "return EventStatusCode.Success;");
-            sb.AppendLine(1.Indent() + "}");//close method
-
-            #endregion
-
             #region private method extractions
 
             if (addDefaults)
@@ -1014,6 +980,44 @@ namespace mCASE_ADMIN.DataAccess.mCase
 
                 #endregion
             }
+            sb.AppendLine(1.Indent() + "#endregion");//enumerable methods
+
+            #region Save
+
+            sb.AppendLine(1.Indent() + "#region Save");
+
+            // Can save record
+            sb.AppendLine(1.Indent() + "/// <summary>Checks all required fields in Datalist</summary>");
+            sb.AppendLine(1.Indent() + "/// <returns>All required fields that have yet been filled in.</returns>");
+            sb.AppendLine(1.Indent() + "public List<string> CanSave()");
+            sb.AppendLine(1.Indent() + "{");//open method
+            sb.AppendLine(2.Indent() + "var requiredFields = new List<string>();");
+
+            foreach (var required in requiredFields)
+            {
+                var check = AddSaveRecordCheckForRequiredProperty(required);
+
+                if (!string.IsNullOrEmpty(check))
+                    sb.AppendLine(2.Indent() + check);
+            }
+            sb.AppendLine(2.Indent() + "return requiredFields;");
+            sb.AppendLine(1.Indent() + "}");//close method
+
+
+
+            // save save record
+            sb.AppendLine(1.Indent() + "/// <summary> If all required fields have been filled in. This will save the RecordInstanceData</summary>");
+            sb.AppendLine(1.Indent() + "/// <returns>Event status code for failure or success</returns>");
+            sb.AppendLine(1.Indent() + "public EventStatusCode SaveRecord()");
+            sb.AppendLine(1.Indent() + "{");//open method
+            sb.AppendLine(2.Indent() + "if(CanSave().Count > 0) return EventStatusCode.Failure;");
+            sb.AppendLine(2.Indent() + "_eventHelper.SaveRecord(RecordInsData);");
+            sb.AppendLine(2.Indent() + "return EventStatusCode.Success;");
+            sb.AppendLine(1.Indent() + "}");//close method
+
+            sb.AppendLine(1.Indent() + "#endregion");//enumerable methods
+
+            #endregion
 
             #endregion
             return sb.ToString();
