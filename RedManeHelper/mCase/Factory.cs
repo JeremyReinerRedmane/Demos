@@ -808,23 +808,22 @@ namespace mCASE_ADMIN.DataAccess.mCase
 
         #endregion
 
-        public static string GetEmbeddedOptions(string className)
+        public static string GetEmbeddedOptions(string className, HashSet<string> embedded)
         {
             var sb = new StringBuilder();
-            var embeddedEnum = $"{className}Static.EmbeddedOptionsEnum";
-            var embeddedMap = $"{className}Static.EmbeddedOptionsMap";
 
-            sb.AppendLine(1.Indent() + $"/// <summary> [mCase data type] Embedded List. Requires the Datalist Id from one of the following Embedded Data lists: Refer to {embeddedEnum} for embedded options </summary>");
-            sb.AppendLine(1.Indent() + "/// <param name=\"embeddedEnum\"> Enum built for this specific method</param>");
-            sb.AppendLine(1.Indent() + "/// <returns>Related children from selected data list</returns>");
-            sb.AppendLine(1.Indent() +
-                          $"public List<RecordInstanceData> GetActiveChildRecords({embeddedEnum} embeddedEnum)"); // property name is added back with enum name appended 
-            sb.AppendLine(1.Indent() + "{"); //open class
-            sb.AppendLine(2.Indent() + $"var sysName = {embeddedMap}[embeddedEnum];");
-            sb.AppendLine(2.Indent() + "if(string.IsNullOrEmpty(sysName)) return new  List<RecordInstanceData>();");
-            sb.AppendLine(2.Indent() + "var childDataListId = _eventHelper.GetDataListID(sysName);");
-            sb.AppendLine(2.Indent() + "return _eventHelper.GetActiveChildRecordsByParentRecId(RecordInsData.RecordInstanceID).Where(x => x.DataListID == childDataListId).ToList();");
-            sb.AppendLine(1.Indent() + "}"); //close class
+            foreach (var value in embedded)
+            {
+                sb.AppendLine(1.Indent() + $"/// <summary> Gets all active embedded {value} from {className}</summary>");
+                sb.AppendLine(1.Indent() + $"/// <returns>Related children from {value}</returns>");
+                sb.AppendLine(1.Indent() +
+                              $"public List<{value}> GetActive{value}Records()"); // property name is added back with enum name appended 
+                sb.AppendLine(1.Indent() + "{"); //open class
+                sb.AppendLine(2.Indent() + $"var childDataListId = _eventHelper.GetDataListID(\"{value}\");");
+                sb.AppendLine(2.Indent() + $"return _eventHelper.GetActiveChildRecordsByParentRecId(RecordInsData.RecordInstanceID).Where(x => x.DataListID == childDataListId).Select(x => new {value}(x, _eventHelper)).ToList();");
+                sb.AppendLine(1.Indent() + "}"); //close class
+
+            }
 
             return sb.ToString();
         }

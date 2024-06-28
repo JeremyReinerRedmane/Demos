@@ -364,7 +364,10 @@ namespace mCASE_ADMIN.DataAccess.mCase
             }
 
             if (embeddedRelatedFields.Count > 0)
-                sb.AppendLine(Factory.GetEmbeddedOptions(className)); // 3: Add class methods
+            {
+                sb.AppendLine(Factory.GetEmbeddedOptions(className, embeddedRelatedFields)); // 3: Add class methods
+                embeddedRelatedFields.Clear(); // Dispose: no longer required
+            }
 
             if (requiresEnumeration)
                 sb.AppendLine(Factory.AddEnumerableExtensions(className, _stringBuilders.Any(), requiredFields)); // 3: Add class methods
@@ -383,11 +386,6 @@ namespace mCASE_ADMIN.DataAccess.mCase
             }
 
             sb.AppendLine(Factory.GenerateEnums(fieldSet.ToList(), "SystemNames", false).ToString());// All class property names
-
-            if (embeddedRelatedFields.Count > 0)//embedded list options
-            {
-                sb.AppendLine(Factory.GenerateEnums(embeddedRelatedFields.ToList(), "EmbeddedOptions", false).ToString()); //enum adds Enum to name at end
-            }
 
             var allDefaultValues = new List<string>() { "Multi Select: False" };
 
