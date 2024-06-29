@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
 namespace mCASE_ADMIN.DataAccess.mCase.Static
@@ -35,38 +36,13 @@ namespace mCASE_ADMIN.DataAccess.mCase.Static
                 : fieldValue.GetPropertyNameFromSystemName();
         }
 
-        public static string ParseClassName(this JToken token, string property)
+        public static Dictionary<string, string> GetFieldOptions(this JToken token)
         {
-            var fieldValue = token[property];
+            var fieldOptions = token[ListTransferFields.FieldOptions.GetDescription()]?.Parent?.FirstOrDefault()?.Value<string>();
 
-            if (fieldValue == null)
-                return string.Empty;
-
-            var hasValues = fieldValue.HasValues;
-
-            if (!hasValues) return string.Empty;
-
-            var values = fieldValue.Value<JToken>();
-
-            if (values == null) return string.Empty;
-
-            foreach (var value in values)
-            {
-                if (!value.HasValues) continue;
-
-                var childValues = value.Value<JToken>();
-
-                if (childValues == null) continue;
-
-                //get value
-                var actualValue = childValues[ListTransferFields.Value.GetDescription()];
-
-                if (actualValue == null) continue;
-
-                return actualValue.Value<string>() ?? string.Empty;
-            }
-
-            return string.Empty;
+            return string.IsNullOrEmpty(fieldOptions) 
+                ? new Dictionary<string, string>() 
+                : JsonConvert.DeserializeObject<Dictionary<string, string>>(fieldOptions)!;
         }
 
         public static List<string> ParseDefaultData(this JToken token, string property)
@@ -186,5 +162,63 @@ namespace mCASE_ADMIN.DataAccess.mCase.Static
             return dict[level];
         }
 
-    }
+        public static Dictionary<string, string> ParseJTokenToStringStringDictionary(JToken jToken)
+        {
+            if (jToken == null)
+            {
+                throw new ArgumentNullException(nameof(jToken));
+            }
+
+            var dictionary = new Dictionary<string, string>();
+            string valueString;
+
+            switch (jToken.Type)
+            {
+                case JTokenType.Object:
+                    var jObject = (JObject)jToken;
+                    foreach (var property in jObject)
+                    {
+                        if (property.Value == null) continue;
+
+                        valueString = GetStringRepresentation(property.Value);
+
+                        dictionary.Add(property.Key, valueString);
+                    }
+                    break;
+                case JTokenType.Array:
+                    // Handle arrays if required in your specific scenario
+                    // You could convert each element to a string or recursively parse arrays
+                    // into nested dictionaries (consider using recursion or a helper method)
+                    break;
+                case JTokenType.Null:
+                    dictionary.Add("", ""); // Handle null values as empty strings (optional)
+                    break;
+                default:
+                    // Handle other JToken types as needed (e.g., primitive values)
+                    valueString = GetStringRepresentation(jToken);
+                    dictionary.Add("", valueString); // Use an empty key if desired
+                    break;
+            }
+
+            return dictionary;
+        }
+
+        private static string GetStringRepresentation(JToken jToken)
+        {
+            switch (jToken.Type)
+            {
+                case JTokenType.String:
+                    return jToken.ToString(Formatting.None);
+                case JTokenType.Integer:
+                case JTokenType.Float:
+                case JTokenType.Date:
+                case JTokenType.Boolean:
+                    return jToken.ToString(Formatting.None);
+                default:
+                    return ""; // Handle other types or return an empty string
+            }
+        }
+
+
+}
 }

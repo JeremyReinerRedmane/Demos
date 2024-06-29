@@ -110,6 +110,6 @@ namespace mCASE_ADMIN.DataAccess.mCase.Static
         [Description("Value")]
         Value,
         [Description("Required")]
-        Required
+        Required,
     }
 }

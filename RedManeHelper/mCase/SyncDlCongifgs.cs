@@ -9,6 +9,7 @@ using System.Text;
 using System.Threading.Tasks;
 using mCASE_ADMIN.DataAccess.mCase.Static;
 using Microsoft.Data.SqlClient;
+using Microsoft.Identity.Client;
 using Newtonsoft.Json.Linq;
 using Extensions = mCASE_ADMIN.DataAccess.mCase.Static.Extensions;
 
@@ -159,8 +160,8 @@ namespace mCASE_ADMIN.DataAccess.mCase
         /// <returns></returns>
         public async Task<List<int>> DataAccess()
         {
-            if (Directory.Exists(_outputDirectory))
-                DeleteAllFiles();
+            //if (Directory.Exists(_outputDirectory))
+            //    DeleteAllFiles();
 
             var ids = new List<int>();
             try
@@ -283,13 +284,12 @@ namespace mCASE_ADMIN.DataAccess.mCase
             if (fields == null)
                 return new StringBuilder();
 
-            var requiresEnumeration = false;
             var hasDateTimes = false;
-            var fieldSet = new HashSet<string>(); //used to track properties being set
+            var fieldSet = new HashSet<Tuple<string,string>>(); //type, property
             var enumerableFieldSet = new HashSet<string>(); //used to enum properties being set
             var embeddedRelatedFields = new HashSet<string>();
             _stringBuilders = new List<StringBuilder>();//used for containing all the enum property values in the class
-            var requiredFields = new List<Tuple<string, string>>();
+            var requiredFields = new List<Tuple<string, string, bool, string, string>> ();
             var requiresEnumerationValues = new List<string>
             {
                 MCaseTypes.EmbeddedList.GetDescription(),
@@ -302,71 +302,11 @@ namespace mCASE_ADMIN.DataAccess.mCase
             var sb = Factory.ClassInitializer(jsonObject, className, _namespace); // 1: Open namespace / class
 
             sb.AppendLine(1.Indent() + "#region Fields");
-            
-            for (var i=0;i<fields.Count();i++)
-            {
-                var field = fields[i];
 
-                var type = field.ParseToken(ListTransferFields.Type.GetDescription());
-
-                if (string.IsNullOrEmpty(type)) continue;
-
-                var systemName = field.ParseToken(ListTransferFields.SystemName.GetDescription());//All caps
-
-                if (string.IsNullOrEmpty(systemName) || fieldSet.Contains(systemName))
-                    continue; //if property is already in field list then continue, no need to duplicate
-
-                if (string.Equals(systemName, className, StringComparison.OrdinalIgnoreCase))
-                {
-                    systemName = "F_" + systemName + $"_{i}";
-                }
-
-                var requiredString = field.ParseToken(ListTransferFields.Required.GetDescription());
-
-                var required = false;
-
-                if (string.Equals("true", requiredString, StringComparison.OrdinalIgnoreCase))
-                {
-                    required = true;
-
-                    requiredFields.Add(new Tuple<string, string>(type, systemName));
-                }
-
-                if (requiresEnumerationValues.Any(x => string.Equals(x, type, StringComparison.OrdinalIgnoreCase)))
-                {
-                    enumerableFieldSet.Add(systemName);
-
-                    if (string.Equals(requiresEnumerationValues[0], type, StringComparison.OrdinalIgnoreCase))
-                    {
-                        var fieldName = field.ParseDynamicData(ListTransferFields.DynamicData.GetDescription());
-
-                        if (string.IsNullOrEmpty(fieldName))
-                            continue;//weird but true. DL: TDM-Signatures Field: TDMSIGNATURES
-
-                        var entityName = fieldName.GetPropertyNameFromSystemName();
-
-                        embeddedRelatedFields.Add(entityName);
-
-                        fieldSet.Add(systemName);
-
-                        continue;
-                    }
-                }
-
-                if (requiresEnumerationValues.Contains(type))
-                    requiresEnumeration = true;
-
-                var property = AddProperties(field, type, systemName, className, required);// 2: Add properties. Magic happens here
-
-                if (string.IsNullOrEmpty(property))
-                    continue;
-
-                sb.AppendLine(property);
-
-                fieldSet.Add(systemName);//completed field, add to list
-            }
+            var requiresEnumeration = GenerateFields(className, fields, fieldSet, requiredFields, requiresEnumerationValues, enumerableFieldSet, embeddedRelatedFields, sb);
 
             sb.AppendLine(1.Indent() + "#endregion Fields");
+
             if (embeddedRelatedFields.Count > 0)
             {
                 sb.AppendLine(Factory.GetEmbeddedOptions(className, embeddedRelatedFields)); // 3: Add class methods
@@ -374,7 +314,7 @@ namespace mCASE_ADMIN.DataAccess.mCase
             }
 
             if (requiresEnumeration)
-                sb.AppendLine(Factory.AddEnumerableExtensions(className, _stringBuilders.Any(), requiredFields)); // 3: Add class methods
+                sb.AppendLine(Factory.AddEnumerableExtensions(className, _stringBuilders.Any(), requiredFields, fieldSet)); // 3: Add class methods
 
             sb.AppendLine(0.Indent() + "}"); // 4: close class
 
@@ -389,7 +329,7 @@ namespace mCASE_ADMIN.DataAccess.mCase
                 sb.AppendLine(Factory.GenerateEnums(enumerableFieldSet.ToList(), "Properties_", true).ToString());// All class property names
             }
 
-            sb.AppendLine(Factory.GenerateEnums(fieldSet.ToList(), "SystemNames", false).ToString());// All class property names
+            sb.AppendLine(Factory.GenerateEnums(fieldSet.Select(x => x.Item2).ToList(), "SystemNames", false).ToString());// All class property names
 
             var allDefaultValues = new List<string>() { "Multi Select: False" };
 
@@ -435,6 +375,111 @@ namespace mCASE_ADMIN.DataAccess.mCase
             return sb;
         }
 
+        private bool GenerateFields(string className, JToken fields, HashSet<Tuple<string, string>> fieldSet, List<Tuple<string, string, bool, string, string>> requiredFields,
+            List<string> requiresEnumerationValues, HashSet<string> enumerableFieldSet, HashSet<string> embeddedRelatedFields, StringBuilder sb)
+        {
+            var requiresEnumeration = false;
+
+            for (var i = 0; i < fields.Count(); i++)
+            {
+                var field = fields[i];
+
+                #region MyRegion
+
+                var type = field.ParseToken(ListTransferFields.Type.GetDescription());
+
+                if (string.IsNullOrEmpty(type)) continue;
+
+                var systemName = field.ParseToken(ListTransferFields.SystemName.GetDescription());//All caps
+                var tuple = new Tuple<string, string> (type, systemName);
+
+                if (string.IsNullOrEmpty(systemName) || fieldSet.Contains(tuple))
+                    continue; //if property is already in field list then continue, no need to duplicate
+
+                if (string.Equals(systemName, className, StringComparison.OrdinalIgnoreCase))
+                {
+                    systemName = "F_" + systemName + $"_{i}";
+                }
+
+                var requiredString = field.ParseToken(ListTransferFields.Required.GetDescription());
+
+                var options = field.GetFieldOptions();//todo
+
+                var required = string.Equals("true", requiredString, StringComparison.OrdinalIgnoreCase);
+                var conditional = ConditionallyMandatory(options);//null means not conditional
+
+
+                if (required || conditional != null)
+                {
+                    //[0] field type [1] system name [2] conditionally mandatory [3] Mandated by field [4] mandated by value
+
+                    if (required)
+                    {
+                        requiredFields.Add(new Tuple<string, string, bool, string, string>(type, systemName, false, string.Empty, string.Empty));
+                    }
+
+                    if (conditional != null)
+                    {
+                        requiredFields.Add(new Tuple<string, string, bool, string, string>(type, systemName, conditional.Item1, conditional.Item2, conditional.Item3));
+                    }
+
+                }
+
+                if (requiresEnumerationValues.Any(x => string.Equals(x, type, StringComparison.OrdinalIgnoreCase)))
+                {
+                    enumerableFieldSet.Add(systemName);
+
+                    if (string.Equals(requiresEnumerationValues[0], type, StringComparison.OrdinalIgnoreCase))
+                    {
+                        var fieldName = field.ParseDynamicData(ListTransferFields.DynamicData.GetDescription());
+
+                        if (string.IsNullOrEmpty(fieldName))
+                            continue;//weird but true. DL: TDM-Signatures Field: TDMSIGNATURES
+
+                        var entityName = fieldName.GetPropertyNameFromSystemName();
+
+                        embeddedRelatedFields.Add(entityName);
+
+                        fieldSet.Add(tuple);
+
+                        continue;
+                    }
+                }
+
+                if (requiresEnumerationValues.Contains(type))
+                    requiresEnumeration = true;
+
+                #endregion Setup
+
+                var property = AddProperties(field, type, systemName, className, required);// 2: Add properties. Magic happens here
+
+                if (string.IsNullOrEmpty(property))
+                    continue;
+
+                sb.AppendLine(property);
+
+                fieldSet.Add(tuple);//completed field, add to list
+            }
+
+            return requiresEnumeration;
+        }
+
+        /// <summary>
+        /// [0] conditionally mandatory
+        /// [1] Mandated By Field
+        /// [2] Mandated By Value 
+        /// </summary>
+        /// <param name="options"></param>
+        /// <returns></returns>
+        private static Tuple<bool, string, string>? ConditionallyMandatory(Dictionary<string, string> options)
+        {
+            if (!options.TryGetValue("Conditionally Mandatory", out var conditional)) return null;
+            if (!options.TryGetValue("Mandated By Field", out var field)) return null;
+            if (!options.TryGetValue("Mandated By Value", out var value)) return null;
+
+            return new Tuple<bool, string, string>(string.Equals(conditional, "yes", StringComparison.OrdinalIgnoreCase), field.GetPropertyNameFromSystemName(), value);
+        }
+
         private string AddProperties(JToken jToken, string type, string sysName, string className, bool required)//sysname is uppercase
         {
             var typeEnum = type.GetEnumValue<MCaseTypes>();
@@ -450,10 +495,10 @@ namespace mCASE_ADMIN.DataAccess.mCase
                 case MCaseTypes.CascadingDynamicDropDown:
                     //Item 1 = property, Item 2 = Enum
                     var values = Factory.EnumerableFactory(jToken, typeEnum, propertyName, sysName, type, className, required); //multiselect?
-                    
+
                     if (!string.IsNullOrEmpty(values.Item2.ToString())) //if there are enum values
                         _stringBuilders.Add(values.Item2);
-                    
+
                     return values.Item1;
                 case MCaseTypes.String:
                 case MCaseTypes.LongString:

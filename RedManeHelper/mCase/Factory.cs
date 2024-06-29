@@ -269,7 +269,7 @@ namespace mCASE_ADMIN.DataAccess.mCase
             var sb = new StringBuilder();
 
             sb.AppendLine(1.Indent() + $"private List<{dynamicData}> {privateName} = null;");
-            sb.AppendLine(1.Indent() + $"/// <summary> {requiredString}[mCase data type: {fieldType}] [Multi Select: {multiSelect}] [Getting: Returns the list of RecordInstancesData's] [Updating: Requires use of either AddTo(), or RemoveFrom()] </summary>");
+            sb.AppendLine(1.Indent() + $"/// <summary> {requiredString}[mCase data type: {fieldType}] [Multi Select: {multiSelect}] [Updating: Use AddTo(), or RemoveFrom()] </summary>");
             sb.AppendLine(1.Indent() + $"public List<{dynamicData}> {propertyName}");
             sb.AppendLine(1.Indent() + "{"); //open Property
             sb.AppendLine(2.Indent() + "get");
@@ -461,7 +461,7 @@ namespace mCASE_ADMIN.DataAccess.mCase
 
             #region Summary
 
-            sb.AppendLine(1.Indent() + $"/// <summary> [mCase data type: {fieldType}] [Multi Select: {multiSelect}] {required}[Default field values can be found in {staticName}] [Available options can be found in {defaultOptionsName}] [Getting: Returns the list of \"{staticName}'s\"] [Updating: AddTo(), RemoveFrom(), MapTo()] </summary>");
+            sb.AppendLine(1.Indent() + $"/// <summary> {required}[mCase data type: {fieldType}] [Multi Select: {multiSelect}] [Default field values can be found in {staticName}] [Available options can be found in {defaultOptionsName}] [Getting: Returns the list of \"{staticName}'s\"] [Updating: AddTo(), RemoveFrom(), MapTo()] </summary>");
 
             if (!string.Equals(multiSelect, "True"))
             {
@@ -830,7 +830,7 @@ namespace mCASE_ADMIN.DataAccess.mCase
             return sb.ToString();
         }
 
-        public static string AddEnumerableExtensions(string className, bool addDefaults, List<Tuple<string, string>> requiredFields)
+        public static string AddEnumerableExtensions(string className, bool addDefaults, List<Tuple<string, string, bool, string, string>> requiredFields, HashSet<Tuple<string, string>> fields)
         {
             var sb = new StringBuilder();
 
@@ -980,7 +980,6 @@ namespace mCASE_ADMIN.DataAccess.mCase
 
                 #endregion
             }
-            sb.AppendLine(1.Indent() + "#endregion Methods");//enumerable methods
 
             #region Save
 
@@ -995,7 +994,7 @@ namespace mCASE_ADMIN.DataAccess.mCase
 
             foreach (var required in requiredFields)
             {
-                var check = AddSaveRecordCheckForRequiredProperty(required);
+                var check = AddSaveRecordCheckForRequiredProperty(required, fields, defaultMap);
 
                 if (!string.IsNullOrEmpty(check))
                     sb.AppendLine(2.Indent() + check);
@@ -1016,6 +1015,8 @@ namespace mCASE_ADMIN.DataAccess.mCase
             sb.AppendLine(1.Indent() + "}");//close method
 
             sb.AppendLine(1.Indent() + "#endregion Save");//enumerable methods
+            sb.AppendLine(1.Indent() + "#endregion Methods");//enumerable methods
+
 
             #endregion
 
@@ -1023,12 +1024,39 @@ namespace mCASE_ADMIN.DataAccess.mCase
             return sb.ToString();
         }
 
-        private static string AddSaveRecordCheckForRequiredProperty(Tuple<string, string> required)
+        /// <summary>
+        /// [0] field type [1] system name [2] conditionally mandatory [3] Mandated by field [4] mandated by value
+        /// </summary>
+        /// <param name="required"></param>
+        /// <returns></returns>
+        private static string AddSaveRecordCheckForRequiredProperty(Tuple<string, string, bool, string, string> required, HashSet<Tuple<string, string>> fields, string staticMapper)
         {
             var type = required.Item1.GetEnumValue<MCaseTypes>();
             var privateName = "_" + required.Item2.GetPropertyNameFromSystemName().ToLower();
             var propertyName = required.Item2.GetPropertyNameFromSystemName();
+            
+            var conditional = required.Item3;
+            if (conditional)
+            {
+                var mandatedByField = required.Item4;
+                var mandatedByValue = required.Item5;
 
+                var dependentField = fields.FirstOrDefault(x => string.Equals(x.Item2.GetPropertyNameFromSystemName(), mandatedByField, StringComparison.OrdinalIgnoreCase));
+                if (dependentField != null)
+                {
+                    //field is the conditional field
+                    var conditionalResult = AddConditionallyMandatoryCheck(dependentField, mandatedByValue, privateName, propertyName, type, staticMapper);
+
+                    return conditionalResult;
+                }
+
+            }
+
+            return CanSaveValidationHelper(type, privateName, propertyName);
+        }
+
+        private static string CanSaveValidationHelper(MCaseTypes type, string privateName, string propertyName)
+        {
             switch (type)
             {
                 //case mCaseTypes.EmbeddedList: Processed after loop completion
@@ -1072,10 +1100,72 @@ namespace mCASE_ADMIN.DataAccess.mCase
                 case MCaseTypes.Score5: //not required in CE's
                 case MCaseTypes.Score6: //not required in CE's
                 default:
-                {
                     return string.Empty;
-                }
             }
+        }
+
+        private static string AddConditionallyMandatoryCheck(Tuple<string, string> dependentField, string mandatedByValue, string privateName, string propertyName, MCaseTypes mandatoryType , string staticMapper)
+        {
+            var sb = new StringBuilder();
+            var type = dependentField.Item1.GetEnumValue<MCaseTypes>();
+            var dependentOnField = "_" +dependentField.Item2.GetPropertyNameFromSystemName().ToLower();
+
+            switch (type)
+            {
+                //case mCaseTypes.EmbeddedList: Processed after loop completion
+                case MCaseTypes.CascadingDropDown:
+                case MCaseTypes.DropDownList:
+                    var demandsValues = string.Join(",", mandatedByValue.Split(new[] { "~*~" }, StringSplitOptions.None).Where(x => !string.IsNullOrEmpty(x)).Select(x => $"\"{x}\""));
+                    sb.AppendLine($"if({dependentOnField} != null && {dependentOnField}");
+                    sb.AppendLine(3.Indent() + $".Select(x => {staticMapper}[x])");
+                    sb.AppendLine(3.Indent() + ".Intersect(new List<string>() "+ "{" + demandsValues + "})");
+                    sb.AppendLine(3.Indent() + ".Any())");
+                    sb.AppendLine(2.Indent() + "{");
+                    sb.AppendLine(3.Indent() + $"// {propertyName} is a conditionally mandatory dependentField. Dependent on the dependentField: {dependentField.Item2}, when her values are any of the following: {demandsValues}");
+                    sb.AppendLine(3.Indent() + CanSaveValidationHelper(mandatoryType, privateName, propertyName));
+                    sb.AppendLine(2.Indent() + "}");
+                    return sb.ToString();
+                case MCaseTypes.DynamicDropDown:
+                case MCaseTypes.CascadingDynamicDropDown:
+                    return string.Empty;
+                case MCaseTypes.String:
+                case MCaseTypes.LongString:
+                case MCaseTypes.EmailAddress:
+                case MCaseTypes.Phone:
+                case MCaseTypes.URL:
+                case MCaseTypes.Number:
+                case MCaseTypes.Money:
+                case MCaseTypes.Time:
+                case MCaseTypes.Boolean:
+                case MCaseTypes.ReadonlyField:
+                case MCaseTypes.User:
+                case MCaseTypes.Address:
+                case MCaseTypes.Attachment:
+                    return String.Empty;
+                case MCaseTypes.Date:
+                case MCaseTypes.DateTime:
+                    return String.Empty;
+                case MCaseTypes.Section: //need in ce's?
+                case MCaseTypes.Narrative: //need in ce's?
+                case MCaseTypes.Header: //need in ce's?
+                case MCaseTypes.UserRoleSecurityRestrict: //not required in CE's
+                case MCaseTypes.DynamicCalculatedField: //not required in CE's
+                case MCaseTypes.CalculatedField: // not required in CE's 
+                case MCaseTypes.UniqueIdentifier: //not required in CE's
+                case MCaseTypes.EmbeddedDocument: // blob?
+                case MCaseTypes.HiddenField: //not required in CE's
+                case MCaseTypes.LineBreak: //not required in CE's
+                case MCaseTypes.Position0: //not required in CE's
+                case MCaseTypes.Score1: //not required in CE's
+                case MCaseTypes.Score2: //not required in CE's
+                case MCaseTypes.Score3: //not required in CE's
+                case MCaseTypes.Score4: //not required in CE's
+                case MCaseTypes.Score5: //not required in CE's
+                case MCaseTypes.Score6: //not required in CE's
+                default:
+                    return string.Empty;
+            }
+            return string.Empty;
         }
 
         public static StringBuilder GenerateEnums(List<string> fieldSet, string className, bool titleCase)
@@ -1170,7 +1260,7 @@ namespace mCASE_ADMIN.DataAccess.mCase
             return sb;
         }
 
-        public static StringBuilder GenerateRelationships(JToken relationships)
+        public static StringBuilder GenerateRelationships(JToken? relationships)
         {
             var sb = new StringBuilder();
 
