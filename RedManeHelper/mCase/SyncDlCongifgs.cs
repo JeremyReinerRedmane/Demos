@@ -160,8 +160,8 @@ namespace mCASE_ADMIN.DataAccess.mCase
         /// <returns></returns>
         public async Task<List<int>> DataAccess()
         {
-            //if (Directory.Exists(_outputDirectory))
-            //    DeleteAllFiles();
+            if (Directory.Exists(_outputDirectory))
+                DeleteAllFiles();
 
             var ids = new List<int>();
             try
@@ -367,7 +367,7 @@ namespace mCASE_ADMIN.DataAccess.mCase
 
             #region 6: Info Class
 
-            sb.Append(Factory.BuildInfoClass(jsonObject, className, requiresEnumeration));
+            sb.Append(Factory.BuildInfoClass(jsonObject, className, fieldSet.Any()));
 
             #endregion
 

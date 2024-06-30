@@ -1035,8 +1035,7 @@ namespace mCASE_ADMIN.DataAccess.mCase
             var privateName = "_" + required.Item2.GetPropertyNameFromSystemName().ToLower();
             var propertyName = required.Item2.GetPropertyNameFromSystemName();
             
-            var conditional = required.Item3;
-            if (conditional)
+            if (required.Item3)//field is conditionally mandatory
             {
                 var mandatedByField = required.Item4;
                 var mandatedByValue = required.Item5;
@@ -1049,6 +1048,7 @@ namespace mCASE_ADMIN.DataAccess.mCase
 
                     return conditionalResult;
                 }
+                //what do we do here?
 
             }
 
@@ -1121,7 +1121,7 @@ namespace mCASE_ADMIN.DataAccess.mCase
                     sb.AppendLine(3.Indent() + ".Intersect(new List<string>() "+ "{" + demandsValues + "})");
                     sb.AppendLine(3.Indent() + ".Any())");
                     sb.AppendLine(2.Indent() + "{");
-                    sb.AppendLine(3.Indent() + $"// {propertyName} is a conditionally mandatory dependentField. Dependent on the dependentField: {dependentField.Item2}, when her values are any of the following: {demandsValues}");
+                    sb.AppendLine(3.Indent() + $"// {propertyName} is a conditionally mandatory field. Dependent on: {dependentField.Item2}, when her values are any of the following: {demandsValues}");
                     sb.AppendLine(3.Indent() + CanSaveValidationHelper(mandatoryType, privateName, propertyName));
                     sb.AppendLine(2.Indent() + "}");
                     return sb.ToString();
