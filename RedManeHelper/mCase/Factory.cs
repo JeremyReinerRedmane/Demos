@@ -994,7 +994,7 @@ namespace mCASE_ADMIN.DataAccess.mCase
 
             foreach (var required in requiredFields)
             {
-                var check = AddSaveRecordCheckForRequiredProperty(required, fields, defaultMap);
+                var check = AddSaveRecordCheckForRequiredProperty(required, fields, defaultValues);
 
                 if (!string.IsNullOrEmpty(check))
                     sb.AppendLine(2.Indent() + check);
@@ -1029,7 +1029,7 @@ namespace mCASE_ADMIN.DataAccess.mCase
         /// </summary>
         /// <param name="required"></param>
         /// <returns></returns>
-        private static string AddSaveRecordCheckForRequiredProperty(Tuple<string, string, bool, string, string> required, HashSet<Tuple<string, string>> fields, string staticMapper)
+        private static string AddSaveRecordCheckForRequiredProperty(Tuple<string, string, bool, string, string> required, HashSet<Tuple<string, string>> fields, string defaultEnum)
         {
             var type = required.Item1.GetEnumValue<MCaseTypes>();
             var privateName = "_" + required.Item2.GetPropertyNameFromSystemName().ToLower();
@@ -1044,7 +1044,7 @@ namespace mCASE_ADMIN.DataAccess.mCase
                 if (dependentField != null)
                 {
                     //field is the conditional field
-                    var conditionalResult = AddConditionallyMandatoryCheck(dependentField, mandatedByValue, privateName, propertyName, type, staticMapper);
+                    var conditionalResult = AddConditionallyMandatoryCheck(dependentField, mandatedByValue, privateName, propertyName, type, defaultEnum);
 
                     return conditionalResult;
                 }
@@ -1064,7 +1064,7 @@ namespace mCASE_ADMIN.DataAccess.mCase
                 case MCaseTypes.DropDownList:
                 case MCaseTypes.DynamicDropDown:
                 case MCaseTypes.CascadingDynamicDropDown:
-                    return $"if({privateName}.Count == 0) requiredFields.Add(\"{propertyName}\");";
+                    return $"if({privateName} != null && {privateName}.Count == 0) requiredFields.Add(\"{propertyName}\");";
                 case MCaseTypes.String:
                 case MCaseTypes.LongString:
                 case MCaseTypes.EmailAddress:
@@ -1104,21 +1104,23 @@ namespace mCASE_ADMIN.DataAccess.mCase
             }
         }
 
-        private static string AddConditionallyMandatoryCheck(Tuple<string, string> dependentField, string mandatedByValue, string privateName, string propertyName, MCaseTypes mandatoryType , string staticMapper)
+        private static string AddConditionallyMandatoryCheck(Tuple<string, string> dependentField, string mandatedByValue, string privateName, string propertyName, MCaseTypes mandatoryType , string defaultValue)
+
         {
             var sb = new StringBuilder();
             var type = dependentField.Item1.GetEnumValue<MCaseTypes>();
             var dependentOnField = "_" +dependentField.Item2.GetPropertyNameFromSystemName().ToLower();
+            var demandsValues = string.Join(",", mandatedByValue.Split(new[] { "~*~" }, StringSplitOptions.None).Where(x => !string.IsNullOrEmpty(x)).Select(x => $"{defaultValue}.{x.GetPropertyNameFromSystemName()}"));
+
+            var valuesList = $"new List<{defaultValue}> () " + "{ " + demandsValues + "}";
 
             switch (type)
             {
                 //case mCaseTypes.EmbeddedList: Processed after loop completion
                 case MCaseTypes.CascadingDropDown:
                 case MCaseTypes.DropDownList:
-                    var demandsValues = string.Join(",", mandatedByValue.Split(new[] { "~*~" }, StringSplitOptions.None).Where(x => !string.IsNullOrEmpty(x)).Select(x => $"\"{x}\""));
                     sb.AppendLine($"if({dependentOnField} != null && {dependentOnField}");
-                    sb.AppendLine(3.Indent() + $".Select(x => {staticMapper}[x])");
-                    sb.AppendLine(3.Indent() + ".Intersect(new List<string>() "+ "{" + demandsValues + "})");
+                    sb.AppendLine(3.Indent() + $".Intersect({valuesList})");
                     sb.AppendLine(3.Indent() + ".Any())");
                     sb.AppendLine(2.Indent() + "{");
                     sb.AppendLine(3.Indent() + $"// {propertyName} is a conditionally mandatory field. Dependent on: {dependentField.Item2}, when her values are any of the following: {demandsValues}");
@@ -1127,13 +1129,12 @@ namespace mCASE_ADMIN.DataAccess.mCase
                     return sb.ToString();
                 case MCaseTypes.DynamicDropDown:
                 case MCaseTypes.CascadingDynamicDropDown:
-                    return string.Empty;
+                    return string.Empty; // todo ??
                 case MCaseTypes.String:
                 case MCaseTypes.LongString:
                 case MCaseTypes.EmailAddress:
                 case MCaseTypes.Phone:
                 case MCaseTypes.URL:
-                case MCaseTypes.Number:
                 case MCaseTypes.Money:
                 case MCaseTypes.Time:
                 case MCaseTypes.Boolean:
@@ -1141,10 +1142,20 @@ namespace mCASE_ADMIN.DataAccess.mCase
                 case MCaseTypes.User:
                 case MCaseTypes.Address:
                 case MCaseTypes.Attachment:
-                    return String.Empty;
+                    var stringDemandsValues = string.Join(",", mandatedByValue.Split(new[] { "~*~" }, StringSplitOptions.None).Where(x => !string.IsNullOrEmpty(x)).Select(x => $"\"{x}\""));
+                    var stringValuesList = "new List<string> () " + "{ " + stringDemandsValues + "}";
+
+                    sb.AppendLine($"if(!string.IsNullOrEmpty({dependentOnField}) && {stringValuesList}.Contains({dependentOnField}, StringComparer.InvariantCultureIgnoreCase))");
+                    sb.AppendLine(2.Indent() + "{");
+                    sb.AppendLine(3.Indent() + $"// {propertyName} is a conditionally mandatory field. Dependent on: {dependentField.Item2}, when her values are any of the following: {demandsValues}");
+                    sb.AppendLine(3.Indent() + CanSaveValidationHelper(mandatoryType, privateName, propertyName));
+                    sb.AppendLine(2.Indent() + "}");
+                    return sb.ToString();
                 case MCaseTypes.Date:
                 case MCaseTypes.DateTime:
                     return String.Empty;
+                case MCaseTypes.Number:
+                    return string.Empty;
                 case MCaseTypes.Section: //need in ce's?
                 case MCaseTypes.Narrative: //need in ce's?
                 case MCaseTypes.Header: //need in ce's?

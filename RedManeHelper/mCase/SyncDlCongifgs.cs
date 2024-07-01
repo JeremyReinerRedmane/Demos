@@ -331,7 +331,7 @@ namespace mCASE_ADMIN.DataAccess.mCase
 
             sb.AppendLine(Factory.GenerateEnums(fieldSet.Select(x => x.Item2).ToList(), "SystemNames", false).ToString());// All class property names
 
-            var allDefaultValues = new List<string>() { "Multi Select: False" };
+            var allDefaultValues = new List<string>() { "Multi Select: False", "True", "False" }; // Boolean Values
 
             foreach (var sbs in _stringBuilders)
             {
@@ -354,7 +354,7 @@ namespace mCASE_ADMIN.DataAccess.mCase
             if (!string.IsNullOrEmpty(relationshipEnums.ToString()))
                 sb.Append(relationshipEnums.ToString());
 
-            if (allDefaultValues.Count > 1)
+            if (allDefaultValues.Count > 3)
             {
                 var distinctData = allDefaultValues.Distinct();
 
