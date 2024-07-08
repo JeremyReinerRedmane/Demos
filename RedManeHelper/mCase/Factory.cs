@@ -229,7 +229,7 @@ namespace mCASE_ADMIN.DataAccess.mCase
 
             if (!mirroredField)
                 sb.AppendLine(1.Indent() +
-                              "/// <returns>\"If unable to parse string to datetime, datetime will be set to DateTime.MinValue\"</returns>");
+                              "/// <returns>If unable to parse string to datetime, datetime will be set to null</returns>");
 
             sb.AppendLine(1.Indent() + $"public DateTime? {propertyName}");
             sb.AppendLine(1.Indent() + "{"); //open Property
