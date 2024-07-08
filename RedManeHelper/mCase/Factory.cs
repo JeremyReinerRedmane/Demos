@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.InteropServices.JavaScript;
 using System.Text;
 using mCASE_ADMIN.DataAccess.mCase.Static;
 using Newtonsoft.Json.Linq;
@@ -222,7 +223,7 @@ namespace mCASE_ADMIN.DataAccess.mCase
             var requiredString = required ? "[Required Field] " : string.Empty;
             var mirroredString = mirroredField ? "[Mirrored field. No setting / updating allowed.] " : string.Empty;
 
-            sb.AppendLine(1.Indent() + $"private DateTime {privateSysName} = DateTime.MinValue;");
+            sb.AppendLine(1.Indent() + $"private DateTime? {privateSysName} = null;");
 
             sb.AppendLine(1.Indent() + $"/// <summary> {requiredString}[mCase data type: {type}] {mirroredString}</summary>");
 
@@ -230,12 +231,13 @@ namespace mCASE_ADMIN.DataAccess.mCase
                 sb.AppendLine(1.Indent() +
                               "/// <returns>\"If unable to parse string to datetime, datetime will be set to DateTime.MinValue\"</returns>");
 
-            sb.AppendLine(1.Indent() + $"public DateTime {propertyName}");
+            sb.AppendLine(1.Indent() + $"public DateTime? {propertyName}");
             sb.AppendLine(1.Indent() + "{"); //open Property
             sb.AppendLine(2.Indent() + "get");
             sb.AppendLine(2.Indent() + "{"); //open Getter
-            sb.AppendLine(3.Indent() + $"if({privateSysName} != DateTime.MinValue) return {privateSysName};");
-            sb.AppendLine(3.Indent() + $"{privateSysName} = DateTime.TryParse(RecordInsData.GetFieldValue(\"" + sysName + "\"), out var dt) ? dt : DateTime.MinValue;");
+            sb.AppendLine(3.Indent() + $"if({privateSysName} != null) return {privateSysName};");
+            sb.AppendLine(3.Indent() + "if(DateTime.TryParse(RecordInsData.GetFieldValue(\"" + sysName + $"\"), out var dt)) {privateSysName} = dt;");
+            sb.AppendLine(3.Indent() + $"else {privateSysName} = null;");
             sb.AppendLine(3.Indent() + $"return {privateSysName};");
             sb.AppendLine(2.Indent() + "}"); //close Getter
 
@@ -249,13 +251,49 @@ namespace mCASE_ADMIN.DataAccess.mCase
                 sb.AppendLine(2.Indent() + "set");
                 sb.AppendLine(2.Indent() + "{"); //open Setter
                 sb.AppendLine(3.Indent() + $"{privateSysName} = value;");
-                sb.AppendLine(3.Indent() + $"RecordInsData.SetValue(\"{sysName}\", {privateSysName}{setter});");
+                sb.AppendLine(3.Indent() + $"RecordInsData.SetValue(\"{sysName}\", {privateSysName} == null ? string.Empty : {privateSysName}?{setter});");
                 sb.AppendLine(2.Indent() + "}"); //close Setter
             }
 
             sb.AppendLine(1.Indent() + "}"); //close Property
 
             return sb.ToString();
+        }
+
+        public static StringBuilder BooleanFactory(JToken jToken, string propertyName, string sysName, string type, bool required)
+        {
+            var sb = new StringBuilder();
+            var enumType = type.GetEnumValue<MCaseTypes>();
+
+            var privateSysName = $"_{propertyName.ToLower()}";
+            var mirroredField = jToken.IsMirrorField();
+            var mirroredString = mirroredField ? "[ Mirrored field. No setting / updating allowed.] " : string.Empty;
+            var requiredString = required ? "[Required Field] " : string.Empty;
+
+            sb.AppendLine(1.Indent() + $"private string {privateSysName} = string.Empty;");
+            sb.AppendLine(1.Indent() + $"/// <summary>{requiredString}[mCase data type: {type}] {mirroredString}[Convert to Bool by using string.ToBoolean()]</summary>");
+            sb.AppendLine(1.Indent() + $"public string {propertyName}");
+            sb.AppendLine(1.Indent() + "{"); //open Property
+            sb.AppendLine(2.Indent() + "get");
+            sb.AppendLine(2.Indent() + "{"); //open Getter
+            sb.AppendLine(3.Indent() + $"if(!string.IsNullOrEmpty({privateSysName})) return {privateSysName};");
+            sb.AppendLine(3.Indent() + $"{privateSysName} = RecordInsData.GetFieldValue(\"{sysName}\");");
+            sb.AppendLine(3.Indent() + $"return {privateSysName};");
+            sb.AppendLine(2.Indent() + "}"); //close Getter
+
+            if (!mirroredField)
+            {
+                //string is not readonly, add setter
+                sb.AppendLine(2.Indent() + "set");
+                sb.AppendLine(2.Indent() + "{"); //open Setter
+                sb.AppendLine(3.Indent() + $"{privateSysName} = value;");
+                sb.AppendLine(3.Indent() + $"RecordInsData.SetValue(\"{sysName}\", {privateSysName});");
+                sb.AppendLine(2.Indent() + "}"); //close Setter
+            }
+
+            sb.AppendLine(1.Indent() + "}"); //close Property
+
+            return sb;
         }
 
         private static string DynamicDropDownFactory(string propertyName, string sysName, string fieldType,
@@ -511,10 +549,27 @@ namespace mCASE_ADMIN.DataAccess.mCase
             sb.AppendLine(0.Indent() + "{"); //open class
             sb.Append(BuildEnumExtensions());
             sb.Append(AddStaticEnumerableExtensions());
+            sb.Append(AddBooleanMethod());
 
             sb.AppendLine(0.Indent() + "}"); //close class
             sb.AppendLine("}"); //close  class
             return sb.ToString();
+        }
+
+        private static StringBuilder AddBooleanMethod()
+        {
+            var sb = new StringBuilder();
+
+            sb.AppendLine(1.Indent() + "/// <summary> If string is not null or empty, this method returns an accurate boolean from a string based off of MCaseEventConstants.TrueValues</summary>"); //static class
+            sb.AppendLine(1.Indent() + "public static bool? ToBoolean(this string value)");
+            sb.AppendLine(1.Indent() + "{");//open method
+            sb.AppendLine(2.Indent() + "if (string.IsNullOrEmpty(value)) return null;");
+            sb.AppendLine(2.Indent() + "if (MCaseConstants.TrueValues.Contains(value, StringComparer.OrdinalIgnoreCase)) return true;");
+            sb.AppendLine(2.Indent() + "if (MCaseConstants.FalseValues.Contains(value, StringComparer.OrdinalIgnoreCase)) return true;");
+            sb.AppendLine(2.Indent() + "return null;");
+            sb.AppendLine(1.Indent() + "}");//close method
+
+            return sb;
         }
 
         /// <summary>
@@ -1100,7 +1155,7 @@ namespace mCASE_ADMIN.DataAccess.mCase
                     return $"if(string.IsNullOrEmpty({privateName})) requiredFields.Add(\"{propertyName}\");";
                 case MCaseTypes.Date:
                 case MCaseTypes.DateTime:
-                    return $"if({privateName} == DateTime.MinValue) requiredFields.Add(\"{propertyName}\");";
+                    return $"if({privateName} == null) requiredFields.Add(\"{propertyName}\");";
                 case MCaseTypes.Section: //need in ce's?
                 case MCaseTypes.Narrative: //need in ce's?
                 case MCaseTypes.Header: //need in ce's?
@@ -1172,9 +1227,9 @@ namespace mCASE_ADMIN.DataAccess.mCase
                     return sb.ToString();
                 case MCaseTypes.Date:
                 case MCaseTypes.DateTime:
-                    return String.Empty;
+                    return string.Empty;//TODO 
                 case MCaseTypes.Number:
-                    return string.Empty;
+                    return string.Empty;//TODO
                 case MCaseTypes.Section: //need in ce's?
                 case MCaseTypes.Narrative: //need in ce's?
                 case MCaseTypes.Header: //need in ce's?

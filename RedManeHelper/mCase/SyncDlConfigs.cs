@@ -547,7 +547,6 @@ namespace mCASE_ADMIN.DataAccess.mCase
                 case MCaseTypes.Number:
                 case MCaseTypes.Money:
                 case MCaseTypes.Time:
-                case MCaseTypes.Boolean:
                 case MCaseTypes.ReadonlyField:
                 case MCaseTypes.User:
                 case MCaseTypes.Address:
@@ -557,6 +556,8 @@ namespace mCASE_ADMIN.DataAccess.mCase
                 case MCaseTypes.Date:
                 case MCaseTypes.DateTime:
                     return Factory.DateFactory(jToken, propertyName, sysName, type, required);
+                case MCaseTypes.Boolean:
+                    return Factory.BooleanFactory(jToken, propertyName, sysName, type, required).ToString();
                 case MCaseTypes.Section: //need in ce's?
                 case MCaseTypes.Narrative: //need in ce's?
                 case MCaseTypes.Header: //need in ce's?
