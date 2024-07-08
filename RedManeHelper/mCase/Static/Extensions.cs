@@ -148,7 +148,7 @@ namespace mCASE_ADMIN.DataAccess.mCase.Static
             return isCoalesce;
         }
 
-        public static string Indent(this int level) => new string('-', level).Replace("-", "   ");
+        public static string Indent(this int level) => new string('-', level+1).Replace("-", "   ");
 
     }
 }

@@ -7,7 +7,6 @@ using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Threading.Tasks;
-using Bogus.Bson;
 using mCASE_ADMIN.DataAccess.mCase.Static;
 using Microsoft.Data.SqlClient;
 using Newtonsoft.Json.Linq;
@@ -298,7 +297,6 @@ namespace mCASE_ADMIN.DataAccess.mCase
             if (fields == null)
                 return new StringBuilder();
 
-            var hasDateTimes = false;
             var fieldSet = new HashSet<Tuple<string, string>>(); //type, property
             var enumerableFieldSet = new HashSet<string>(); //used to enum properties being set
             var embeddedRelatedFields = new HashSet<string>();
@@ -315,8 +313,6 @@ namespace mCASE_ADMIN.DataAccess.mCase
             var relationships = jsonObject[ListTransferFields.Relationships.GetDescription()];
 
             var sb = Factory.ClassInitializer(jsonObject, className, _namespace, _mainUsings); // 1: Open namespace / class
-
-            sb.AppendLine(1.Indent() + "#region Fields");
 
             var requiresEnumeration = GenerateFields(className, fields, fieldSet, requiredFields, requiresEnumerationValues, enumerableFieldSet, embeddedRelatedFields, sb);
 

@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.InteropServices.JavaScript;
 using System.Text;
 using mCASE_ADMIN.DataAccess.mCase.Static;
 using Newtonsoft.Json.Linq;
@@ -25,19 +24,14 @@ namespace mCASE_ADMIN.DataAccess.mCase
             var sysName = jObject.ParseJson(ListTransferFields.SystemName.GetDescription());
             var dtNow = DateTime.Now.ToString(Extensions.MCaseDateTimeStorageFormat);
 
-            sb.AppendLine( //TODO continue to add usings, as more and more validations are made
-                mainUsings);
+            sb.AppendLine(mainUsings);
             sb.AppendLine($"namespace {nameSpace}");
             sb.AppendLine("{"); //open namespace
-
-            #region Entity
-
             sb.AppendLine(0.Indent() + $"/// <summary> Synchronized data list [{id}][{sysName}] on {dtNow} </summary>");
             sb.AppendLine(0.Indent() + $"public class {className}");
             sb.AppendLine(0.Indent() + "{"); //open class
             sb.AppendLine(1.Indent() + "public RecordInstanceData RecordInsData;");
             sb.AppendLine(1.Indent() + "private readonly AEventHelper _eventHelper;");
-
             sb.AppendLine(1.Indent() + "/// <summary> Class for Updating Existing RecordInstanceData. To create a new RecordInstance data, initialize with the appropriate datalist ID. </summary>");
             sb.AppendLine(1.Indent() +
                           $"public {className}(RecordInstanceData recordInsData, AEventHelper eventHelper)");
@@ -47,7 +41,7 @@ namespace mCASE_ADMIN.DataAccess.mCase
             sb.AppendLine(2.Indent() + "RecordInsData = recordInsData;");
             sb.AppendLine(2.Indent() + "_eventHelper.AddInfoLog($\"{SystemName} has been instantiated for recordInstance value: {recordInsData.RecordInstanceID}\");");
             sb.AppendLine(1.Indent() + "}"); //close constructor
-
+            sb.AppendLine(1.Indent() + "#region Fields");
             sb.AppendLine(1.Indent() + $"public string SystemName => \"{sysName}\";");
             sb.AppendLine(1.Indent() + "private int _dataListId = -1;");
             sb.AppendLine(1.Indent() + "/// <summary>");
@@ -63,8 +57,6 @@ namespace mCASE_ADMIN.DataAccess.mCase
             sb.AppendLine(3.Indent() + "return _dataListId;");
             sb.AppendLine(2.Indent() + "}"); //close Getter
             sb.AppendLine(1.Indent() + "}"); //close Property
-
-            #endregion
 
             return sb;
         }
@@ -1135,6 +1127,17 @@ namespace mCASE_ADMIN.DataAccess.mCase
             sb.AppendLine(2.Indent() + "_eventHelper.SaveRecord(RecordInsData);");
             sb.AppendLine(2.Indent() + "_eventHelper.AddInfoLog($\"[{SystemName}] Successfully saved record: {RecordInsData.RecordInstanceID}\");");
             sb.AppendLine(2.Indent() + "return requiredFields;");
+            sb.AppendLine(1.Indent() + "}");//close method
+
+
+            // Delete record
+            sb.AppendLine(1.Indent() + "/// <summary> If exception thrown here, attempt to save record prior to soft delete </summary>");
+            sb.AppendLine(1.Indent() + "public EventStatusCode SoftDelete()");
+            sb.AppendLine(1.Indent() + "{");//open method
+            sb.AppendLine(2.Indent() + "RecordInsData.Status = MCaseEventConstants.RecordStatusDeleted;");
+            sb.AppendLine(2.Indent() + "RecordInsData.FrozenInd = true;");
+            sb.AppendLine(2.Indent() + "_eventHelper.SaveRecord(RecordInsData);");
+            sb.AppendLine(2.Indent() + "return EventStatusCode.Success;");
             sb.AppendLine(1.Indent() + "}");//close method
 
 
