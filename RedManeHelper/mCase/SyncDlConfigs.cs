@@ -25,18 +25,20 @@ namespace mCASE_ADMIN.DataAccess.mCase
         private readonly string _credentials;
         private readonly string _mCaseUrl;
         private readonly string _namespace;
+        public readonly string _staticUsings;
+        public readonly string _mainUsings;
         private List<StringBuilder> _stringBuilders;
 
         public SyncDlConfigs(string[] commandLineArgs)
         {
-            if (commandLineArgs.Length != 8 && commandLineArgs.Length != 7)//requires query, or csv
+            if (commandLineArgs.Length != 10 && commandLineArgs.Length != 9)//requires query, or csv
             {
                 Console.WriteLine("Invalid Params. There are only two constructors.. Direct Sql query = 8 params. Or Direct Id Requests in CSV Format = 7 params");
 
                 throw new Exception();
             }
 
-            if (commandLineArgs.Length == 8) //Recieving all SQL Id's from specified Db
+            if (commandLineArgs.Length == 10) //Recieving all SQL Id's from specified Db
             {
                 Console.WriteLine("System operation: Requesting Data from Db. Setting Parameters");
                 // [0] bin dir containing dll and exe files
@@ -64,9 +66,15 @@ namespace mCASE_ADMIN.DataAccess.mCase
 
                 _namespace = commandLineArgs[7];//7
                 Console.WriteLine("Namespace: " + _namespace);
+
+                _mainUsings = commandLineArgs[8];
+                Console.WriteLine("Main usings: " + _namespace);
+
+                _staticUsings = commandLineArgs[9];
+                Console.WriteLine("static usings: " + _namespace);
             }
 
-            if (commandLineArgs.Length == 7)
+            if (commandLineArgs.Length == 9)
             {
                 Console.WriteLine("System operation: CSV Data. Setting Parameters");
                 // [0] bin dir containing dll and exe files
@@ -91,6 +99,12 @@ namespace mCASE_ADMIN.DataAccess.mCase
 
                 _namespace = commandLineArgs[6];
                 Console.WriteLine("Namespace: " + _namespace);
+
+                _mainUsings = commandLineArgs[7];
+                Console.WriteLine("Main usings: " + _namespace);
+
+                _staticUsings = commandLineArgs[8];
+                Console.WriteLine("static usings: " + _namespace);
             }
 
             Console.WriteLine("All parameters have been completed. Moving to next step");
@@ -146,7 +160,7 @@ namespace mCASE_ADMIN.DataAccess.mCase
 
             if (string.IsNullOrEmpty(_csvData))
             {
-                var staticFileData = Factory.GenerateStaticFile(_namespace);
+                var staticFileData = Factory.GenerateStaticFile(_namespace, _staticUsings);
 
                 var staticPath = Path.Combine(_outputDirectory, "FactoryExtensions.cs");
 
@@ -300,7 +314,7 @@ namespace mCASE_ADMIN.DataAccess.mCase
             };
             var relationships = jsonObject[ListTransferFields.Relationships.GetDescription()];
 
-            var sb = Factory.ClassInitializer(jsonObject, className, _namespace); // 1: Open namespace / class
+            var sb = Factory.ClassInitializer(jsonObject, className, _namespace, _mainUsings); // 1: Open namespace / class
 
             sb.AppendLine(1.Indent() + "#region Fields");
 

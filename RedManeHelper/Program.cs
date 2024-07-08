@@ -4,7 +4,7 @@ var commandLineArgs = Environment.GetCommandLineArgs();
 
 if (commandLineArgs.Length > 1)
 {
-    if (commandLineArgs.Length == 8)
+    if (commandLineArgs.Length == 10)
     {
         //directly querying db for datalist id's
         var cmd = new SyncDlConfigs(commandLineArgs);
@@ -14,7 +14,7 @@ if (commandLineArgs.Length > 1)
         cmd.RemoteSync(sqlQuery);
     }
 
-    if (commandLineArgs.Length == 7)
+    if (commandLineArgs.Length == 9)
     {
         //direct access to csv data
         var cmd = new SyncDlConfigs(commandLineArgs);
@@ -27,13 +27,27 @@ if (commandLineArgs.Length > 1)
 }
 else
 {
+    //var cmd = new List<string>
+    //{
+    //    "",
+    //    //"1250,726,744",
+    //    "data source",
+    //    "sql query",
+    //    "credentials",
+    //    "api endpoint url",
+    //    @"output directory",
+    //    @"exception directory",
+    //    "namespace",
+    //    "class file usings statements",
+    //    "static file usings statements"
+    //}.ToArray();
     var cmd = new List<string>
     {
 
     }.ToArray();
 
     var local = new SyncDlConfigs(cmd);
-    if (cmd.Length == 8)
+    if (cmd.Length == 10)
     {
         //directly querying db
         var sqlQuery = await local.DataAccess();
@@ -41,7 +55,7 @@ else
         local.RemoteSync(sqlQuery);
     }
 
-    if (cmd.Length == 7)
+    if (cmd.Length == 9)
     {
         //direct access to csv data
         var data = local.DirectDataAccess();
@@ -52,7 +66,7 @@ else
 
 /* TASKS
  * ---------------------------------------------------------Required---------------------------------------------------------
- * 1  []: Need to export usings to cmd param for project specific needs (Main file usings, and Single static usings)
+ * 1  [x]: Need to export usings to cmd param for project specific needs (Main file usings, and Single static usings)
  * 1B:    This also requires fixing the constructor from 7 and 8 params to potentially 9-10 params (two additional params for 1 for static file, and the second for class file)
  *
  * 2  []: Need to convert default data structures to nullable types (Datetime,... Any others?))

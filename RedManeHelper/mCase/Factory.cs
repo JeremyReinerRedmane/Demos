@@ -16,7 +16,7 @@ namespace mCASE_ADMIN.DataAccess.mCase
             MCaseTypes.Phone, MCaseTypes.Time, MCaseTypes.URL
         };
 
-        public static StringBuilder ClassInitializer(JObject jObject, string className, string nameSpace)
+        public static StringBuilder ClassInitializer(JObject jObject, string className, string nameSpace, string mainUsings)
         {
             var sb = new StringBuilder();
 
@@ -25,7 +25,7 @@ namespace mCASE_ADMIN.DataAccess.mCase
             var dtNow = DateTime.Now.ToString(Extensions.MCaseDateTimeStorageFormat);
 
             sb.AppendLine( //TODO continue to add usings, as more and more validations are made
-                "using System;\nusing System.Collections.Generic;\nusing System.Linq;\nusing MCaseCustomEvents.ARFocus.DataAccess;\nusing MCaseEventsSDK;\nusing MCaseEventsSDK.Util;\nusing MCaseEventsSDK.Util.Data;\nusing System.ComponentModel;\nusing System.Reflection;\nusing MCase.Core.Event;");
+                mainUsings);
             sb.AppendLine($"namespace {nameSpace}");
             sb.AppendLine("{"); //open namespace
 
@@ -497,12 +497,12 @@ namespace mCASE_ADMIN.DataAccess.mCase
         #endregion
         #region Static File Extensions
 
-        public static string GenerateStaticFile(string namespace_)
+        public static string GenerateStaticFile(string namespace_, string staticUsings)
         {
             var sb = new StringBuilder();
 
             sb.AppendLine( //TODO continue to add usings, as more and more validations are made
-                "using System;\nusing System.Collections.Generic;\r\nusing System.Linq;\r\nusing MCaseEventsSDK.Util.Data;\nusing System.Text.RegularExpressions;\r\nusing MCaseEventsSDK;");
+                staticUsings);
             sb.AppendLine($"namespace {namespace_}"); //TODO: project specific namespace
             sb.AppendLine("{"); //Open class
             sb.AppendLine(0.Indent() + "/// <summary> Much to learn, this static extension still has. Powerful tool it can be. But remember, foresee the consequences of your code you must. With caution, use this extension you should. </summary>"); //static class
