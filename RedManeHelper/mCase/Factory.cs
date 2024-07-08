@@ -263,7 +263,6 @@ namespace mCASE_ADMIN.DataAccess.mCase
         public static StringBuilder BooleanFactory(JToken jToken, string propertyName, string sysName, string type, bool required)
         {
             var sb = new StringBuilder();
-            var enumType = type.GetEnumValue<MCaseTypes>();
 
             var privateSysName = $"_{propertyName.ToLower()}";
             var mirroredField = jToken.IsMirrorField();
@@ -271,7 +270,7 @@ namespace mCASE_ADMIN.DataAccess.mCase
             var requiredString = required ? "[Required Field] " : string.Empty;
 
             sb.AppendLine(1.Indent() + $"private string {privateSysName} = string.Empty;");
-            sb.AppendLine(1.Indent() + $"/// <summary>{requiredString}[mCase data type: {type}] {mirroredString}[Convert to Bool by using string.ToBoolean()]</summary>");
+            sb.AppendLine(1.Indent() + $"/// <summary>{requiredString}[mCase data type: {type}] {mirroredString}[Convert to Bool by using {propertyName}.ToBoolean()]</summary>");
             sb.AppendLine(1.Indent() + $"public string {propertyName}");
             sb.AppendLine(1.Indent() + "{"); //open Property
             sb.AppendLine(2.Indent() + "get");
