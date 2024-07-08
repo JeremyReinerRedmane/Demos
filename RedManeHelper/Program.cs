@@ -86,14 +86,15 @@ else
  * 7  [x]: Add auto logs to constructor for creation of entity, saving for saving the entity, and deleting for deleting the entity
  * 7B:    Need to add deleting method for soft deleting record
  *
- * 8  []: Convert all string returns to string builder. Update the string builder to receive string builder as argument in place of string.
+ * 8  [x]: Convert all string returns to string builder. Update the string builder to receive string builder as argument in place of string.
  *
  * 9  [x]: Save record should return list of required fields. Update the CanSave() -> CheckRequiredFields(). And save method if should return required fields (List<strings>())
  *
- * 10 []: Stored value types need to reflect accurate null values if presented. String.Empty is a accepted null value to store in DB as no value was presented.
+ * 10 [x]: Stored value types need to reflect accurate null values if presented. String.Empty is a accepted null value to store in DB as no value was presented.
  * 10A:    potential nullable value types: bool, datetime, time, number....?
  *
  * 11 [x]: Use parent child relationships to recieve child records based off of listId, (not just embedded records). List of records should return value type
+ *
  * --------------------------------------------------------- Syntactic Sugar ---------------------------------------------------------
  *
  * 1 [X]: Move logging into methods region
@@ -110,5 +111,5 @@ else
  *
  * 7 []: Return docstrings to static methods for clarity on return type on actual methods in static extensions as well as doc strings on class instance method calls
  *
- * 8 []: update regions
+ * 8 [x]: update regions
  */

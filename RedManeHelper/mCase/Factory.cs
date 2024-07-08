@@ -141,7 +141,7 @@ namespace mCASE_ADMIN.DataAccess.mCase
 
         #region Factories
 
-        public static string StringFactory(JToken jToken, string propertyName, string sysName, string type, bool required)
+        public static StringBuilder StringFactory(JToken jToken, string propertyName, string sysName, string type, bool required)
         {
             var sb = new StringBuilder();
             var enumType = type.GetEnumValue<MCaseTypes>();
@@ -181,10 +181,10 @@ namespace mCASE_ADMIN.DataAccess.mCase
 
             sb.AppendLine(1.Indent() + "}"); //close Property
 
-            return sb.ToString();
+            return sb;
         }
 
-        public static string LongFactory(string propertyName, string sysName, string type, bool required)
+        public static StringBuilder LongFactory(string propertyName, string sysName, string type, bool required)
         {
             var sb = new StringBuilder();
 
@@ -210,10 +210,10 @@ namespace mCASE_ADMIN.DataAccess.mCase
             sb.AppendLine(2.Indent() + "}"); //close setter
             sb.AppendLine(1.Indent() + "}"); //close 
 
-            return sb.ToString();
+            return sb;
         }
 
-        public static string DateFactory(JToken jToken, string propertyName, string sysName, string type, bool required)
+        public static StringBuilder DateFactory(JToken jToken, string propertyName, string sysName, string type, bool required)
         {
             var sb = new StringBuilder();
             var enumType = type.GetEnumValue<MCaseTypes>();
@@ -229,7 +229,7 @@ namespace mCASE_ADMIN.DataAccess.mCase
 
             if (!mirroredField)
                 sb.AppendLine(1.Indent() +
-                              "/// <returns>\"If unable to parse string to datetime, datetime will be set to DateTime.MinValue\"</returns>");
+                              "/// <returns>If unable to parse string to datetime, datetime will be set to null</returns>");
 
             sb.AppendLine(1.Indent() + $"public DateTime? {propertyName}");
             sb.AppendLine(1.Indent() + "{"); //open Property
@@ -257,13 +257,12 @@ namespace mCASE_ADMIN.DataAccess.mCase
 
             sb.AppendLine(1.Indent() + "}"); //close Property
 
-            return sb.ToString();
+            return sb;
         }
 
         public static StringBuilder BooleanFactory(JToken jToken, string propertyName, string sysName, string type, bool required)
         {
             var sb = new StringBuilder();
-            var enumType = type.GetEnumValue<MCaseTypes>();
 
             var privateSysName = $"_{propertyName.ToLower()}";
             var mirroredField = jToken.IsMirrorField();
@@ -271,7 +270,7 @@ namespace mCASE_ADMIN.DataAccess.mCase
             var requiredString = required ? "[Required Field] " : string.Empty;
 
             sb.AppendLine(1.Indent() + $"private string {privateSysName} = string.Empty;");
-            sb.AppendLine(1.Indent() + $"/// <summary>{requiredString}[mCase data type: {type}] {mirroredString}[Convert to Bool by using string.ToBoolean()]</summary>");
+            sb.AppendLine(1.Indent() + $"/// <summary>{requiredString}[mCase data type: {type}] {mirroredString}[Convert to Bool by using {propertyName}.ToBoolean()]</summary>");
             sb.AppendLine(1.Indent() + $"public string {propertyName}");
             sb.AppendLine(1.Indent() + "{"); //open Property
             sb.AppendLine(2.Indent() + "get");
@@ -296,7 +295,7 @@ namespace mCASE_ADMIN.DataAccess.mCase
             return sb;
         }
 
-        private static string DynamicDropDownFactory(string propertyName, string sysName, string fieldType,
+        private static StringBuilder DynamicDropDownFactory(string propertyName, string sysName, string fieldType,
             string privateName, string multiSelect, string dynamics, bool notAbleToSelectManyValues, bool required)
         {
             var requiredString = required ? "[Required Field] " : string.Empty;
@@ -331,10 +330,10 @@ namespace mCASE_ADMIN.DataAccess.mCase
             sb.AppendLine(2.Indent() + "}"); //close Setter
             sb.AppendLine(1.Indent() + "}"); //close Property
 
-            return sb.ToString();
+            return sb;
         }
 
-        private static Tuple<string, StringBuilder> DropDownFactory(JToken jToken, string propertyName, string sysName,
+        private static Tuple<StringBuilder, StringBuilder> DropDownFactory(JToken jToken, string propertyName, string sysName,
             string fieldType, string privateName, string multiSelect, bool notAbleToSelectManyValues, string className, bool required)
         {
             var defaultValues = jToken.ParseDefaultData(ListTransferFields.FieldValues.GetDescription());
@@ -360,7 +359,7 @@ namespace mCASE_ADMIN.DataAccess.mCase
             }
 
 
-            return new Tuple<string, StringBuilder>(returnValue.ToString(), enumValues);
+            return new Tuple<StringBuilder, StringBuilder>(returnValue, enumValues);
         }
 
         /// <summary>
@@ -372,7 +371,7 @@ namespace mCASE_ADMIN.DataAccess.mCase
         /// <param name="sysName"></param>
         /// <param name="fieldType"></param>
         /// <returns>Property, Enum</returns>
-        public static Tuple<string, StringBuilder> EnumerableFactory(JToken jToken, MCaseTypes type,
+        public static Tuple<StringBuilder, StringBuilder> EnumerableFactory(JToken jToken, MCaseTypes type,
             string propertyName, string sysName, string fieldType, string className, bool required)
         {
             var fieldOptions = jToken.ParseToken(ListTransferFields.FieldOptions.GetDescription());
@@ -390,16 +389,16 @@ namespace mCASE_ADMIN.DataAccess.mCase
                         multiSelect, notAbleToSelectManyValues, className, required);// has default values. Values are strings
 
                     //Item 1 = property, Item 2 = Enum
-                    return new Tuple<string, StringBuilder>(dropDownValues.Item1, dropDownValues.Item2);
+                    return new Tuple<StringBuilder, StringBuilder>(dropDownValues.Item1, dropDownValues.Item2);
 
                 case MCaseTypes.CascadingDynamicDropDown:
                 case MCaseTypes.DynamicDropDown:
                     var dynamicValues = DynamicDropDownFactory(propertyName, sysName, fieldType, privateName,
                         multiSelect, dynamicData, notAbleToSelectManyValues, required);//does not have default values. Values are RecordInstances (pointers)
-                    return new Tuple<string, StringBuilder>(dynamicValues, new StringBuilder());
+                    return new Tuple<StringBuilder, StringBuilder>(dynamicValues, new StringBuilder());
 
                 default:
-                    return new Tuple<string, StringBuilder>(string.Empty, new StringBuilder());
+                    return new Tuple<StringBuilder, StringBuilder>(new StringBuilder(), new StringBuilder());
             }
         }
 
@@ -560,7 +559,7 @@ namespace mCASE_ADMIN.DataAccess.mCase
         {
             var sb = new StringBuilder();
 
-            sb.AppendLine(1.Indent() + "/// <summary> If string is not null or empty, this method returns an accurate boolean from a string based off of MCaseEventConstants.TrueValues</summary>"); //static class
+            sb.AppendLine(1.Indent() + "/// <summary> If string is not null or empty, this method returns an accurate boolean from a string based off of MCaseEventConstants.TrueValues && MCaseEventConstants.FalseValues</summary>"); //static class
             sb.AppendLine(1.Indent() + "public static bool? ToBoolean(this string value)");
             sb.AppendLine(1.Indent() + "{");//open method
             sb.AppendLine(2.Indent() + "if (string.IsNullOrEmpty(value)) return null;");
@@ -907,8 +906,6 @@ namespace mCASE_ADMIN.DataAccess.mCase
             var propertyMap = $"{className}Static.PropertiesMap";
             var defaultMap = $"{className}Static.DefaultValuesMap";
             
-            sb.AppendLine(1.Indent() + "#region Methods");
-
             if (addDefaults)
             {
                 // Map To Enum
@@ -1002,9 +999,6 @@ namespace mCASE_ADMIN.DataAccess.mCase
             }
 
             #endregion
-
-            #region private method extractions
-
             if (addDefaults)
             {
                 #region Clear With Default Values
@@ -1016,24 +1010,6 @@ namespace mCASE_ADMIN.DataAccess.mCase
                 sb.AppendLine(1.Indent() + $"public int Clear({staticProperties} propertyEnum) => this.Clear<{entity}, {defaultValues}>({propertyMap}[propertyEnum]);");
 
                 #endregion
-                
-                sb.AppendLine(1.Indent() + "#region Private");
-                //add MultiSelectValue
-                sb.AppendLine(1.Indent() + $"private List<{defaultValues}> GetMultiSelectValue(string sysName)");
-                sb.AppendLine(1.Indent() + "{");//open method
-                sb.AppendLine(2.Indent() + "var storedValue = RecordInsData.GetMultiSelectFieldValue(sysName);");
-                sb.AppendLine(2.Indent() + $"return !storedValue.Any() ? new List<{defaultValues}>() : storedValue.Select(x => x.TryGetValue<{defaultValues}>()).ToList();");
-                sb.AppendLine(1.Indent() + "}");//close method
-
-                //Set Default values
-                sb.AppendLine(1.Indent() + $"private List<{defaultValues}> SetDefaultList(List<{defaultValues}> value, bool invalidValues)");
-                sb.AppendLine(1.Indent() + "{");//open method
-                sb.AppendLine(2.Indent() + $"if (value == null || !value.Any()) return new List<{defaultValues}>();");
-                sb.AppendLine(2.Indent() + $"if (value == new List<{defaultValues}>() " + "{ " + defaultValues + ".Multiselectfalse }) return value;");
-                sb.AppendLine(2.Indent() + $"return invalidValues ? new List<{defaultValues}>()" + "{ " + defaultValues + ".Invalidselection } : value;");
-                sb.AppendLine(1.Indent() + "}");//close method
-
-                sb.AppendLine(1.Indent() + "#endregion Private");
             }
             else
             {
@@ -1047,10 +1023,7 @@ namespace mCASE_ADMIN.DataAccess.mCase
 
                 #endregion
             }
-
             #region Save
-
-            sb.AppendLine(1.Indent() + "#region Save");
 
             // Can save record
             sb.AppendLine(1.Indent() + "/// <summary>Checks all required fields in Datalist</summary>");
@@ -1083,17 +1056,35 @@ namespace mCASE_ADMIN.DataAccess.mCase
             sb.AppendLine(2.Indent() + "return requiredFields;");
             sb.AppendLine(1.Indent() + "}");//close method
 
-            sb.AppendLine(1.Indent() + "#endregion Save");//enumerable methods
 
             sb.AppendLine(1.Indent() + "public void LogDebug(string log) => _eventHelper.AddDebugLog($\"[{SystemName}][{RecordInsData.RecordInstanceID}]: {log}\");");
             sb.AppendLine(1.Indent() + "public void LogInfo(string log) => _eventHelper.AddInfoLog($\"[{SystemName}][{RecordInsData.RecordInstanceID}]: {log}\");");
             sb.AppendLine(1.Indent() + "public void LogWarning(string log) => _eventHelper.AddWarningLog($\"[{SystemName}][{RecordInsData.RecordInstanceID}]: {log}\");");
             sb.AppendLine(1.Indent() + "public void LogError(string log) => _eventHelper.AddErrorLog($\"[{SystemName}][{RecordInsData.RecordInstanceID}]: {log}\");");
 
-            sb.AppendLine(1.Indent() + "#endregion Methods");//enumerable methods
-
-
             #endregion
+            #region private method extractions
+
+            if (addDefaults)
+            {
+                sb.AppendLine(1.Indent() + "#region Private");
+                //add MultiSelectValue
+                sb.AppendLine(1.Indent() + $"private List<{defaultValues}> GetMultiSelectValue(string sysName)");
+                sb.AppendLine(1.Indent() + "{");//open method
+                sb.AppendLine(2.Indent() + "var storedValue = RecordInsData.GetMultiSelectFieldValue(sysName);");
+                sb.AppendLine(2.Indent() + $"return !storedValue.Any() ? new List<{defaultValues}>() : storedValue.Select(x => x.TryGetValue<{defaultValues}>()).ToList();");
+                sb.AppendLine(1.Indent() + "}");//close method
+
+                //Set Default values
+                sb.AppendLine(1.Indent() + $"private List<{defaultValues}> SetDefaultList(List<{defaultValues}> value, bool invalidValues)");
+                sb.AppendLine(1.Indent() + "{");//open method
+                sb.AppendLine(2.Indent() + $"if (value == null || !value.Any()) return new List<{defaultValues}>();");
+                sb.AppendLine(2.Indent() + $"if (value == new List<{defaultValues}>() " + "{ " + defaultValues + ".Multiselectfalse }) return value;");
+                sb.AppendLine(2.Indent() + $"return invalidValues ? new List<{defaultValues}>()" + "{ " + defaultValues + ".Invalidselection } : value;");
+                sb.AppendLine(1.Indent() + "}");//close method
+
+                sb.AppendLine(1.Indent() + "#endregion Private");
+            }
 
             #endregion
             return sb.ToString();

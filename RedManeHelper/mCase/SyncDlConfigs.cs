@@ -322,8 +322,11 @@ namespace mCASE_ADMIN.DataAccess.mCase
 
             sb.AppendLine(1.Indent() + "#endregion Fields");
 
+            sb.AppendLine(1.Indent() + "#region Methods");//enumerable methods
+
             var childRelationships =
                 relationships?.ParseChildren(ListTransferFields.ChildSystemName.GetDescription());
+
 
             if (embeddedRelatedFields.Count > 0 || childRelationships != null && childRelationships.Any())
             {// add child relationships to embedded relationships list.
@@ -351,6 +354,8 @@ namespace mCASE_ADMIN.DataAccess.mCase
 
             if (requiresEnumeration)
                 sb.AppendLine(Factory.AddEnumerableExtensions(className, _stringBuilders.Any(), requiredFields, fieldSet)); // 3: Add class methods
+
+            sb.AppendLine(1.Indent() + "#endregion Methods");//enumerable methods
 
             sb.AppendLine(0.Indent() + "}"); // 4: close class
 
@@ -487,10 +492,10 @@ namespace mCASE_ADMIN.DataAccess.mCase
 
                 var property = AddProperties(field, type, systemName, className, required);// 2: Add properties. Magic happens here
 
-                if (string.IsNullOrEmpty(property))
+                if (string.IsNullOrEmpty(property.ToString()))
                     continue;
 
-                sb.AppendLine(property);
+                sb.Append(property);
 
                 fieldSet.Add(tuple);//completed field, add to list
             }
@@ -519,7 +524,7 @@ namespace mCASE_ADMIN.DataAccess.mCase
             return new Tuple<bool, string, string>(string.Equals(conditional, "yes", StringComparison.OrdinalIgnoreCase), field, value);
         }
 
-        private string AddProperties(JToken jToken, string type, string sysName, string className, bool required)//sysname is uppercase
+        private StringBuilder AddProperties(JToken jToken, string type, string sysName, string className, bool required)//sysname is uppercase
         {
             var typeEnum = type.GetEnumValue<MCaseTypes>();
 
@@ -557,7 +562,7 @@ namespace mCASE_ADMIN.DataAccess.mCase
                 case MCaseTypes.DateTime:
                     return Factory.DateFactory(jToken, propertyName, sysName, type, required);
                 case MCaseTypes.Boolean:
-                    return Factory.BooleanFactory(jToken, propertyName, sysName, type, required).ToString();
+                    return Factory.BooleanFactory(jToken, propertyName, sysName, type, required);
                 case MCaseTypes.Section: //need in ce's?
                 case MCaseTypes.Narrative: //need in ce's?
                 case MCaseTypes.Header: //need in ce's?
@@ -576,7 +581,7 @@ namespace mCASE_ADMIN.DataAccess.mCase
                 case MCaseTypes.Score5: //not required in CE's
                 case MCaseTypes.Score6: //not required in CE's
                 default:
-                    return string.Empty;
+                    return new StringBuilder();
             }
         }
     }
