@@ -582,7 +582,7 @@ namespace mCASE_ADMIN.DataAccess.mCase
             sb.AppendLine(1.Indent() + "{");//open method
             sb.AppendLine(2.Indent() + "if (string.IsNullOrEmpty(value)) return null;");
             sb.AppendLine(2.Indent() + "if (MCaseConstants.TrueValues.Contains(value, StringComparer.OrdinalIgnoreCase)) return true;");
-            sb.AppendLine(2.Indent() + "if (MCaseConstants.FalseValues.Contains(value, StringComparer.OrdinalIgnoreCase)) return true;");
+            sb.AppendLine(2.Indent() + "if (MCaseConstants.FalseValues.Contains(value, StringComparer.OrdinalIgnoreCase)) return false;");
             sb.AppendLine(2.Indent() + "return null;");
             sb.AppendLine(1.Indent() + "}");//close method
 
