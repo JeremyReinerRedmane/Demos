@@ -61,11 +61,6 @@ namespace mCASE_ADMIN.DataAccess.mCase
             sb.AppendLine(3.Indent() + "return _dataListId;");
             sb.AppendLine(2.Indent() + "}"); //close Getter
             sb.AppendLine(1.Indent() + "}"); //close Property
-            sb.AppendLine(1.Indent() + $"public void LogDebug(string log) => _eventHelper.AddDebugLog($\"[{className} Record][{{RecordInsData.RecordInstanceID}}]: {{log}}\");");
-            sb.AppendLine(1.Indent() + $"public void LogInfo(string log) => _eventHelper.AddInfoLog($\"[{className} Record][{{RecordInsData.RecordInstanceID}}]: {{log}}\");");
-            sb.AppendLine(1.Indent() + $"public void LogWarning(string log) => _eventHelper.AddWarningLog($\"[{className} Record][{{RecordInsData.RecordInstanceID}}]: {{log}}\");");
-            sb.AppendLine(1.Indent() + $"public void LogError(string log) => _eventHelper.AddErrorLog($\"[{className} Record][{{RecordInsData.RecordInstanceID}}]: {{log}}\");");
-
 
             #endregion
 
@@ -1030,6 +1025,12 @@ namespace mCASE_ADMIN.DataAccess.mCase
             sb.AppendLine(1.Indent() + "}");//close method
 
             sb.AppendLine(1.Indent() + "#endregion Save");//enumerable methods
+
+            sb.AppendLine(1.Indent() + $"public void LogDebug(string log) => _eventHelper.AddDebugLog($\"[{className} Record][{{RecordInsData.RecordInstanceID}}]: {{log}}\");");
+            sb.AppendLine(1.Indent() + $"public void LogInfo(string log) => _eventHelper.AddInfoLog($\"[{className} Record][{{RecordInsData.RecordInstanceID}}]: {{log}}\");");
+            sb.AppendLine(1.Indent() + $"public void LogWarning(string log) => _eventHelper.AddWarningLog($\"[{className} Record][{{RecordInsData.RecordInstanceID}}]: {{log}}\");");
+            sb.AppendLine(1.Indent() + $"public void LogError(string log) => _eventHelper.AddErrorLog($\"[{className} Record][{{RecordInsData.RecordInstanceID}}]: {{log}}\");");
+
             sb.AppendLine(1.Indent() + "#endregion Methods");//enumerable methods
 
 

@@ -82,7 +82,7 @@ else
  * 11 []: Use parent child relationships to recieve child records based off of listId, (not just embedded records). List of records should return value type
  * --------------------------------------------------------- Syntactic Sugar ---------------------------------------------------------
  *
- * 1 []: Move logging into methods region
+ * 1 [X]: Move logging into methods region
  *
  * 2 []: Should systemName strings refer to system name mappers?
  *
