@@ -832,7 +832,7 @@ namespace mCASE_ADMIN.DataAccess.mCase
                 sb.AppendLine(1.Indent() + $"/// <summary> Gets active related records of type: {propertyName}</summary>");
                 sb.AppendLine(1.Indent() + $"/// <returns>Related children from {propertyName}</returns>");
                 sb.AppendLine(1.Indent() +
-                              $"public List<{propertyName}> GetActive{propertyName}Records() => _eventHelper.GetRelatedRecords(RecordInsData.RecordInstanceID, \"{value}\").Select(x => new {propertyName}(x, _eventHelper)).ToList();"); // property name is added back with enum name appended 
+                              $"public List<{propertyName}> GetActive{propertyName}Records() => _eventHelper.GetRelatedRecords(RecordInsData.RecordInstanceID, new {propertyName}Info(_eventHelper).SystemName).Select(x => new {propertyName}(x, _eventHelper)).ToList();"); // property name is added back with enum name appended 
 
             }
 
