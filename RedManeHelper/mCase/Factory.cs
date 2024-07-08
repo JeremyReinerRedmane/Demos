@@ -44,6 +44,7 @@ namespace mCASE_ADMIN.DataAccess.mCase
             sb.AppendLine(2.Indent() + "_eventHelper = eventHelper;");
             sb.AppendLine(2.Indent() + $"if (recordInsData.DataListID != DataListId) throw new Exception(\"RecordInstance is not of type {sysName}\");");
             sb.AppendLine(2.Indent() + "RecordInsData = recordInsData;");
+            sb.AppendLine(2.Indent() + "_eventHelper.AddInfoLog($\"{SystemName} has been instantiated for recordInstance value: {recordInsData.RecordInstanceID}\");");
             sb.AppendLine(1.Indent() + "}"); //close constructor
 
             sb.AppendLine(1.Indent() + $"public string SystemName => \"{sysName}\";");
@@ -998,7 +999,7 @@ namespace mCASE_ADMIN.DataAccess.mCase
             // Can save record
             sb.AppendLine(1.Indent() + "/// <summary>Checks all required fields in Datalist</summary>");
             sb.AppendLine(1.Indent() + "/// <returns>All required fields that have yet been filled in.</returns>");
-            sb.AppendLine(1.Indent() + "public List<string> CanSave()");
+            sb.AppendLine(1.Indent() + "public List<string> RequiredFieldsCheck()");
             sb.AppendLine(1.Indent() + "{");//open method
             sb.AppendLine(2.Indent() + "var requiredFields = new List<string>();");
 
@@ -1014,22 +1015,24 @@ namespace mCASE_ADMIN.DataAccess.mCase
 
 
 
-            // save save record
+            // save record
             sb.AppendLine(1.Indent() + "/// <summary> If all required fields have been filled in. This will save the RecordInstanceData</summary>");
-            sb.AppendLine(1.Indent() + "/// <returns>Event status code for failure or success</returns>");
-            sb.AppendLine(1.Indent() + "public EventStatusCode SaveRecord()");
+            sb.AppendLine(1.Indent() + "/// <returns>A list of all unfilled required fields. Empty list means succesfully saved</returns>");
+            sb.AppendLine(1.Indent() + "public List<string> SaveRecord()");
             sb.AppendLine(1.Indent() + "{");//open method
-            sb.AppendLine(2.Indent() + "if(CanSave().Count > 0) return EventStatusCode.Failure;");
+            sb.AppendLine(2.Indent() + "var requiredFields = RequiredFieldsCheck();");
+            sb.AppendLine(2.Indent() + "if(requiredFields.Count > 0) return requiredFields;");
             sb.AppendLine(2.Indent() + "_eventHelper.SaveRecord(RecordInsData);");
-            sb.AppendLine(2.Indent() + "return EventStatusCode.Success;");
+            sb.AppendLine(2.Indent() + "_eventHelper.AddInfoLog($\"[{SystemName}] Successfully saved record: {RecordInsData.RecordInstanceID}\");");
+            sb.AppendLine(2.Indent() + "return requiredFields;");
             sb.AppendLine(1.Indent() + "}");//close method
 
             sb.AppendLine(1.Indent() + "#endregion Save");//enumerable methods
 
-            sb.AppendLine(1.Indent() + $"public void LogDebug(string log) => _eventHelper.AddDebugLog($\"[{className} Record][{{RecordInsData.RecordInstanceID}}]: {{log}}\");");
-            sb.AppendLine(1.Indent() + $"public void LogInfo(string log) => _eventHelper.AddInfoLog($\"[{className} Record][{{RecordInsData.RecordInstanceID}}]: {{log}}\");");
-            sb.AppendLine(1.Indent() + $"public void LogWarning(string log) => _eventHelper.AddWarningLog($\"[{className} Record][{{RecordInsData.RecordInstanceID}}]: {{log}}\");");
-            sb.AppendLine(1.Indent() + $"public void LogError(string log) => _eventHelper.AddErrorLog($\"[{className} Record][{{RecordInsData.RecordInstanceID}}]: {{log}}\");");
+            sb.AppendLine(1.Indent() + "public void LogDebug(string log) => _eventHelper.AddDebugLog($\"[{SystemName}][{RecordInsData.RecordInstanceID}]: {log}\");");
+            sb.AppendLine(1.Indent() + "public void LogInfo(string log) => _eventHelper.AddInfoLog($\"[{SystemName}][{RecordInsData.RecordInstanceID}]: {log}\");");
+            sb.AppendLine(1.Indent() + "public void LogWarning(string log) => _eventHelper.AddWarningLog($\"[{SystemName}][{RecordInsData.RecordInstanceID}]: {log}\");");
+            sb.AppendLine(1.Indent() + "public void LogError(string log) => _eventHelper.AddErrorLog($\"[{SystemName}][{RecordInsData.RecordInstanceID}]: {log}\");");
 
             sb.AppendLine(1.Indent() + "#endregion Methods");//enumerable methods
 
