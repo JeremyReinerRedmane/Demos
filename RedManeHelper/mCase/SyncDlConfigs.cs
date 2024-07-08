@@ -7,6 +7,7 @@ using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Threading.Tasks;
+using Bogus.Bson;
 using mCASE_ADMIN.DataAccess.mCase.Static;
 using Microsoft.Data.SqlClient;
 using Newtonsoft.Json.Linq;
@@ -284,11 +285,11 @@ namespace mCASE_ADMIN.DataAccess.mCase
                 return new StringBuilder();
 
             var hasDateTimes = false;
-            var fieldSet = new HashSet<Tuple<string,string>>(); //type, property
+            var fieldSet = new HashSet<Tuple<string, string>>(); //type, property
             var enumerableFieldSet = new HashSet<string>(); //used to enum properties being set
             var embeddedRelatedFields = new HashSet<string>();
             _stringBuilders = new List<StringBuilder>();//used for containing all the enum property values in the class
-            var requiredFields = new List<Tuple<string, string, bool, string, string>> ();
+            var requiredFields = new List<Tuple<string, string, bool, string, string>>();
             var requiresEnumerationValues = new List<string>
             {
                 MCaseTypes.EmbeddedList.GetDescription(),
@@ -297,6 +298,7 @@ namespace mCASE_ADMIN.DataAccess.mCase
                 MCaseTypes.DynamicDropDown.GetDescription(),
                 MCaseTypes.CascadingDynamicDropDown.GetDescription(),
             };
+            var relationships = jsonObject[ListTransferFields.Relationships.GetDescription()];
 
             var sb = Factory.ClassInitializer(jsonObject, className, _namespace); // 1: Open namespace / class
 
@@ -306,9 +308,30 @@ namespace mCASE_ADMIN.DataAccess.mCase
 
             sb.AppendLine(1.Indent() + "#endregion Fields");
 
-            if (embeddedRelatedFields.Count > 0)
-            {
-                sb.AppendLine(Factory.GetEmbeddedOptions(className, embeddedRelatedFields)); // 3: Add class methods
+            var childRelationships =
+                relationships?.ParseChildren(ListTransferFields.ChildSystemName.GetDescription());
+
+            if (embeddedRelatedFields.Count > 0 || childRelationships != null && childRelationships.Any())
+            {// add child relationships to embedded relationships list.
+
+                if (childRelationships != null && childRelationships.Any())// required because child relationships are an Or clause above, so it is not certain here if it is null yet
+                {
+                    var distinctChildRelationships = childRelationships.Distinct().ToList();
+
+                    var tempListToCompare = embeddedRelatedFields.Select(x => x.GetPropertyNameFromSystemName())
+                        .ToList();
+
+                    foreach (var relationship in distinctChildRelationships)
+                    {
+                        if (!tempListToCompare.Contains(relationship, StringComparer.OrdinalIgnoreCase))
+                        {
+                            embeddedRelatedFields.Add(relationship);
+                        }
+                    }
+                    tempListToCompare.Clear();
+                }
+
+                sb.AppendLine(Factory.GetActiveRelatedRecords(embeddedRelatedFields)); // 3: Add class methods
                 embeddedRelatedFields.Clear(); // Dispose: no longer required
             }
 
@@ -346,8 +369,6 @@ namespace mCASE_ADMIN.DataAccess.mCase
                 allDefaultValues = allDefaultValues.Distinct().ToList();
             }
 
-            var relationships = jsonObject[ListTransferFields.Relationships.GetDescription()];
-
             var relationshipEnums = Factory.GenerateRelationships(relationships);
 
             if (!string.IsNullOrEmpty(relationshipEnums.ToString()))
@@ -383,6 +404,9 @@ namespace mCASE_ADMIN.DataAccess.mCase
             {
                 var field = fields[i];
 
+                if (field == null)
+                    continue;
+
                 #region MyRegion
 
                 var type = field.ParseToken(ListTransferFields.Type.GetDescription());
@@ -390,7 +414,7 @@ namespace mCASE_ADMIN.DataAccess.mCase
                 if (string.IsNullOrEmpty(type)) continue;
 
                 var systemName = field.ParseToken(ListTransferFields.SystemName.GetDescription());//All caps
-                var tuple = new Tuple<string, string> (type, systemName);
+                var tuple = new Tuple<string, string>(type, systemName);
 
                 if (string.IsNullOrEmpty(systemName) || fieldSet.Contains(tuple))
                     continue; //if property is already in field list then continue, no need to duplicate
@@ -406,7 +430,6 @@ namespace mCASE_ADMIN.DataAccess.mCase
 
                 var required = string.Equals("true", requiredString, StringComparison.OrdinalIgnoreCase);
                 var conditional = ConditionallyMandatory(options);//null means not conditional
-
 
                 if (required || conditional != null)
                 {
@@ -468,13 +491,18 @@ namespace mCASE_ADMIN.DataAccess.mCase
         /// </summary>
         /// <param name="options"></param>
         /// <returns></returns>
-        private static Tuple<bool, string, string> ConditionallyMandatory(Dictionary<string, string> options)
+        private static Tuple<bool, string, string>? ConditionallyMandatory(Dictionary<string, string> options)
         {
             if (!options.TryGetValue("Conditionally Mandatory", out var conditional)) return null;
             if (!options.TryGetValue("Mandated By Field", out var field)) return null;
             if (!options.TryGetValue("Mandated By Value", out var value)) return null;
 
-            return new Tuple<bool, string, string>(string.Equals(conditional, "yes", StringComparison.OrdinalIgnoreCase), field.GetPropertyNameFromSystemName(), value);
+            if (!string.IsNullOrEmpty(field))
+                field = field.GetPropertyNameFromSystemName();
+            else
+                field = string.Empty;
+
+            return new Tuple<bool, string, string>(string.Equals(conditional, "yes", StringComparison.OrdinalIgnoreCase), field, value);
         }
 
         private string AddProperties(JToken jToken, string type, string sysName, string className, bool required)//sysname is uppercase

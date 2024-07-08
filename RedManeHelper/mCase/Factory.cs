@@ -546,7 +546,7 @@ namespace mCASE_ADMIN.DataAccess.mCase
         {
             var sb = new StringBuilder();
 
-            sb.AppendLine(1.Indent() + "public static List<RecordInstanceData> GetEmbeddedRecords(this AEventHelper eventHelper, long recordInstanceId, string sysName)");
+            sb.AppendLine(1.Indent() + "public static List<RecordInstanceData> GetRelatedRecords(this AEventHelper eventHelper, long recordInstanceId, string sysName)");
             sb.AppendLine(1.Indent() + "{");//open method
             sb.AppendLine(2.Indent() + "var childDataListId = eventHelper.GetDataListID(sysName);");
             sb.AppendLine(2.Indent() + "return eventHelper.GetActiveChildRecordsByParentRecId(recordInstanceId).Where(x => x.DataListID == childDataListId).ToList();");
@@ -820,23 +820,23 @@ namespace mCASE_ADMIN.DataAccess.mCase
 
         #endregion
 
-        public static string GetEmbeddedOptions(string className, HashSet<string> embedded)
+        public static string GetActiveRelatedRecords(HashSet<string> embedded)
         {
             var sb = new StringBuilder();
 
-            sb.AppendLine(1.Indent() + "#region Embedded");
+            sb.AppendLine(1.Indent() + "#region Related Records");
             foreach (var value in embedded)
             {
                 var propertyName = value.GetPropertyNameFromSystemName();
 
-                sb.AppendLine(1.Indent() + $"/// <summary> Gets all active embedded {propertyName} from {propertyName}</summary>");
+                sb.AppendLine(1.Indent() + $"/// <summary> Gets active related records of type: {propertyName}</summary>");
                 sb.AppendLine(1.Indent() + $"/// <returns>Related children from {propertyName}</returns>");
                 sb.AppendLine(1.Indent() +
-                              $"public List<{propertyName}> GetActive{propertyName}Records() => _eventHelper.GetEmbeddedRecords(RecordInsData.RecordInstanceID, \"{value}\").Select(x => new {propertyName}(x, _eventHelper)).ToList();"); // property name is added back with enum name appended 
+                              $"public List<{propertyName}> GetActive{propertyName}Records() => _eventHelper.GetRelatedRecords(RecordInsData.RecordInstanceID, \"{value}\").Select(x => new {propertyName}(x, _eventHelper)).ToList();"); // property name is added back with enum name appended 
 
             }
 
-            sb.AppendLine(1.Indent() + "#endregion Embedded");
+            sb.AppendLine(1.Indent() + "#endregion Related Records");
             return sb.ToString();
         }
 

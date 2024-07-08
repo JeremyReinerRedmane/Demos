@@ -79,7 +79,7 @@ else
  * 10 []: Stored value types need to reflect accurate null values if presented. String.Empty is a accepted null value to store in DB as no value was presented.
  * 10A:    potential nullable value types: bool, datetime, time, number....?
  *
- * 11 []: Use parent child relationships to recieve child records based off of listId, (not just embedded records). List of records should return value type
+ * 11 [x]: Use parent child relationships to recieve child records based off of listId, (not just embedded records). List of records should return value type
  * --------------------------------------------------------- Syntactic Sugar ---------------------------------------------------------
  *
  * 1 [X]: Move logging into methods region
@@ -95,4 +95,6 @@ else
  * 6 []: Add error validation global errors to class constructor for more concise error referencing across fields / methods
  *
  * 7 []: Return docstrings to static methods for clarity on return type on actual methods in static extensions as well as doc strings on class instance method calls
+ *
+ * 8 []: update regions
  */
