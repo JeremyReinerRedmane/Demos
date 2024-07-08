@@ -559,12 +559,14 @@ namespace mCASE_ADMIN.DataAccess.mCase
         private static StringBuilder AddDateTimeExtensions()
         {
             var sb = new StringBuilder();
-
+            sb.AppendLine(1.Indent() + "/// <summary> If string is not null or empty, this method returns an accurate boolean from a string based off of MCaseEventConstants.TrueValues && MCaseEventConstants.FalseValues</summary>");
+            sb.AppendLine(1.Indent() + "/// <param name=\"value\"></param>");
+            sb.AppendLine(1.Indent() + "/// <returns>true, false, or null</returns>");
             sb.AppendLine(1.Indent() + "public static List<DateTime> SortDateTimes(this List<DateTime> dates, bool asc)");
             sb.AppendLine(1.Indent() + "{");//open method
             sb.AppendLine(2.Indent() + "if (asc) dates.Sort((dt1, dt2) => dt1.CompareTo(dt2));");
             sb.AppendLine(2.Indent() + "else dates.Sort((dt1, dt2) => dt2.CompareTo(dt1));");
-            sb.AppendLine(2.Indent() + "return dates");
+            sb.AppendLine(2.Indent() + "return dates;");
             sb.AppendLine(1.Indent() + "}");//close method
 
 
@@ -634,6 +636,12 @@ namespace mCASE_ADMIN.DataAccess.mCase
 
             #region Clear
 
+            sb.AppendLine(1.Indent() + "/// <summary> Clears internal state list for class property </summary>");
+            sb.AppendLine(1.Indent() + "/// <typeparam name=\"T\">Class object</typeparam>");
+            sb.AppendLine(1.Indent() + "/// <typeparam name=\"TEnum\">Property Enum specific to class</typeparam>");
+            sb.AppendLine(1.Indent() + "/// <param name=\"classObject\">The actual class object</param>");
+            sb.AppendLine(1.Indent() + "/// <param name=\"property\">String param referencing the class property</param>");
+            sb.AppendLine(1.Indent() + "/// <returns>Null Errors - 2, Invalid Types -1, Success 0</returns>");
             sb.AppendLine(1.Indent() + "public static int Clear<T, TEnum>(this T classObject, string property) where TEnum : Enum");
             sb.AppendLine(1.Indent() + "{"); //open method
             sb.AppendLine(2.Indent() + "var objectType = classObject.GetType();");
@@ -660,6 +668,12 @@ namespace mCASE_ADMIN.DataAccess.mCase
 
             #region Add RecordInstance
 
+            sb.AppendLine(1.Indent() + "/// <summary> Adds object to internal state of class property </summary>");
+            sb.AppendLine(1.Indent() + "/// <typeparam name=\"T\">Class object</typeparam>");
+            sb.AppendLine(1.Indent() + "/// <param name=\"classObject\">The actual class object</param>");
+            sb.AppendLine(1.Indent() + "/// <param name=\"property\">String param referencing the class property</param>");
+            sb.AppendLine(1.Indent() + "/// <param name=\"value\">Value added to property</param>");
+            sb.AppendLine(1.Indent() + "/// <returns>RecordInstance not Created -5, Null Errors - 2, Invalid Types -1, Success 1</returns>");
             sb.AppendLine(1.Indent() + "public static int AddTo<T>(this T classObject, string property, RecordInstanceData value)");
             sb.AppendLine(1.Indent() + "{"); //open method
             sb.AppendLine(2.Indent() + "if (value == null) return -2;");
@@ -680,6 +694,12 @@ namespace mCASE_ADMIN.DataAccess.mCase
 
             #region Add String
 
+            sb.AppendLine(1.Indent() + "/// <summary> Adds object to internal state of class property </summary>");
+            sb.AppendLine(1.Indent() + "/// <typeparam name=\"T\">Class object</typeparam>");
+            sb.AppendLine(1.Indent() + "/// <param name=\"classObject\">The actual class object</param>");
+            sb.AppendLine(1.Indent() + "/// <param name=\"property\">String param referencing the class property</param>");
+            sb.AppendLine(1.Indent() + "/// <param name=\"value\">Value added to property</param>");
+            sb.AppendLine(1.Indent() + "/// <returns>RecordInstance not Created -5, Null Errors - 2, Invalid Types -1, Success 1</returns>");
             sb.AppendLine(1.Indent() + "public static int AddTo<T>(this T classObject, string property, string value)");
             sb.AppendLine(1.Indent() + "{"); //open method
             sb.AppendLine(2.Indent() + "if (value == null) return -2;");
@@ -699,6 +719,13 @@ namespace mCASE_ADMIN.DataAccess.mCase
 
             #region Add DefaultValue
 
+            sb.AppendLine(1.Indent() + "/// <summary> Adds object to internal state of class property </summary>");
+            sb.AppendLine(1.Indent() + "/// <typeparam name=\"T\">Class object</typeparam>");
+            sb.AppendLine(1.Indent() + "/// <typeparam name=\"TEnum\">Property value related to Class object</typeparam>");
+            sb.AppendLine(1.Indent() + "/// <param name=\"classObject\">The actual class object</param>");
+            sb.AppendLine(1.Indent() + "/// <param name=\"property\">String param referencing the class property</param>");
+            sb.AppendLine(1.Indent() + "/// <param name=\"value\">Value added to property</param>");
+            sb.AppendLine(1.Indent() + "/// <returns>RecordInstance not Created -5, Null Errors - 2, Invalid Types -1, Success 1</returns>");
             sb.AppendLine(1.Indent() +
                           $"public static int AddTo<T, TEnum>(this T classObject,string property, TEnum value) where TEnum : Enum");
             sb.AppendLine(1.Indent() + "{"); //open method
@@ -728,6 +755,12 @@ namespace mCASE_ADMIN.DataAccess.mCase
 
             #region AddRange RecordInstance
 
+            sb.AppendLine(1.Indent() + "/// <summary> Adds Range object to internal state of class property </summary>");
+            sb.AppendLine(1.Indent() + "/// <typeparam name=\"T\">Class object</typeparam>");
+            sb.AppendLine(1.Indent() + "/// <param name=\"classObject\">The actual class object</param>");
+            sb.AppendLine(1.Indent() + "/// <param name=\"property\">String param referencing the class property</param>");
+            sb.AppendLine(1.Indent() + "/// <param name=\"value\">Value added to property</param>");
+            sb.AppendLine(1.Indent() + "/// <returns>RecordInstance not Created -5, Null Errors - 2, Invalid Types -1, Success returns amount added</returns>");
             sb.AppendLine(1.Indent() +
                           $"public static int AddRangeTo<T>(this T classObject, string property, List<RecordInstanceData> value)");
             sb.AppendLine(1.Indent() + "{"); //open method
@@ -753,6 +786,12 @@ namespace mCASE_ADMIN.DataAccess.mCase
 
             #region AddRange RecordInstance
 
+            sb.AppendLine(1.Indent() + "/// <summary> Adds Range object to internal state of class property </summary>");
+            sb.AppendLine(1.Indent() + "/// <typeparam name=\"T\">Class object</typeparam>");
+            sb.AppendLine(1.Indent() + "/// <param name=\"classObject\">The actual class object</param>");
+            sb.AppendLine(1.Indent() + "/// <param name=\"property\">String param referencing the class property</param>");
+            sb.AppendLine(1.Indent() + "/// <param name=\"value\">Value added to property</param>");
+            sb.AppendLine(1.Indent() + "/// <returns>RecordInstance not Created -5, Null Errors - 2, Invalid Types -1, Success returns amount added</returns>");
             sb.AppendLine(1.Indent() +
                           $"public static int AddRangeTo<T>(this T classObject, string property, List<string> value)");
             sb.AppendLine(1.Indent() + "{"); //open method
@@ -777,6 +816,13 @@ namespace mCASE_ADMIN.DataAccess.mCase
 
             #region AddRange Default Values
 
+            sb.AppendLine(1.Indent() + "/// <summary> Adds Range object to internal state of class property </summary>");
+            sb.AppendLine(1.Indent() + "/// <typeparam name=\"T\">Class object</typeparam>");
+            sb.AppendLine(1.Indent() + "/// <typeparam name=\"TEnum\">Property type specific to class object</typeparam>");
+            sb.AppendLine(1.Indent() + "/// <param name=\"classObject\">The actual class object</param>");
+            sb.AppendLine(1.Indent() + "/// <param name=\"property\">String param referencing the class property</param>");
+            sb.AppendLine(1.Indent() + "/// <param name=\"value\">Value added to property</param>");
+            sb.AppendLine(1.Indent() + "/// <returns>RecordInstance not Created -5, Null Errors - 2, Invalid Types -1, Success returns amount added</returns>");
             sb.AppendLine(1.Indent() + "public static int AddRangeTo<T, TEnum>(this T classObject, string property, List<TEnum> value) where TEnum : Enum");
             sb.AppendLine(1.Indent() + "{"); //open method
             sb.AppendLine(2.Indent() + "if (value == null) return -2;");
@@ -806,6 +852,12 @@ namespace mCASE_ADMIN.DataAccess.mCase
 
             #region Remove RecordInstance
 
+            sb.AppendLine(1.Indent() + "/// <summary> Removes object from internal state of class property </summary>");
+            sb.AppendLine(1.Indent() + "/// <typeparam name=\"T\">Class object</typeparam>");
+            sb.AppendLine(1.Indent() + "/// <param name=\"classObject\">The actual class object</param>");
+            sb.AppendLine(1.Indent() + "/// <param name=\"property\">String param referencing the class property</param>");
+            sb.AppendLine(1.Indent() + "/// <param name=\"predicate\">Predicate value to remove</param>");
+            sb.AppendLine(1.Indent() + "/// <returns>Null Errors - 2, Invalid Types -1, Success returns amount removed</returns>");
             sb.AppendLine(1.Indent() + "public static int RemoveFrom<T>(this T classObject, string property, Func<RecordInstanceData, bool> predicate)");
             sb.AppendLine(1.Indent() + "{"); //open method
             sb.AppendLine(2.Indent() + "if (predicate == null) return -2;");
@@ -826,6 +878,12 @@ namespace mCASE_ADMIN.DataAccess.mCase
             #endregion
 
             #region Remove string
+            sb.AppendLine(1.Indent() + "/// <summary> Removes object from internal state of class property </summary>");
+            sb.AppendLine(1.Indent() + "/// <typeparam name=\"T\">Class object</typeparam>");
+            sb.AppendLine(1.Indent() + "/// <param name=\"classObject\">The actual class object</param>");
+            sb.AppendLine(1.Indent() + "/// <param name=\"property\">String param referencing the class property</param>");
+            sb.AppendLine(1.Indent() + "/// <param name=\"predicate\">Predicate value to remove</param>");
+            sb.AppendLine(1.Indent() + "/// <returns>Null Errors - 2, Invalid Types -1, Success returns amount removed</returns>");
             sb.AppendLine(1.Indent() +
                           "public static int RemoveFrom<T>(this T classObject, string property, Func<string, bool> predicate)");
             sb.AppendLine(1.Indent() + "{"); //open method
@@ -847,6 +905,13 @@ namespace mCASE_ADMIN.DataAccess.mCase
 
             #region Remove enum
 
+            sb.AppendLine(1.Indent() + "/// <summary> Removes object from internal state of class property </summary>");
+            sb.AppendLine(1.Indent() + "/// <typeparam name=\"T\">Class object</typeparam>");
+            sb.AppendLine(1.Indent() + "/// <typeparam name=\"TEnum\">PropertyValue related to Class object</typeparam>");
+            sb.AppendLine(1.Indent() + "/// <param name=\"classObject\">The actual class object</param>");
+            sb.AppendLine(1.Indent() + "/// <param name=\"property\">String param referencing the class property</param>");
+            sb.AppendLine(1.Indent() + "/// <param name=\"predicate\">Predicate value to remove</param>");
+            sb.AppendLine(1.Indent() + "/// <returns>Null Errors - 2, Invalid Types -1, Success returns amount removed</returns>");
             sb.AppendLine(1.Indent() +
                           "public static int RemoveFrom<T, TEnum>(this T classObject, string property, Func<TEnum, bool> predicate) where TEnum : Enum");
             sb.AppendLine(1.Indent() + "{"); //open method
@@ -1055,6 +1120,7 @@ namespace mCASE_ADMIN.DataAccess.mCase
                 if (!string.IsNullOrEmpty(check))
                     sb.AppendLine(2.Indent() + check);
             }
+            sb.AppendLine(2.Indent() + "if(requiredFields.Count > 0) _eventHelper.AddWarningLog($\"[{SystemName}][{RecordInsData.RecordInstanceID}]: Required fields check returned {requiredFields.Count} mandatory field(s) unfilled\");");
             sb.AppendLine(2.Indent() + "return requiredFields;");
             sb.AppendLine(1.Indent() + "}");//close method
 
