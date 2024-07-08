@@ -148,19 +148,7 @@ namespace mCASE_ADMIN.DataAccess.mCase.Static
             return isCoalesce;
         }
 
-        public static string Indent(this int level)
-        {
-            var dict = new Dictionary<int, string>()
-            {
-                { 0, "   " },
-                { 1, "       " },
-                { 2, "           " },
-                { 3, "               " },
-                { 4, "                  " },
-                { 5, "                      " },
-            };
-            return dict[level];
-        }
+        public static string Indent(this int level) => new string('-', level).Replace("-", "   ");
 
     }
 }

@@ -620,7 +620,8 @@ namespace mCASE_ADMIN.DataAccess.mCase
             sb.AppendLine(1.Indent() + "public static List<RecordInstanceData> GetRelatedRecords(this AEventHelper eventHelper, long recordInstanceId, string sysName)");
             sb.AppendLine(1.Indent() + "{");//open method
             sb.AppendLine(2.Indent() + "var childDataListId = eventHelper.GetDataListID(sysName);");
-            sb.AppendLine(2.Indent() + "return eventHelper.GetActiveChildRecordsByParentRecId(recordInstanceId).Where(x => x.DataListID == childDataListId).ToList();");
+            sb.AppendLine(2.Indent() + "if (!childDataListId.HasValue) return new List<RecordInstanceData>();");
+            sb.AppendLine(2.Indent() + "return eventHelper.GetActiveChildRecordsByListId(recordInstanceId, childDataListId.Value).ToList();");
             sb.AppendLine(1.Indent() + "}");//close method
 
             return sb;
