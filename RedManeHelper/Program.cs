@@ -105,8 +105,6 @@ else
  *
  * 4 []: How do we reflect readonly / mirrored fields, is this system currently accurate? Where do we use only getters vs gets && sets
  *
- * 5 []: need to build static datetime comparison method for determining datetime greater than less then, and datetime ordering for ICollections, one to ones
- *
  * 6 []: Add error validation global errors to class constructor for more concise error referencing across fields / methods
  *
  * 7 []: Return docstrings to static methods for clarity on return type on actual methods in static extensions as well as doc strings on class instance method calls
