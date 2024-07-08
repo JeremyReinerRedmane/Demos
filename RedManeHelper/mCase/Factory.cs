@@ -610,20 +610,19 @@ namespace mCASE_ADMIN.DataAccess.mCase
 
             sb.Append(BuildClearMethods());
 
-            sb.Append(GetEmbeddedStatic());
+            sb.Append(GetRelatedRecordsStatic());
 
             return sb.ToString();
         }
 
-        private static StringBuilder GetEmbeddedStatic()
+        private static StringBuilder GetRelatedRecordsStatic()
         {
             var sb = new StringBuilder();
 
             sb.AppendLine(1.Indent() + "public static List<RecordInstanceData> GetRelatedRecords(this AEventHelper eventHelper, long recordInstanceId, string sysName)");
             sb.AppendLine(1.Indent() + "{");//open method
             sb.AppendLine(2.Indent() + "var childDataListId = eventHelper.GetDataListID(sysName);");
-            sb.AppendLine(2.Indent() + "if (!childDataListId.HasValue) return new List<RecordInstanceData>();");
-            sb.AppendLine(2.Indent() + "return eventHelper.GetActiveChildRecordsByListId(recordInstanceId, childDataListId.Value).ToList();");
+            sb.AppendLine(2.Indent() + "return !childDataListId.HasValue ? new List<RecordInstanceData>() : eventHelper.GetActiveChildRecordsByListId(recordInstanceId, childDataListId.Value).ToList();");
             sb.AppendLine(1.Indent() + "}");//close method
 
             return sb;
