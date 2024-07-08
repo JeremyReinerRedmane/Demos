@@ -263,11 +263,12 @@ namespace mCASE_ADMIN.DataAccess.mCase
         }
 
         private static string DynamicDropDownFactory(string propertyName, string sysName, string fieldType,
-            string privateName, string multiSelect, string dynamicData, bool notAbleToSelectManyValues, bool required)
+            string privateName, string multiSelect, string dynamics, bool notAbleToSelectManyValues, bool required)
         {
             var requiredString = required ? "[Required Field] " : string.Empty;
             var sb = new StringBuilder();
 
+            var dynamicData = dynamics.GetPropertyNameFromSystemName();
             sb.AppendLine(1.Indent() + $"private List<{dynamicData}> {privateName} = null;");
             sb.AppendLine(1.Indent() + $"/// <summary> {requiredString}[mCase data type: {fieldType}] [Multi Select: {multiSelect}] [Updating: Use AddTo(), or RemoveFrom()] </summary>");
             sb.AppendLine(1.Indent() + $"public List<{dynamicData}> {propertyName}");
@@ -506,7 +507,7 @@ namespace mCASE_ADMIN.DataAccess.mCase
             var sb = new StringBuilder();
 
             sb.AppendLine( //TODO continue to add usings, as more and more validations are made
-                "using System;\nusing System.Collections.Generic;\nusing System.ComponentModel;\nusing System.Linq;\nusing MCaseEventsSDK.Util;\nusing MCaseEventsSDK.Util.Data;\nusing System.Text.RegularExpressions;");
+                "using System;\nusing System.Collections.Generic;\r\nusing System.Linq;\r\nusing MCaseEventsSDK.Util.Data;\nusing System.Text.RegularExpressions;\r\nusing MCaseEventsSDK;");
             sb.AppendLine($"namespace {namespace_}"); //TODO: project specific namespace
             sb.AppendLine("{"); //Open class
             sb.AppendLine(0.Indent() + "/// <summary> Much to learn, this static extension still has. Powerful tool it can be. But remember, foresee the consequences of your code you must. With caution, use this extension you should. </summary>"); //static class
@@ -541,7 +542,23 @@ namespace mCASE_ADMIN.DataAccess.mCase
 
             sb.Append(BuildClearMethods());
 
+            sb.Append(GetEmbeddedStatic());
+
             return sb.ToString();
+        }
+
+        private static StringBuilder GetEmbeddedStatic()
+        {
+            var sb = new StringBuilder();
+
+            sb.AppendLine(1.Indent() + "public static List<RecordInstanceData> GetEmbeddedRecords(this AEventHelper eventHelper, long recordInstanceId, string sysName)");
+            sb.AppendLine(1.Indent() + "{");//open method
+            sb.AppendLine(2.Indent() + "var childDataListId = eventHelper.GetDataListID(sysName);");
+            sb.AppendLine(2.Indent() + "return eventHelper.GetActiveChildRecordsByParentRecId(recordInstanceId).Where(x => x.DataListID == childDataListId).ToList();");
+            sb.AppendLine(1.Indent() + "}");//close method
+
+            return sb;
+
         }
 
         private static StringBuilder BuildClearMethods()
@@ -815,14 +832,12 @@ namespace mCASE_ADMIN.DataAccess.mCase
             sb.AppendLine(1.Indent() + "#region Embedded");
             foreach (var value in embedded)
             {
-                sb.AppendLine(1.Indent() + $"/// <summary> Gets all active embedded {value} from {className}</summary>");
-                sb.AppendLine(1.Indent() + $"/// <returns>Related children from {value}</returns>");
+                var propertyName = value.GetPropertyNameFromSystemName();
+
+                sb.AppendLine(1.Indent() + $"/// <summary> Gets all active embedded {propertyName} from {propertyName}</summary>");
+                sb.AppendLine(1.Indent() + $"/// <returns>Related children from {propertyName}</returns>");
                 sb.AppendLine(1.Indent() +
-                              $"public List<{value}> GetActive{value}Records()"); // property name is added back with enum name appended 
-                sb.AppendLine(1.Indent() + "{"); //open class
-                sb.AppendLine(2.Indent() + $"var childDataListId = _eventHelper.GetDataListID(\"{value}\");");
-                sb.AppendLine(2.Indent() + $"return _eventHelper.GetActiveChildRecordsByParentRecId(RecordInsData.RecordInstanceID).Where(x => x.DataListID == childDataListId).Select(x => new {value}(x, _eventHelper)).ToList();");
-                sb.AppendLine(1.Indent() + "}"); //close class
+                              $"public List<{propertyName}> GetActive{propertyName}Records() => _eventHelper.GetEmbeddedRecords(RecordInsData.RecordInstanceID, \"{value}\").Select(x => new {propertyName}(x, _eventHelper)).ToList();"); // property name is added back with enum name appended 
 
             }
 
@@ -835,9 +850,9 @@ namespace mCASE_ADMIN.DataAccess.mCase
             var sb = new StringBuilder();
 
             var entity = $"{className}";
-            var staticProperties = $"{className}Static.Properties_Enum";
+            var staticProperties = $"{className}Static.PropertiesEnum";
             var defaultValues = $"{className}Static.DefaultValuesEnum";
-            var propertyMap = $"{className}Static.Properties_Map";
+            var propertyMap = $"{className}Static.PropertiesMap";
             var defaultMap = $"{className}Static.DefaultValuesMap";
             
             sb.AppendLine(1.Indent() + "#region Methods");
@@ -1271,7 +1286,7 @@ namespace mCASE_ADMIN.DataAccess.mCase
             return sb;
         }
 
-        public static StringBuilder GenerateRelationships(JToken? relationships)
+        public static StringBuilder GenerateRelationships(JToken relationships)
         {
             var sb = new StringBuilder();
 

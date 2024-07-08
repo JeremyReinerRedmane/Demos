@@ -9,7 +9,6 @@ using System.Text;
 using System.Threading.Tasks;
 using mCASE_ADMIN.DataAccess.mCase.Static;
 using Microsoft.Data.SqlClient;
-using Microsoft.Identity.Client;
 using Newtonsoft.Json.Linq;
 using Extensions = mCASE_ADMIN.DataAccess.mCase.Static.Extensions;
 
@@ -326,7 +325,7 @@ namespace mCASE_ADMIN.DataAccess.mCase
 
             if (enumerableFieldSet.Any())//generate our property values
             {
-                sb.AppendLine(Factory.GenerateEnums(enumerableFieldSet.ToList(), "Properties_", true).ToString());// All class property names
+                sb.AppendLine(Factory.GenerateEnums(enumerableFieldSet.ToList(), "Properties", true).ToString());// All class property names
             }
 
             sb.AppendLine(Factory.GenerateEnums(fieldSet.Select(x => x.Item2).ToList(), "SystemNames", false).ToString());// All class property names
@@ -436,9 +435,7 @@ namespace mCASE_ADMIN.DataAccess.mCase
                         if (string.IsNullOrEmpty(fieldName))
                             continue;//weird but true. DL: TDM-Signatures Field: TDMSIGNATURES
 
-                        var entityName = fieldName.GetPropertyNameFromSystemName();
-
-                        embeddedRelatedFields.Add(entityName);
+                        embeddedRelatedFields.Add(fieldName);
 
                         fieldSet.Add(tuple);
 
@@ -471,7 +468,7 @@ namespace mCASE_ADMIN.DataAccess.mCase
         /// </summary>
         /// <param name="options"></param>
         /// <returns></returns>
-        private static Tuple<bool, string, string>? ConditionallyMandatory(Dictionary<string, string> options)
+        private static Tuple<bool, string, string> ConditionallyMandatory(Dictionary<string, string> options)
         {
             if (!options.TryGetValue("Conditionally Mandatory", out var conditional)) return null;
             if (!options.TryGetValue("Mandated By Field", out var field)) return null;

@@ -16,9 +16,9 @@ namespace mCASE_ADMIN.DataAccess.mCase.Static
         {
             var propertyValue = jObject[property]?.Parent?.FirstOrDefault()?.Value<string>();
 
-            if (string.Equals("SystemName", property, StringComparison.OrdinalIgnoreCase) && !string.IsNullOrEmpty(propertyValue)) 
+            if (string.Equals("SystemName", property, StringComparison.OrdinalIgnoreCase) && !string.IsNullOrEmpty(propertyValue))
                 return propertyValue;
-            
+
             return string.IsNullOrEmpty(propertyValue)
                 ? string.Empty
                 : propertyValue.GetPropertyNameFromSystemName();
@@ -28,7 +28,7 @@ namespace mCASE_ADMIN.DataAccess.mCase.Static
         {
             var fieldValue = token[property]?.Parent?.FirstOrDefault()?.Value<string>();
 
-            if (!string.IsNullOrEmpty(fieldValue) && string.Equals("SystemName", property, StringComparison.OrdinalIgnoreCase) || string.Equals("FieldOptions", property, StringComparison.OrdinalIgnoreCase))
+            if (!string.IsNullOrEmpty(fieldValue) && string.Equals("SystemName", property, StringComparison.OrdinalIgnoreCase) || string.Equals("FieldOptions", property, StringComparison.OrdinalIgnoreCase) || string.Equals(ListTransferFields.DynamicSourceSystemName.GetDescription(), property, StringComparison.OrdinalIgnoreCase))
                 return fieldValue;
 
             return string.IsNullOrEmpty(fieldValue)
@@ -40,25 +40,25 @@ namespace mCASE_ADMIN.DataAccess.mCase.Static
         {
             var fieldOptions = token[ListTransferFields.FieldOptions.GetDescription()]?.Parent?.FirstOrDefault()?.Value<string>();
 
-            return string.IsNullOrEmpty(fieldOptions) 
-                ? new Dictionary<string, string>() 
-                : JsonConvert.DeserializeObject<Dictionary<string, string>>(fieldOptions)!;
+            return string.IsNullOrEmpty(fieldOptions)
+                ? new Dictionary<string, string>()
+                : JsonConvert.DeserializeObject<Dictionary<string, string>>(fieldOptions);
         }
 
         public static List<string> ParseDefaultData(this JToken token, string property)
         {
             var fieldValue = token[property];
 
-            if(fieldValue == null)
+            if (fieldValue == null)
                 return new List<string>();
 
             var hasValues = fieldValue.HasValues;
 
-            if(!hasValues) return new List<string>();
+            if (!hasValues) return new List<string>();
 
             var values = fieldValue.Value<JToken>();
 
-            if(values == null) return new List<string>();
+            if (values == null) return new List<string>();
 
             var returnValues = new List<string>();
 
@@ -73,15 +73,15 @@ namespace mCASE_ADMIN.DataAccess.mCase.Static
                 //get value
                 var actualValue = childValues[ListTransferFields.Value.GetDescription()];
 
-                if(actualValue == null) continue;
+                if (actualValue == null) continue;
 
-                var valueObject= actualValue.FirstOrDefault();
+                var valueObject = actualValue.FirstOrDefault();
 
-                if(valueObject == null) continue;
+                if (valueObject == null) continue;
 
                 var x = valueObject[ListTransferFields.Value.GetDescription()]?.Value<string>();
 
-                if(string.IsNullOrEmpty(x)) continue;
+                if (string.IsNullOrEmpty(x)) continue;
 
                 returnValues.Add(x);
 
@@ -132,9 +132,9 @@ namespace mCASE_ADMIN.DataAccess.mCase.Static
         {
             var property = token[prop1];
 
-            if(property == null || !property.HasValues) return string.Empty;
+            if (property == null || !property.HasValues) return string.Empty;
 
-            var property2= property.ParseToken(ListTransferFields.DynamicSourceSystemName.GetDescription());
+            var property2 = property.ParseToken(ListTransferFields.DynamicSourceSystemName.GetDescription());
 
             return property2;
         }
@@ -162,63 +162,5 @@ namespace mCASE_ADMIN.DataAccess.mCase.Static
             return dict[level];
         }
 
-        public static Dictionary<string, string> ParseJTokenToStringStringDictionary(JToken jToken)
-        {
-            if (jToken == null)
-            {
-                throw new ArgumentNullException(nameof(jToken));
-            }
-
-            var dictionary = new Dictionary<string, string>();
-            string valueString;
-
-            switch (jToken.Type)
-            {
-                case JTokenType.Object:
-                    var jObject = (JObject)jToken;
-                    foreach (var property in jObject)
-                    {
-                        if (property.Value == null) continue;
-
-                        valueString = GetStringRepresentation(property.Value);
-
-                        dictionary.Add(property.Key, valueString);
-                    }
-                    break;
-                case JTokenType.Array:
-                    // Handle arrays if required in your specific scenario
-                    // You could convert each element to a string or recursively parse arrays
-                    // into nested dictionaries (consider using recursion or a helper method)
-                    break;
-                case JTokenType.Null:
-                    dictionary.Add("", ""); // Handle null values as empty strings (optional)
-                    break;
-                default:
-                    // Handle other JToken types as needed (e.g., primitive values)
-                    valueString = GetStringRepresentation(jToken);
-                    dictionary.Add("", valueString); // Use an empty key if desired
-                    break;
-            }
-
-            return dictionary;
-        }
-
-        private static string GetStringRepresentation(JToken jToken)
-        {
-            switch (jToken.Type)
-            {
-                case JTokenType.String:
-                    return jToken.ToString(Formatting.None);
-                case JTokenType.Integer:
-                case JTokenType.Float:
-                case JTokenType.Date:
-                case JTokenType.Boolean:
-                    return jToken.ToString(Formatting.None);
-                default:
-                    return ""; // Handle other types or return an empty string
-            }
-        }
-
-
-}
+    }
 }
