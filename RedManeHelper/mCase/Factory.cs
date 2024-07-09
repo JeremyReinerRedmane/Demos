@@ -541,28 +541,10 @@ namespace mCASE_ADMIN.DataAccess.mCase
             sb.Append(BuildEnumExtensions());
             sb.Append(AddStaticEnumerableExtensions());
             sb.Append(AddBooleanMethod());
-            sb.Append(AddDateTimeExtensions());
 
             sb.AppendLine(0.Indent() + "}"); //close class
             sb.AppendLine("}"); //close  class
             return sb.ToString();
-        }
-
-        private static StringBuilder AddDateTimeExtensions()
-        {
-            var sb = new StringBuilder();
-            sb.AppendLine(1.Indent() + "/// <summary> If string is not null or empty, this method returns an accurate boolean from a string based off of MCaseEventConstants.TrueValues && MCaseEventConstants.FalseValues</summary>");
-            sb.AppendLine(1.Indent() + "/// <param name=\"value\"></param>");
-            sb.AppendLine(1.Indent() + "/// <returns>true, false, or null</returns>");
-            sb.AppendLine(1.Indent() + "public static List<DateTime> SortDateTimes(this List<DateTime> dates, bool asc)");
-            sb.AppendLine(1.Indent() + "{");//open method
-            sb.AppendLine(2.Indent() + "if (asc) dates.Sort((dt1, dt2) => dt1.CompareTo(dt2));");
-            sb.AppendLine(2.Indent() + "else dates.Sort((dt1, dt2) => dt2.CompareTo(dt1));");
-            sb.AppendLine(2.Indent() + "return dates;");
-            sb.AppendLine(1.Indent() + "}");//close method
-
-
-            return sb;
         }
 
         private static StringBuilder AddBooleanMethod()
@@ -1137,6 +1119,7 @@ namespace mCASE_ADMIN.DataAccess.mCase
             sb.AppendLine(2.Indent() + "RecordInsData.Status = MCaseEventConstants.RecordStatusDeleted;");
             sb.AppendLine(2.Indent() + "RecordInsData.FrozenInd = true;");
             sb.AppendLine(2.Indent() + "_eventHelper.SaveRecord(RecordInsData);");
+            sb.AppendLine(2.Indent() + "_eventHelper.AddInfoLog($\"[{SystemName}] Soft Deleted Record: {RecordInsData.RecordInstanceID}\");");
             sb.AppendLine(2.Indent() + "return EventStatusCode.Success;");
             sb.AppendLine(1.Indent() + "}");//close method
 

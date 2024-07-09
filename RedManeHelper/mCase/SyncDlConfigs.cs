@@ -24,15 +24,15 @@ namespace mCASE_ADMIN.DataAccess.mCase
         private readonly string _credentials;
         private readonly string _mCaseUrl;
         private readonly string _namespace;
-        public readonly string _staticUsings;
-        public readonly string _mainUsings;
+        private readonly string _staticUsings;
+        private readonly string _mainUsings;
         private List<StringBuilder> _stringBuilders;
 
         public SyncDlConfigs(string[] commandLineArgs)
         {
             if (commandLineArgs.Length != 10 && commandLineArgs.Length != 9)//requires query, or csv
             {
-                Console.WriteLine("Invalid Params. There are only two constructors.. Direct Sql query = 8 params. Or Direct Id Requests in CSV Format = 7 params");
+                Console.WriteLine("Invalid Params. There are only two constructors.. Direct Sql query = 10 params. Or Direct Id Requests in CSV Format = 9 params");
 
                 throw new Exception();
             }
