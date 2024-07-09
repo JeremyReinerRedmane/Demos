@@ -123,6 +123,15 @@ namespace mCASE_ADMIN.DataAccess.mCase
 
             client.DefaultRequestHeaders.Authorization = authorizationHeader;
 
+            if (string.IsNullOrEmpty(_csvData))
+            {
+                var staticFileData = Factory.GenerateStaticFile(_namespace, _staticUsings);
+
+                var staticPath = Path.Combine(_outputDirectory, "FactoryExtensions.cs");
+
+                File.WriteAllText(staticPath, staticFileData);
+            }
+
             foreach (var id in sqlResult)
             {
                 var url = _mCaseUrl + id;
@@ -155,15 +164,6 @@ namespace mCASE_ADMIN.DataAccess.mCase
                     File.WriteAllText(path, ex.ToString());
                 }
                 Console.ForegroundColor = ConsoleColor.DarkGray;
-            }
-
-            if (string.IsNullOrEmpty(_csvData))
-            {
-                var staticFileData = Factory.GenerateStaticFile(_namespace, _staticUsings);
-
-                var staticPath = Path.Combine(_outputDirectory, "FactoryExtensions.cs");
-
-                File.WriteAllText(staticPath, staticFileData);
             }
         }
 
@@ -510,7 +510,13 @@ namespace mCASE_ADMIN.DataAccess.mCase
         {
             if (!options.TryGetValue("Conditionally Mandatory", out var conditional)) return null;
             if (!options.TryGetValue("Mandated By Field", out var field)) return null;
-            if (!options.TryGetValue("Mandated By Value", out var value)) return null;
+            options.TryGetValue("Mandated By Value", out var value);
+            if(string.IsNullOrEmpty(value))
+            {
+                //field requires non empty value
+                if (!options.TryGetValue("Mandated If Field Has Value", out value)) return null;
+                value = "Mandated If Field Has Value";
+            }
 
             if (!string.IsNullOrEmpty(field))
                 field = field.GetPropertyNameFromSystemName();
@@ -551,6 +557,7 @@ namespace mCASE_ADMIN.DataAccess.mCase
                 case MCaseTypes.ReadonlyField:
                 case MCaseTypes.User:
                 case MCaseTypes.Address:
+                case MCaseTypes.DynamicCalculatedField: 
                     return Factory.StringFactory(jToken, propertyName, sysName, type, required);
                 case MCaseTypes.Attachment:
                     return Factory.LongFactory(propertyName, sysName, type, required);
@@ -563,7 +570,6 @@ namespace mCASE_ADMIN.DataAccess.mCase
                 case MCaseTypes.Narrative: //need in ce's?
                 case MCaseTypes.Header: //need in ce's?
                 case MCaseTypes.UserRoleSecurityRestrict: //not required in CE's
-                case MCaseTypes.DynamicCalculatedField: //not required in CE's
                 case MCaseTypes.CalculatedField: // not required in CE's 
                 case MCaseTypes.UniqueIdentifier: //not required in CE's
                 case MCaseTypes.EmbeddedDocument: // blob?

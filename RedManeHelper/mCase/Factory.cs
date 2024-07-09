@@ -139,7 +139,8 @@ namespace mCASE_ADMIN.DataAccess.mCase
             var enumType = type.GetEnumValue<MCaseTypes>();
 
             var privateSysName = $"_{propertyName.ToLower()}";
-            var mirroredField = jToken.IsMirrorField();
+            var mirroredField = jToken.IsMirrorField() || enumType == MCaseTypes.DynamicCalculatedField;
+
             var mirroredString = mirroredField ? "[ Mirrored field. No setting / updating allowed.] " : string.Empty;
             var requiredString = required ? "[Required Field] ": string.Empty;
 
@@ -1102,15 +1103,23 @@ namespace mCASE_ADMIN.DataAccess.mCase
             // save record
             sb.AppendLine(1.Indent() + "/// <summary> If all required fields have been filled in. This will save the RecordInstanceData</summary>");
             sb.AppendLine(1.Indent() + "/// <returns>A list of all unfilled required fields. Empty list means succesfully saved</returns>");
-            sb.AppendLine(1.Indent() + "public List<string> SaveRecord()");
+            sb.AppendLine(1.Indent() + "public List<string> TrySaveRecord()");
             sb.AppendLine(1.Indent() + "{");//open method
             sb.AppendLine(2.Indent() + "var requiredFields = RequiredFieldsCheck();");
             sb.AppendLine(2.Indent() + "if(requiredFields.Count > 0) return requiredFields;");
             sb.AppendLine(2.Indent() + "_eventHelper.SaveRecord(RecordInsData);");
-            sb.AppendLine(2.Indent() + "_eventHelper.AddInfoLog($\"[{SystemName}] Successfully saved record: {RecordInsData.RecordInstanceID}\");");
+            sb.AppendLine(2.Indent() + "_eventHelper.AddInfoLog($\"[{SystemName}] Successfully saved record: {RecordInsData.RecordInstanceID}. All fields passed requirement check.\");");
             sb.AppendLine(2.Indent() + "return requiredFields;");
             sb.AppendLine(1.Indent() + "}");//close method
-
+            // save record
+            sb.AppendLine(1.Indent() + "/// <summary> Save RecordInstanceData without requirement checks</summary>");
+            sb.AppendLine(1.Indent() + "/// <returns></returns>");
+            sb.AppendLine(1.Indent() + "public EventStatusCode SaveRecord()");
+            sb.AppendLine(1.Indent() + "{");//open method
+            sb.AppendLine(2.Indent() + "_eventHelper.SaveRecord(RecordInsData);");
+            sb.AppendLine(2.Indent() + "_eventHelper.AddInfoLog($\"[{SystemName}] Successfully saved record: {RecordInsData.RecordInstanceID}\");");
+            sb.AppendLine(2.Indent() + "return EventStatusCode.Success;");
+            sb.AppendLine(1.Indent() + "}");//close method
 
             // Delete record
             sb.AppendLine(1.Indent() + "/// <summary> If exception thrown here, attempt to save record prior to soft delete </summary>");
@@ -1172,20 +1181,101 @@ namespace mCASE_ADMIN.DataAccess.mCase
             {
                 var mandatedByField = required.Item4;
                 var mandatedByValue = required.Item5;
-
                 var dependentField = fields.FirstOrDefault(x => string.Equals(x.Item2.GetPropertyNameFromSystemName(), mandatedByField, StringComparison.OrdinalIgnoreCase));
+
                 if (dependentField != null)
                 {
+                    if (string.Equals("Mandated If Field Has Value", mandatedByValue, StringComparison.OrdinalIgnoreCase))
+                    {
+                        var notEmptyCheck = AddNotEmptyConditionalCheck(dependentField, privateName, propertyName, type);
+
+                        return notEmptyCheck;
+                    }
+
                     //field is the conditional field
                     var conditionalResult = AddConditionallyMandatoryCheck(dependentField, mandatedByValue, privateName, propertyName, type, defaultEnum);
 
                     return conditionalResult;
                 }
                 //what do we do here?
+                Console.WriteLine();
 
             }
 
             return CanSaveValidationHelper(type, privateName, propertyName);
+        }
+
+        private static string AddNotEmptyConditionalCheck(Tuple<string, string> dependentField, string privateName, string propertyName, MCaseTypes type)
+        {
+            var sb = new StringBuilder();
+
+            var dependentType = dependentField.Item1.GetEnumValue<MCaseTypes>();
+            var dependentValue = "_" + dependentField.Item2.GetPropertyNameFromSystemName().ToLower();
+            var helperComment =
+                $"// {propertyName} is a conditionally mandatory field. Dependent on: {dependentField.Item2}, when her values are not empty.";
+
+            switch (dependentType)
+            {
+                //case mCaseTypes.EmbeddedList: Processed after loop completion
+                case MCaseTypes.CascadingDropDown:
+                case MCaseTypes.DropDownList:
+                case MCaseTypes.DynamicDropDown:
+                case MCaseTypes.CascadingDynamicDropDown:
+                    sb.AppendLine($"if({dependentValue} != null && {dependentValue}.Count > 0) ");
+                    sb.AppendLine(2.Indent() + "{");
+                    sb.AppendLine(3.Indent() + helperComment);
+                    sb.AppendLine(3.Indent() + CanSaveValidationHelper(type, privateName, propertyName));
+                    sb.AppendLine(2.Indent() + "}");
+                    break;
+                case MCaseTypes.String:
+                case MCaseTypes.LongString:
+                case MCaseTypes.EmailAddress:
+                case MCaseTypes.Phone:
+                case MCaseTypes.URL:
+                case MCaseTypes.Number:
+                case MCaseTypes.Money:
+                case MCaseTypes.Time:
+                case MCaseTypes.Boolean:
+                case MCaseTypes.ReadonlyField:
+                case MCaseTypes.User:
+                case MCaseTypes.Address:
+                case MCaseTypes.Attachment:
+                    sb.AppendLine($"if(string.IsNullOrEmpty({dependentValue}))");
+                    sb.AppendLine(2.Indent() + "{");
+                    sb.AppendLine(3.Indent() + helperComment);
+                    sb.AppendLine(3.Indent() + CanSaveValidationHelper(type, privateName, propertyName));
+                    sb.AppendLine(2.Indent() + "}");
+                    return sb.ToString();
+                case MCaseTypes.Date:
+                case MCaseTypes.DateTime:
+                    sb.AppendLine($"if({dependentValue} == null)");
+                    sb.AppendLine(2.Indent() + "{");
+                    sb.AppendLine(3.Indent() + helperComment);
+                    sb.AppendLine(3.Indent() + CanSaveValidationHelper(type, privateName, propertyName));
+                    sb.AppendLine(2.Indent() + "}");
+                    return sb.ToString();
+                case MCaseTypes.Section: //need in ce's?
+                case MCaseTypes.Narrative: //need in ce's?
+                case MCaseTypes.Header: //need in ce's?
+                case MCaseTypes.UserRoleSecurityRestrict: //not required in CE's
+                case MCaseTypes.DynamicCalculatedField: //not required in CE's
+                case MCaseTypes.CalculatedField: // not required in CE's 
+                case MCaseTypes.UniqueIdentifier: //not required in CE's
+                case MCaseTypes.EmbeddedDocument: // blob?
+                case MCaseTypes.HiddenField: //not required in CE's
+                case MCaseTypes.LineBreak: //not required in CE's
+                case MCaseTypes.Position0: //not required in CE's
+                case MCaseTypes.Score1: //not required in CE's
+                case MCaseTypes.Score2: //not required in CE's
+                case MCaseTypes.Score3: //not required in CE's
+                case MCaseTypes.Score4: //not required in CE's
+                case MCaseTypes.Score5: //not required in CE's
+                case MCaseTypes.Score6: //not required in CE's
+                default:
+                    return string.Empty;
+            }
+
+            return sb.ToString();
         }
 
         private static string CanSaveValidationHelper(MCaseTypes type, string privateName, string propertyName)
@@ -1246,7 +1336,8 @@ namespace mCASE_ADMIN.DataAccess.mCase
             var demandsValues = string.Join(",", mandatedByValue.Split(new[] { "~*~" }, StringSplitOptions.None).Where(x => !string.IsNullOrEmpty(x)).Select(x => $"{defaultValue}.{x.GetPropertyNameFromSystemName()}"));
 
             var valuesList = $"new List<{defaultValue}> () " + "{ " + demandsValues + "}";
-
+            var helperComment =
+                $"// {propertyName} is a conditionally mandatory field. Dependent on: {dependentField.Item2}, when her values are any of the following: {demandsValues}";
             switch (type)
             {
                 //case mCaseTypes.EmbeddedList: Processed after loop completion
@@ -1256,13 +1347,19 @@ namespace mCASE_ADMIN.DataAccess.mCase
                     sb.AppendLine(3.Indent() + $".Intersect({valuesList})");
                     sb.AppendLine(3.Indent() + ".Any())");
                     sb.AppendLine(2.Indent() + "{");
-                    sb.AppendLine(3.Indent() + $"// {propertyName} is a conditionally mandatory field. Dependent on: {dependentField.Item2}, when her values are any of the following: {demandsValues}");
+                    sb.AppendLine(3.Indent() + helperComment);
                     sb.AppendLine(3.Indent() + CanSaveValidationHelper(mandatoryType, privateName, propertyName));
                     sb.AppendLine(2.Indent() + "}");
                     return sb.ToString();
                 case MCaseTypes.DynamicDropDown:
                 case MCaseTypes.CascadingDynamicDropDown:
-                    return string.Empty; // todo ??
+                    sb.AppendLine($"if({dependentOnField} != null && {dependentOnField}");
+                    sb.AppendLine(3.Indent() + ".Any())");
+                    sb.AppendLine(2.Indent() + "{");
+                    sb.AppendLine(3.Indent() + helperComment);
+                    sb.AppendLine(3.Indent() + CanSaveValidationHelper(mandatoryType, privateName, propertyName));
+                    sb.AppendLine(2.Indent() + "}");
+                    return sb.ToString();
                 case MCaseTypes.String:
                 case MCaseTypes.LongString:
                 case MCaseTypes.EmailAddress:
@@ -1280,7 +1377,7 @@ namespace mCASE_ADMIN.DataAccess.mCase
 
                     sb.AppendLine($"if(!string.IsNullOrEmpty({dependentOnField}) && {stringValuesList}.Contains({dependentOnField}, StringComparer.InvariantCultureIgnoreCase))");
                     sb.AppendLine(2.Indent() + "{");
-                    sb.AppendLine(3.Indent() + $"// {propertyName} is a conditionally mandatory field. Dependent on: {dependentField.Item2}, when her values are any of the following: {demandsValues}");
+                    sb.AppendLine(3.Indent() + helperComment);
                     sb.AppendLine(3.Indent() + CanSaveValidationHelper(mandatoryType, privateName, propertyName));
                     sb.AppendLine(2.Indent() + "}");
                     return sb.ToString();
