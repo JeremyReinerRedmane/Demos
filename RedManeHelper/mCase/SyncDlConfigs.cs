@@ -344,12 +344,17 @@ namespace mCASE_ADMIN.DataAccess.mCase
                     tempListToCompare.Clear();
                 }
 
-                sb.AppendLine(Factory.GetActiveRelatedRecords(embeddedRelatedFields)); // 3: Add class methods
+                sb.Append(Factory.GetActiveRelatedRecords(embeddedRelatedFields)); // 3: Add class methods
                 embeddedRelatedFields.Clear(); // Dispose: no longer required
             }
 
             if (requiresEnumeration)
-                sb.AppendLine(Factory.AddEnumerableExtensions(className, _stringBuilders.Any(), requiredFields, fieldSet)); // 3: Add class methods
+                sb.Append(Factory.AddEnumerableExtensions(className, _stringBuilders.Any(), requiredFields, fieldSet)); // 3: Add class methods
+            else
+            {
+                Console.WriteLine();
+            }
+            sb.Append(Factory.AddConstantMethods(_stringBuilders.Any(), requiredFields, fieldSet, className)); // 3: Add class methods
 
             sb.AppendLine(1.Indent() + "#endregion Methods");//enumerable methods
 
@@ -560,7 +565,7 @@ namespace mCASE_ADMIN.DataAccess.mCase
                 case MCaseTypes.DynamicCalculatedField: 
                     return Factory.StringFactory(jToken, propertyName, sysName, type, required);
                 case MCaseTypes.Attachment:
-                    return Factory.LongFactory(propertyName, sysName, type, required);
+                    return Factory.LongStringFactory(propertyName, sysName, type, required);
                 case MCaseTypes.Date:
                 case MCaseTypes.DateTime:
                     return Factory.DateFactory(jToken, propertyName, sysName, type, required);

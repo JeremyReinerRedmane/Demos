@@ -17,6 +17,14 @@ namespace mCASE_ADMIN.DataAccess.mCase
             MCaseTypes.Phone, MCaseTypes.Time, MCaseTypes.URL
         };
 
+        /// <summary>
+        /// Opens class initializer for Datalist, as well as the region for fields. This does not close the class, or namespace.
+        /// </summary>
+        /// <param name="jObject"></param>
+        /// <param name="className"></param>
+        /// <param name="nameSpace"></param>
+        /// <param name="mainUsings"></param>
+        /// <returns></returns>
         public static StringBuilder ClassInitializer(JObject jObject, string className, string nameSpace, string mainUsings)
         {
             var sb = new StringBuilder();
@@ -62,6 +70,13 @@ namespace mCASE_ADMIN.DataAccess.mCase
             return sb;
         }
 
+        /// <summary>
+        /// This opens the info class, and closes the namespace
+        /// </summary>
+        /// <param name="jObject"></param>
+        /// <param name="className"></param>
+        /// <param name="hasFields"></param>
+        /// <returns></returns>
         public static StringBuilder BuildInfoClass(JObject jObject, string className, bool hasFields)
         {
             var sb = new StringBuilder();
@@ -133,7 +148,15 @@ namespace mCASE_ADMIN.DataAccess.mCase
         }
 
         #region Factories
-
+        /// <summary>
+        /// used specifically for generating c# string data types. (majority of mCase data structures can remain strings)
+        /// </summary>
+        /// <param name="jToken"></param>
+        /// <param name="propertyName"></param>
+        /// <param name="sysName"></param>
+        /// <param name="type"></param>
+        /// <param name="required"></param>
+        /// <returns></returns>
         public static StringBuilder StringFactory(JToken jToken, string propertyName, string sysName, string type, bool required)
         {
             var sb = new StringBuilder();
@@ -178,7 +201,16 @@ namespace mCASE_ADMIN.DataAccess.mCase
             return sb;
         }
 
-        public static StringBuilder LongFactory(string propertyName, string sysName, string type, bool required)
+        /// <summary>
+        /// used specifically for generating c# string data types, but mCase LongValues. Think geolocations?
+        /// </summary>
+        /// <param name="jToken"></param>
+        /// <param name="propertyName"></param>
+        /// <param name="sysName"></param>
+        /// <param name="type"></param>
+        /// <param name="required"></param>
+        /// <returns></returns>
+        public static StringBuilder LongStringFactory(string propertyName, string sysName, string type, bool required)
         {
             var sb = new StringBuilder();
 
@@ -206,7 +238,15 @@ namespace mCASE_ADMIN.DataAccess.mCase
 
             return sb;
         }
-
+        /// <summary>
+        /// used specifically for generating c# DateTime data types. Dates / DateTimes
+        /// </summary>
+        /// <param name="jToken"></param>
+        /// <param name="propertyName"></param>
+        /// <param name="sysName"></param>
+        /// <param name="type"></param>
+        /// <param name="required"></param>
+        /// <returns></returns>
         public static StringBuilder DateFactory(JToken jToken, string propertyName, string sysName, string type, bool required)
         {
             var sb = new StringBuilder();
@@ -254,6 +294,16 @@ namespace mCASE_ADMIN.DataAccess.mCase
             return sb;
         }
 
+        /// <summary>
+        /// used specifically for generating c# bool data types, but stored as strings. mCase does not have the classical true / false boolean. there are 5 known true / false values
+        /// in mCase [0 / 1] [y / n] [Yes / No] [on / off] [true / false] and any one of these can be true or false. 
+        /// </summary>
+        /// <param name="jToken"></param>
+        /// <param name="propertyName"></param>
+        /// <param name="sysName"></param>
+        /// <param name="type"></param>
+        /// <param name="required"></param>
+        /// <returns></returns>
         public static StringBuilder BooleanFactory(JToken jToken, string propertyName, string sysName, string type, bool required)
         {
             var sb = new StringBuilder();
@@ -289,6 +339,18 @@ namespace mCASE_ADMIN.DataAccess.mCase
             return sb;
         }
 
+        /// <summary>
+        /// Used to generate property who's data structure returns other recordInstances. In the case of this tool, other Facotry entities
+        /// </summary>
+        /// <param name="propertyName"></param>
+        /// <param name="sysName"></param>
+        /// <param name="fieldType"></param>
+        /// <param name="privateName"></param>
+        /// <param name="multiSelect"></param>
+        /// <param name="dynamics"></param>
+        /// <param name="notAbleToSelectManyValues"></param>
+        /// <param name="required"></param>
+        /// <returns></returns>
         private static StringBuilder DynamicDropDownFactory(string propertyName, string sysName, string fieldType,
             string privateName, string multiSelect, string dynamics, bool notAbleToSelectManyValues, bool required)
         {
@@ -327,6 +389,21 @@ namespace mCASE_ADMIN.DataAccess.mCase
             return sb;
         }
 
+        /// <summary>
+        /// Generates either a list of string(no default values), or if default values are provided
+        /// then a list of constant default value enums are also generated.
+        /// The result being the property is created, as well as a property default value list that controls entry values to list.
+        /// </summary>
+        /// <param name="jToken"></param>
+        /// <param name="propertyName"></param>
+        /// <param name="sysName"></param>
+        /// <param name="fieldType"></param>
+        /// <param name="privateName"></param>
+        /// <param name="multiSelect"></param>
+        /// <param name="notAbleToSelectManyValues"></param>
+        /// <param name="className"></param>
+        /// <param name="required"></param>
+        /// <returns>StringBuilder 1 being the property, StringBuilder 2 being the enum values</returns>
         private static Tuple<StringBuilder, StringBuilder> DropDownFactory(JToken jToken, string propertyName, string sysName,
             string fieldType, string privateName, string multiSelect, bool notAbleToSelectManyValues, string className, bool required)
         {
@@ -399,6 +476,11 @@ namespace mCASE_ADMIN.DataAccess.mCase
         #endregion
         #region Additional Factory Helpers
 
+        /// <summary>
+        /// Because string is so dynamic in mCase, not all strings are truly strings, some are numbers, some are bools, and each require their own validations
+        /// </summary>
+        /// <param name="type"></param>
+        /// <returns></returns>
         private static string AddStringValidations(MCaseTypes type)
         {
             var sb = new StringBuilder();
@@ -433,6 +515,16 @@ namespace mCASE_ADMIN.DataAccess.mCase
             return sb.ToString();
         }
 
+        /// <summary>
+        /// Generates the Drop down list property where no default values are specified (List of strings)
+        /// </summary>
+        /// <param name="propertyName"></param>
+        /// <param name="systemName"></param>
+        /// <param name="privateName"></param>
+        /// <param name="fieldType"></param>
+        /// <param name="multiSelect"></param>
+        /// <param name="required"></param>
+        /// <returns></returns>
         private static StringBuilder NoDefaultValues(string propertyName, string systemName, string privateName, string fieldType, string multiSelect, string required)
         {
             var sb = new StringBuilder();
@@ -468,6 +560,21 @@ namespace mCASE_ADMIN.DataAccess.mCase
             return sb;
         }
 
+        /// <summary>
+        /// Generates the Drop down where the entered value is required to be one of the default value properties specified in configurations
+        /// </summary>
+        /// <param name="propertyName"></param>
+        /// <param name="sysName"></param>
+        /// <param name="fieldType"></param>
+        /// <param name="privateName"></param>
+        /// <param name="multiSelect"></param>
+        /// <param name="notAbleToSelectManyValues"></param>
+        /// <param name="defaultValues"></param>
+        /// <param name="staticName"></param>
+        /// <param name="defaultOptionsName"></param>
+        /// <param name="map"></param>
+        /// <param name="required"></param>
+        /// <returns></returns>
         private static StringBuilder GenerateDDWithDefaultValues(string propertyName, string sysName, string fieldType,
             string privateName, string multiSelect, bool notAbleToSelectManyValues, List<string> defaultValues,
             string staticName, string defaultOptionsName, string map, string required)
@@ -529,6 +636,13 @@ namespace mCASE_ADMIN.DataAccess.mCase
         #endregion
         #region Static File Extensions
 
+        /// <summary>
+        /// This file holds internal logic for using reflection to update internal states to class properties [comnplex as fuuq] this level of programming is difficult using an
+        /// IDE, i would recommend to update, validate, and check that code works before updating the meta code here in string. (10x more difficult here)
+        /// </summary>
+        /// <param name="namespace_"></param>
+        /// <param name="staticUsings"></param>
+        /// <returns></returns>
         public static string GenerateStaticFile(string namespace_, string staticUsings)
         {
             var sb = new StringBuilder();
@@ -549,6 +663,10 @@ namespace mCASE_ADMIN.DataAccess.mCase
             return sb.ToString();
         }
 
+        /// <summary>
+        /// Adds boolean static conversion method
+        /// </summary>
+        /// <returns></returns>
         private static StringBuilder AddBooleanMethod()
         {
             var sb = new StringBuilder();
@@ -591,6 +709,10 @@ namespace mCASE_ADMIN.DataAccess.mCase
             return sb.ToString();
         }
 
+        /// <summary>
+        /// Currently only set to retrieving the values for embedded items, and child records
+        /// </summary>
+        /// <returns></returns>
         private static StringBuilder GetRelatedRecordsStatic()
         {
             var sb = new StringBuilder();
@@ -605,6 +727,10 @@ namespace mCASE_ADMIN.DataAccess.mCase
 
         }
 
+        /// <summary>
+        /// Adds clear method to static file
+        /// </summary>
+        /// <returns></returns>
         private static StringBuilder BuildClearMethods()
         {
             var sb = new StringBuilder();
@@ -637,6 +763,10 @@ namespace mCASE_ADMIN.DataAccess.mCase
             return sb;
         }
 
+        /// <summary>
+        /// There are three different add methods. Add to List of string, List of RecordInstanceData, List of Default Values,
+        /// </summary>
+        /// <returns></returns>
         private static StringBuilder BuildAddMethods()
         {
             var sb = new StringBuilder();
@@ -724,6 +854,10 @@ namespace mCASE_ADMIN.DataAccess.mCase
             return sb;
         }
 
+        /// <summary>
+        /// There are three different add Range methods. Add to List of string, List of RecordInstanceData, List of Default Values,
+        /// </summary>
+        /// <returns></returns>
         private static StringBuilder BuildAddRangeMethods()
         {
             var sb = new StringBuilder();
@@ -821,6 +955,10 @@ namespace mCASE_ADMIN.DataAccess.mCase
             return sb;
         }
 
+        /// <summary>
+        /// There are three different Remove methods. This uses a predicate for each type, to remove any item that meets the predicate req.
+        /// </summary>
+        /// <returns></returns>
         private static StringBuilder BuildRemoveFromMethods()
         {
             var sb = new StringBuilder();
@@ -909,6 +1047,10 @@ namespace mCASE_ADMIN.DataAccess.mCase
             return sb;
         }
 
+        /// <summary>
+        /// This builds out the enum value class as well as the dictionary mapping class to said enum
+        /// </summary>
+        /// <returns></returns>
         public static StringBuilder BuildEnumExtensions()
         {
             var sb = new StringBuilder();
@@ -932,11 +1074,17 @@ namespace mCASE_ADMIN.DataAccess.mCase
 
         #endregion
 
-        public static string GetActiveRelatedRecords(HashSet<string> embedded)
+        /// <summary>
+        /// Generates the GetActive....Records() methods. Any child / embedded record will have their own call
+        /// </summary>
+        /// <param name="embedded"></param>
+        /// <returns></returns>
+        public static StringBuilder GetActiveRelatedRecords(HashSet<string> embedded)
         {
             var sb = new StringBuilder();
 
-            sb.AppendLine(1.Indent() + "#region Related Records");
+            if(embedded.Any())
+                sb.AppendLine(1.Indent() + "#region Related Records");
             foreach (var value in embedded)
             {
                 var propertyName = value.GetPropertyNameFromSystemName();
@@ -947,12 +1095,21 @@ namespace mCASE_ADMIN.DataAccess.mCase
                               $"public List<{propertyName}> GetActive{propertyName}Records() => _eventHelper.GetRelatedRecords(RecordInsData.RecordInstanceID, new {propertyName}Info(_eventHelper).SystemName).Select(x => new {propertyName}(x, _eventHelper)).ToList();"); // property name is added back with enum name appended 
 
             }
-
-            sb.AppendLine(1.Indent() + "#endregion Related Records");
-            return sb.ToString();
+            if (embedded.Any())
+                sb.AppendLine(1.Indent() + "#endregion Related Records");
+            
+            return sb;
         }
 
-        public static string AddEnumerableExtensions(string className, bool addDefaults, List<Tuple<string, string, bool, string, string>> requiredFields, HashSet<Tuple<string, string>> fields)
+        /// <summary>
+        /// Largest method here generates connections to static files for add, remove, clear if method has enumerated values
+        /// </summary>
+        /// <param name="className"></param>
+        /// <param name="addDefaults"></param>
+        /// <param name="requiredFields"></param>
+        /// <param name="fields"></param>
+        /// <returns></returns>
+        public static StringBuilder AddEnumerableExtensions(string className, bool addDefaults, List<Tuple<string, string, bool, string, string>> requiredFields, HashSet<Tuple<string, string>> fields)
         {
             var sb = new StringBuilder();
 
@@ -1079,8 +1236,15 @@ namespace mCASE_ADMIN.DataAccess.mCase
 
                 #endregion
             }
-            #region Save
 
+            return sb;
+        }
+
+        public static StringBuilder AddConstantMethods(bool addDefaults, List<Tuple<string, string, bool, string, string>> requiredFields, HashSet<Tuple<string, string>> fields, string className)
+        {
+            var sb = new StringBuilder();
+            var defaultValues = $"{className}Static.DefaultValuesEnum";
+            
             // Can save record
             sb.AppendLine(1.Indent() + "/// <summary>Checks all required fields in Datalist</summary>");
             sb.AppendLine(1.Indent() + "/// <returns>All required fields that have yet been filled in.</returns>");
@@ -1109,8 +1273,8 @@ namespace mCASE_ADMIN.DataAccess.mCase
             sb.AppendLine(1.Indent() + "{");//open method
             sb.AppendLine(2.Indent() + "var requiredFields = RequiredFieldsCheck();");
             sb.AppendLine(2.Indent() + "if(requiredFields.Count > 0) return requiredFields;");
-            sb.AppendLine(2.Indent() + "_eventHelper.SaveRecord(RecordInsData);");
-            sb.AppendLine(2.Indent() + "_eventHelper.AddInfoLog($\"[{SystemName}] Successfully saved record: {RecordInsData.RecordInstanceID}. All fields passed requirement check.\");");
+            sb.AppendLine(2.Indent() + "var status = SaveRecord();");
+            sb.AppendLine(2.Indent() + "if (status == EventStatusCode.Success) return new List<string>();");
             sb.AppendLine(2.Indent() + "return requiredFields;");
             sb.AppendLine(1.Indent() + "}");//close method
             // save record
@@ -1118,30 +1282,44 @@ namespace mCASE_ADMIN.DataAccess.mCase
             sb.AppendLine(1.Indent() + "/// <returns></returns>");
             sb.AppendLine(1.Indent() + "public EventStatusCode SaveRecord()");
             sb.AppendLine(1.Indent() + "{");//open method
-            sb.AppendLine(2.Indent() + "_eventHelper.SaveRecord(RecordInsData);");
-            sb.AppendLine(2.Indent() + "_eventHelper.AddInfoLog($\"[{SystemName}] Successfully saved record: {RecordInsData.RecordInstanceID}\");");
-            sb.AppendLine(2.Indent() + "return EventStatusCode.Success;");
+            sb.AppendLine(2.Indent() + "try");
+            sb.AppendLine(2.Indent() + "{");//open try
+            sb.AppendLine(3.Indent() + "_eventHelper.SaveRecord(RecordInsData);");
+            sb.AppendLine(3.Indent() + "_eventHelper.AddInfoLog($\"[{SystemName}] Successfully Saved Record: {RecordInsData.RecordInstanceID}\");");
+            sb.AppendLine(3.Indent() + "return EventStatusCode.Success;");
+            sb.AppendLine(2.Indent() + "}");//close try
+            sb.AppendLine(2.Indent() + "catch (Exception ex)");
+            sb.AppendLine(2.Indent() + "{");//open catch
+            sb.AppendLine(3.Indent() + "_eventHelper.AddWarningLog($\"[Failed]-[{SystemName}] Saving Record: {RecordInsData.RecordInstanceID}\\n=============================================\\n{ex}\\n=============================================\\n\");");
+            sb.AppendLine(3.Indent() + "return EventStatusCode.Failure;");
+            sb.AppendLine(2.Indent() + "}");//close catch
             sb.AppendLine(1.Indent() + "}");//close method
 
             // Delete record
-            sb.AppendLine(1.Indent() + "/// <summary> If exception thrown here, attempt to save record prior to soft delete </summary>");
+            sb.AppendLine(1.Indent() + "/// <summary> Attempts to update status field on record instance to soft deleted</summary>");
+            sb.AppendLine(1.Indent() + "/// <returns>EventStatusCode.Success, or Failure if exception thrown</returns>");
             sb.AppendLine(1.Indent() + "public EventStatusCode SoftDelete()");
             sb.AppendLine(1.Indent() + "{");//open method
             sb.AppendLine(2.Indent() + "RecordInsData.Status = MCaseEventConstants.RecordStatusDeleted;");
             sb.AppendLine(2.Indent() + "RecordInsData.FrozenInd = true;");
-            sb.AppendLine(2.Indent() + "_eventHelper.SaveRecord(RecordInsData);");
-            sb.AppendLine(2.Indent() + "_eventHelper.AddInfoLog($\"[{SystemName}] Soft Deleted Record: {RecordInsData.RecordInstanceID}\");");
-            sb.AppendLine(2.Indent() + "return EventStatusCode.Success;");
+            sb.AppendLine(2.Indent() + "try");
+            sb.AppendLine(2.Indent() + "{");//open try
+            sb.AppendLine(3.Indent() + "_eventHelper.SaveRecord(RecordInsData);");
+            sb.AppendLine(3.Indent() + "_eventHelper.AddInfoLog($\"[Success]-[{SystemName}] Soft Deleted Record: {RecordInsData.RecordInstanceID}\");");
+            sb.AppendLine(3.Indent() + "return EventStatusCode.Success;");
+            sb.AppendLine(2.Indent() + "}");//close try
+            sb.AppendLine(2.Indent() + "catch (Exception ex)");
+            sb.AppendLine(2.Indent() + "{");//open catch
+            sb.AppendLine(3.Indent() + "_eventHelper.AddWarningLog($\"[Failed]-[{SystemName}] Soft Deleted Record: {RecordInsData.RecordInstanceID}\\n=============================================\\n{ex}\\n=============================================\\n\");");
+            sb.AppendLine(3.Indent() + "return EventStatusCode.Failure;");
+            sb.AppendLine(2.Indent() + "}");//close catch
             sb.AppendLine(1.Indent() + "}");//close method
-
+            
 
             sb.AppendLine(1.Indent() + "public void LogDebug(string log) => _eventHelper.AddDebugLog($\"[{SystemName}][{RecordInsData.RecordInstanceID}]: {log}\");");
             sb.AppendLine(1.Indent() + "public void LogInfo(string log) => _eventHelper.AddInfoLog($\"[{SystemName}][{RecordInsData.RecordInstanceID}]: {log}\");");
             sb.AppendLine(1.Indent() + "public void LogWarning(string log) => _eventHelper.AddWarningLog($\"[{SystemName}][{RecordInsData.RecordInstanceID}]: {log}\");");
             sb.AppendLine(1.Indent() + "public void LogError(string log) => _eventHelper.AddErrorLog($\"[{SystemName}][{RecordInsData.RecordInstanceID}]: {log}\");");
-
-            #endregion
-            #region private method extractions
 
             if (addDefaults)
             {
@@ -1164,8 +1342,7 @@ namespace mCASE_ADMIN.DataAccess.mCase
                 sb.AppendLine(1.Indent() + "#endregion Private");
             }
 
-            #endregion
-            return sb.ToString();
+            return sb;
         }
 
         /// <summary>
@@ -1396,7 +1573,7 @@ namespace mCASE_ADMIN.DataAccess.mCase
                     var currentVal = $"dependentOnField_{currentIteration}";
                     sb.AppendLine($"if (BigInteger.TryParse(\"{values.First()}\", out var {localLow}) && BigInteger.TryParse(\"{values.Last()}\", out var {localHigh}) && BigInteger.TryParse({dependentOnField}, out var {currentVal}))");
                     sb.AppendLine(2.Indent() + "{");//open if
-                    sb.AppendLine(3.Indent() + $"if ({localLow} < {currentVal} && {currentVal} < {localHigh})");
+                    sb.AppendLine(3.Indent() + $"if ({localLow} <= {currentVal} && {currentVal} <= {localHigh})");
                     sb.AppendLine(3.Indent() + "{");//open embedded if
                     sb.AppendLine(4.Indent() + helperComment);
                     sb.AppendLine(4.Indent() + CanSaveValidationHelper(mandatoryType, privateName, propertyName));
