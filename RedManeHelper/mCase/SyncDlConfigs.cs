@@ -20,6 +20,7 @@ namespace mCASE_ADMIN.DataAccess.mCase
         private readonly string _connectionString;
         private readonly string _sqlCommand;
         private readonly string _outputDirectory;
+        private readonly string _tempOutputDirectory;
         private readonly string _exceptionDirectory;
         private readonly string _credentials;
         private readonly string _mCaseUrl;
@@ -58,6 +59,11 @@ namespace mCASE_ADMIN.DataAccess.mCase
                 if (!Directory.Exists(_outputDirectory))
                     Directory.CreateDirectory(_outputDirectory);
 
+                _tempOutputDirectory = commandLineArgs[5] + "_Temp";
+                Console.WriteLine("Temp Dir: " + _outputDirectory);
+                if (!Directory.Exists(_tempOutputDirectory))
+                    Directory.CreateDirectory(_tempOutputDirectory);
+
                 _exceptionDirectory = commandLineArgs[6];//6
                 Console.WriteLine("Exception Dir: " + _exceptionDirectory);
                 if (!Directory.Exists(_exceptionDirectory))
@@ -90,6 +96,12 @@ namespace mCASE_ADMIN.DataAccess.mCase
                 Console.WriteLine("Output Dir: " + _outputDirectory);
                 if (!Directory.Exists(_outputDirectory))
                     Directory.CreateDirectory(_outputDirectory);
+
+                _tempOutputDirectory = commandLineArgs[4] + "_Temp";
+                Console.WriteLine("Temp Dir: " + _outputDirectory);
+                if (!Directory.Exists(_tempOutputDirectory))
+                    Directory.CreateDirectory(_tempOutputDirectory);
+
 
                 _exceptionDirectory = commandLineArgs[5];
                 Console.WriteLine("Exception Dir: " + _exceptionDirectory);
@@ -127,7 +139,7 @@ namespace mCASE_ADMIN.DataAccess.mCase
             {
                 var staticFileData = Factory.GenerateStaticFile(_namespace, _staticUsings);
 
-                var staticPath = Path.Combine(_outputDirectory, "FactoryExtensions.cs");
+                var staticPath = Path.Combine(_tempOutputDirectory, "FactoryExtensions.cs");
 
                 File.WriteAllText(staticPath, staticFileData);
             }
@@ -165,6 +177,38 @@ namespace mCASE_ADMIN.DataAccess.mCase
                 }
                 Console.ForegroundColor = ConsoleColor.DarkGray;
             }
+
+            Console.WriteLine();
+            // completed all dls in temp location, move to live location and delete temp.
+            try
+            {
+                MoveFilesFromTempToFactoryDir();
+            }
+            catch
+            {
+                if (Directory.Exists(_tempOutputDirectory))
+                    DeleteTempDir();
+            }
+        }
+
+        private void MoveFilesFromTempToFactoryDir()
+        {
+            if (!Directory.Exists(_tempOutputDirectory))
+                throw new Exception();
+
+            var files = Directory.GetFiles(_tempOutputDirectory);
+
+            foreach (var file in files)
+            {
+                var className = file.Split("\\").Last();
+
+                File.Move(file, Path.Combine(_outputDirectory, className), true);
+            }
+
+            files = Directory.GetFiles(_tempOutputDirectory);
+
+            if (files.Length == 0)
+                DeleteTempDir();
         }
 
         /// <summary>
@@ -173,9 +217,6 @@ namespace mCASE_ADMIN.DataAccess.mCase
         /// <returns></returns>
         public async Task<List<int>> DataAccess()
         {
-            if (Directory.Exists(_outputDirectory))
-                DeleteAllFiles();
-
             var ids = new List<int>();
             try
             {
@@ -217,17 +258,30 @@ namespace mCASE_ADMIN.DataAccess.mCase
             }
         }
 
-        private void DeleteAllFiles()
+        private void DeleteTempDir()
         {
-            var dir = new DirectoryInfo(_outputDirectory);
-
-            if (dir.GetFiles().Length == 0) return;
+            var dir = new DirectoryInfo(_tempOutputDirectory);
 
             var files = dir.GetFiles();
+
+            if (files.Length == 0)
+            {
+                Directory.Delete(_tempOutputDirectory);
+                return;
+            }
 
             foreach (var file in files)
             {
                 file.Delete();
+            }
+
+            files = dir.GetFiles();
+
+            if(files.Length == 0) 
+                Directory.Delete(_tempOutputDirectory);
+            else
+            {
+                Console.WriteLine($"[{files.Length}] files remain and Temp dir could not be deleted. {_tempOutputDirectory}");
             }
         }
 
@@ -272,7 +326,7 @@ namespace mCASE_ADMIN.DataAccess.mCase
             {
                 var sb = GenerateFileData(jsonObject, className);
 
-                var path = Path.Combine(_outputDirectory, className + ".cs");
+                var path = Path.Combine(_tempOutputDirectory, className + ".cs");
 
                 File.WriteAllText(path, sb.ToString());
 

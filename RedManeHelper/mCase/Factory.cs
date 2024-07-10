@@ -1601,7 +1601,6 @@ namespace mCASE_ADMIN.DataAccess.mCase
                 default:
                     return string.Empty;
             }
-            return string.Empty;
         }
 
         public static StringBuilder GenerateEnums(List<string> fieldSet, string className, bool titleCase)
