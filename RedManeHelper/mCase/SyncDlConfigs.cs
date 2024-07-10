@@ -178,7 +178,6 @@ namespace mCASE_ADMIN.DataAccess.mCase
                 Console.ForegroundColor = ConsoleColor.DarkGray;
             }
 
-            Console.WriteLine();
             // completed all dls in temp location, move to live location and delete temp.
             try
             {
@@ -302,7 +301,8 @@ namespace mCASE_ADMIN.DataAccess.mCase
         }
 
         /// <summary>
-        /// Using List transfer we can catch the structure of our DL's from the db, and reconstruct a C# object. used for custom events
+        /// Using List transfer we can catch the structure of our DL's from the db, and reconstruct a C# object. used for custom events. Files are sent to temp directory location,
+        /// untill all processes have been completed
         /// </summary>
         /// <param name="data"></param>
         private string Sync(string data)
@@ -481,7 +481,7 @@ namespace mCASE_ADMIN.DataAccess.mCase
                 if (field == null)
                     continue;
 
-                #region MyRegion
+                #region Setup MetaData
 
                 var type = field.ParseToken(ListTransferFields.Type.GetDescription());
 
@@ -543,7 +543,7 @@ namespace mCASE_ADMIN.DataAccess.mCase
                 if (requiresEnumerationValues.Contains(type))
                     requiresEnumeration = true;
 
-                #endregion Setup
+                #endregion Setup MetaData
 
                 var property = AddProperties(field, type, systemName, className, required);// 2: Add properties. Magic happens here
 

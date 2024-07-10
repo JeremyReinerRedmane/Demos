@@ -1266,54 +1266,33 @@ namespace mCASE_ADMIN.DataAccess.mCase
 
 
 
-            // save record
+            // Try Save record
             sb.AppendLine(1.Indent() + "/// <summary> Attempts to pass all required fields prior to saving recordInstanceData</summary>");
             sb.AppendLine(1.Indent() + "/// <returns>A list of all unfilled required fields. Empty list means successfully saved</returns>");
             sb.AppendLine(1.Indent() + "public List<string> TrySaveRecord()");
             sb.AppendLine(1.Indent() + "{");//open method
             sb.AppendLine(2.Indent() + "var requiredFields = RequiredFieldsCheck();");
             sb.AppendLine(2.Indent() + "if(requiredFields.Count > 0) return requiredFields;");
-            sb.AppendLine(2.Indent() + "var status = SaveRecord();");
+            sb.AppendLine(2.Indent() + "var status = SaveRecord(false);");
             sb.AppendLine(2.Indent() + "if (status == EventStatusCode.Success) return new List<string>();");
-            sb.AppendLine(2.Indent() + "return requiredFields;");
+            sb.AppendLine(2.Indent() + "return new List<string>(){ \"Error in saving, check error log for exception\"};");
             sb.AppendLine(1.Indent() + "}");//close method
-            // save record
+
+            // Save record
             sb.AppendLine(1.Indent() + "/// <summary> Save RecordInstanceData without requirement checks</summary>");
-            sb.AppendLine(1.Indent() + "/// <returns></returns>");
-            sb.AppendLine(1.Indent() + "public EventStatusCode SaveRecord()");
-            sb.AppendLine(1.Indent() + "{");//open method
-            sb.AppendLine(2.Indent() + "try");
-            sb.AppendLine(2.Indent() + "{");//open try
-            sb.AppendLine(3.Indent() + "_eventHelper.SaveRecord(RecordInsData);");
-            sb.AppendLine(3.Indent() + "_eventHelper.AddInfoLog($\"[{SystemName}] Successfully Saved Record: {RecordInsData.RecordInstanceID}\");");
-            sb.AppendLine(3.Indent() + "return EventStatusCode.Success;");
-            sb.AppendLine(2.Indent() + "}");//close try
-            sb.AppendLine(2.Indent() + "catch (Exception ex)");
-            sb.AppendLine(2.Indent() + "{");//open catch
-            sb.AppendLine(3.Indent() + "_eventHelper.AddWarningLog($\"[Failed]-[{SystemName}] Saving Record: {RecordInsData.RecordInstanceID}\\n=============================================\\n{ex}\\n=============================================\\n\");");
-            sb.AppendLine(3.Indent() + "return EventStatusCode.Failure;");
-            sb.AppendLine(2.Indent() + "}");//close catch
-            sb.AppendLine(1.Indent() + "}");//close method
+            sb.AppendLine(1.Indent() + "/// <returns>EventStatusCode.Success, or Failure if exception thrown. If Exception thrown, it will be logged to error log</returns>");
+            sb.AppendLine(1.Indent() + "public EventStatusCode SaveRecord() => SaveRecord(false);");
 
             // Delete record
             sb.AppendLine(1.Indent() + "/// <summary> Attempts to update status field on record instance to soft deleted</summary>");
-            sb.AppendLine(1.Indent() + "/// <returns>EventStatusCode.Success, or Failure if exception thrown</returns>");
+            sb.AppendLine(1.Indent() + "/// <returns>EventStatusCode.Success, or Failure if exception thrown. If Exception thrown, it will be logged to error log</returns>");
             sb.AppendLine(1.Indent() + "public EventStatusCode SoftDelete()");
             sb.AppendLine(1.Indent() + "{");//open method
             sb.AppendLine(2.Indent() + "RecordInsData.Status = MCaseEventConstants.RecordStatusDeleted;");
             sb.AppendLine(2.Indent() + "RecordInsData.FrozenInd = true;");
-            sb.AppendLine(2.Indent() + "try");
-            sb.AppendLine(2.Indent() + "{");//open try
-            sb.AppendLine(3.Indent() + "_eventHelper.SaveRecord(RecordInsData);");
-            sb.AppendLine(3.Indent() + "_eventHelper.AddInfoLog($\"[Success]-[{SystemName}] Soft Deleted Record: {RecordInsData.RecordInstanceID}\");");
-            sb.AppendLine(3.Indent() + "return EventStatusCode.Success;");
-            sb.AppendLine(2.Indent() + "}");//close try
-            sb.AppendLine(2.Indent() + "catch (Exception ex)");
-            sb.AppendLine(2.Indent() + "{");//open catch
-            sb.AppendLine(3.Indent() + "_eventHelper.AddWarningLog($\"[Failed]-[{SystemName}] Soft Deleted Record: {RecordInsData.RecordInstanceID}\\n=============================================\\n{ex}\\n=============================================\\n\");");
-            sb.AppendLine(3.Indent() + "return EventStatusCode.Failure;");
-            sb.AppendLine(2.Indent() + "}");//close catch
+            sb.AppendLine(2.Indent() + "return SaveRecord(true);");
             sb.AppendLine(1.Indent() + "}");//close method
+
             
 
             sb.AppendLine(1.Indent() + "public void LogDebug(string log) => _eventHelper.AddDebugLog($\"[{SystemName}][{RecordInsData.RecordInstanceID}]: {log}\");");
@@ -1321,9 +1300,29 @@ namespace mCASE_ADMIN.DataAccess.mCase
             sb.AppendLine(1.Indent() + "public void LogWarning(string log) => _eventHelper.AddWarningLog($\"[{SystemName}][{RecordInsData.RecordInstanceID}]: {log}\");");
             sb.AppendLine(1.Indent() + "public void LogError(string log) => _eventHelper.AddErrorLog($\"[{SystemName}][{RecordInsData.RecordInstanceID}]: {log}\");");
 
+            sb.AppendLine(1.Indent() + "#region Private");
+
+            // private save record
+            sb.AppendLine(1.Indent() + "/// <summary> Save RecordInstanceData without requirement checks</summary>");
+            sb.AppendLine(1.Indent() + "/// <returns>EventStatusCode</returns>");
+            sb.AppendLine(1.Indent() + "private EventStatusCode SaveRecord(bool delete)");
+            sb.AppendLine(1.Indent() + "{");//open method
+            sb.AppendLine(2.Indent() + "var crud = delete ? \"Deleted\" : \"Saved\";");
+            sb.AppendLine(2.Indent() + "try");
+            sb.AppendLine(2.Indent() + "{");//open try
+            sb.AppendLine(3.Indent() + "_eventHelper.SaveRecord(RecordInsData);");
+            sb.AppendLine(3.Indent() + "_eventHelper.AddInfoLog($\"[Success]-[{SystemName}] {crud} Record: {RecordInsData.RecordInstanceID}\");");
+            sb.AppendLine(3.Indent() + "return EventStatusCode.Success;");
+            sb.AppendLine(2.Indent() + "}");//close try
+            sb.AppendLine(2.Indent() + "catch (Exception ex)");
+            sb.AppendLine(2.Indent() + "{");//open catch
+            sb.AppendLine(3.Indent() + "_eventHelper.AddErrorLog($\"[Failed]-[{SystemName}] {crud} Record: {RecordInsData.RecordInstanceID}\\n=============================================\\n{ex}\\n=============================================\\n\");");
+            sb.AppendLine(3.Indent() + "return EventStatusCode.Failure;");
+            sb.AppendLine(2.Indent() + "}");//close catch
+            sb.AppendLine(1.Indent() + "}");//close method
+
             if (addDefaults)
             {
-                sb.AppendLine(1.Indent() + "#region Private");
                 //add MultiSelectValue
                 sb.AppendLine(1.Indent() + $"private List<{defaultValues}> GetMultiSelectValue(string sysName)");
                 sb.AppendLine(1.Indent() + "{");//open method
@@ -1338,9 +1337,9 @@ namespace mCASE_ADMIN.DataAccess.mCase
                 sb.AppendLine(2.Indent() + $"if (value == new List<{defaultValues}>() " + "{ " + defaultValues + ".Multiselectfalse }) return value;");
                 sb.AppendLine(2.Indent() + $"return invalidValues ? new List<{defaultValues}>()" + "{ " + defaultValues + ".Invalidselection } : value;");
                 sb.AppendLine(1.Indent() + "}");//close method
-
-                sb.AppendLine(1.Indent() + "#endregion Private");
             }
+
+            sb.AppendLine(1.Indent() + "#endregion Private");
 
             return sb;
         }
@@ -1609,9 +1608,9 @@ namespace mCASE_ADMIN.DataAccess.mCase
 
             var distinct = fieldSet.Distinct().OrderBy(x => x).ToList();//order enums by name
 
-            sb.AppendLine(BuildEnums(distinct, className).ToString());
+            sb.Append(BuildEnums(distinct, className));
 
-            sb.AppendLine(BuildEnumMapper(distinct, className, titleCase).ToString());
+            sb.Append(BuildEnumMapper(distinct, className, titleCase));
 
             return sb;
         }
@@ -1654,7 +1653,7 @@ namespace mCASE_ADMIN.DataAccess.mCase
             return sb;
         }
 
-        public static StringBuilder BuildEnumMapper(List<string> fieldSet, string className, bool titleCase)
+        private static StringBuilder BuildEnumMapper(List<string> fieldSet, string className, bool titleCase)
         {
             var sb = new StringBuilder();
 
@@ -1723,5 +1722,3 @@ namespace mCASE_ADMIN.DataAccess.mCase
         }
     }
 }
-
-//extract duplicate getters / setters to methods.
