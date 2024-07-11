@@ -1610,6 +1610,8 @@ namespace mCASE_ADMIN.DataAccess.mCase
 
             sb.Append(BuildEnums(distinct, className));
 
+            sb.AppendLine();
+
             sb.Append(BuildEnumMapper(distinct, className, titleCase));
 
             return sb;

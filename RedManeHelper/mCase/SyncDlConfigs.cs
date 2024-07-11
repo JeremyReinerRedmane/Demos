@@ -302,7 +302,7 @@ namespace mCASE_ADMIN.DataAccess.mCase
 
         /// <summary>
         /// Using List transfer we can catch the structure of our DL's from the db, and reconstruct a C# object. used for custom events. Files are sent to temp directory location,
-        /// untill all processes have been completed
+        /// until all processes have been completed
         /// </summary>
         /// <param name="data"></param>
         private string Sync(string data)
