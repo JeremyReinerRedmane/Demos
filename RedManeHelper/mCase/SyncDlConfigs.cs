@@ -448,10 +448,13 @@ namespace mCASE_ADMIN.DataAccess.mCase
                 allDefaultValues = allDefaultValues.Distinct().ToList();
             }
 
-            var relationshipEnums = Factory.GenerateRelationships(relationships);
+            if (relationships != null)
+            {
+                var relationshipEnums = Factory.GenerateRelationships(relationships);
 
-            if (!string.IsNullOrEmpty(relationshipEnums.ToString()))
-                sb.Append(relationshipEnums);
+                if (!string.IsNullOrEmpty(relationshipEnums.ToString()))
+                    sb.Append(relationshipEnums);
+            }
 
             if (allDefaultValues.Count > 3)
             {

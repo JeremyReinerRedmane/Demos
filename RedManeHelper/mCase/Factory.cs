@@ -1264,7 +1264,12 @@ namespace mCASE_ADMIN.DataAccess.mCase
             return sb;
         }
 
-        public static StringBuilder GenerateRelationships(JToken? relationships)
+        /// <summary>
+        /// Nullable types are not supported in upper solutions. Jtoken still requires nullable checks, although the argument itself is not nullable
+        /// </summary>
+        /// <param name="relationships"></param>
+        /// <returns></returns>
+        public static StringBuilder GenerateRelationships(JToken relationships)
         {
             var sb = new StringBuilder();
 
