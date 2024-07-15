@@ -199,9 +199,14 @@ namespace mCASE_ADMIN.DataAccess.mCase
 
             foreach (var file in files)
             {
-                var className = file.Split("\\").Last();
+                var className = file.Split('\\').Last();
 
-                File.Move(file, Path.Combine(_outputDirectory, className), true);
+                var finalLocation = Path.Combine(_outputDirectory, className);
+
+                if (File.Exists(finalLocation))
+                    File.Delete(finalLocation);
+
+                File.Move(file, Path.Combine(_outputDirectory, className));
             }
 
             files = Directory.GetFiles(_tempOutputDirectory);
