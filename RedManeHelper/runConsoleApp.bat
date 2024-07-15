@@ -8,7 +8,8 @@ echo Begining Class Sync
 ::rem [5] output directory
 ::rem [6] exception directory exist
 ::rem [7] namespace
-
+::rem [8] main usings
+::rem [9] static usings
 ::rem (5 & 6) will be created if none exist
 
 ::Direct executable filepath "connection string" "sql query" "credentials" "target url" "output directory" "output exception directory" "namespace"
@@ -25,9 +26,11 @@ echo Begining Class Sync
 ::rem [4] output directory
 ::rem [5] exception directory
 ::rem [6] namespace
+::rem [7] main usings
+::rem [8] static usings
 
 ::rem (4 & 5) will be created if none exist
 
-::Direct executable filepath "csv data" "credentials" "target url" "output directory" "output exception directory" "namespace"
+::Direct executable filepath "csv data" "credentials" "target url" "output directory" "output exception directory" "namespace" "usings" "static usings"
 
 pause

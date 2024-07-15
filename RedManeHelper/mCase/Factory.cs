@@ -25,25 +25,25 @@ namespace mCASE_ADMIN.DataAccess.mCase
         /// <param name="nameSpace"></param>
         /// <param name="mainUsings"></param>
         /// <returns></returns>
-        public static StringBuilder ClassInitializer(JObject jObject, string className, string nameSpace, string mainUsings)
+        public static StringBuilder ClassInitializer(JObject jObject, string sysName, string nameSpace, string mainUsings)
         {
             var sb = new StringBuilder();
 
             var id = jObject.ParseJson(ListTransferFields.Id.GetDescription());
-            var sysName = jObject.ParseJson(ListTransferFields.SystemName.GetDescription());
+            var className = jObject.ParseNameValue(ListTransferFields.Name.GetDescription());
             var dtNow = DateTime.Now.ToString(Extensions.MCaseDateTimeStorageFormat);
 
             sb.AppendLine(mainUsings);
             sb.AppendLine($"namespace {nameSpace}");
             sb.AppendLine("{"); //open namespace
-            sb.AppendLine(0.Indent() + $"/// <summary> Synchronized data list [{id}][{sysName}] on {dtNow} </summary>");
-            sb.AppendLine(0.Indent() + $"public class {className}");
+            sb.AppendLine(0.Indent() + $"/// <summary> Synchronized data list [{id}][{className}] on {dtNow} </summary>");
+            sb.AppendLine(0.Indent() + $"public class {sysName}");
             sb.AppendLine(0.Indent() + "{"); //open class
             sb.AppendLine(1.Indent() + "public RecordInstanceData RecordInsData;");
             sb.AppendLine(1.Indent() + "private readonly AEventHelper _eventHelper;");
             sb.AppendLine(1.Indent() + "/// <summary> Class for Updating Existing RecordInstanceData. To create a new RecordInstance data, initialize with the appropriate datalist ID. </summary>");
             sb.AppendLine(1.Indent() +
-                          $"public {className}(RecordInstanceData recordInsData, AEventHelper eventHelper)");
+                          $"public {sysName}(RecordInstanceData recordInsData, AEventHelper eventHelper)");
             sb.AppendLine(1.Indent() + "{"); //open constructor #Existing Record Instance Data
             sb.AppendLine(2.Indent() + "_eventHelper = eventHelper;");
             sb.AppendLine(2.Indent() + $"if (recordInsData.DataListID != DataListId) throw new Exception(\"RecordInstance is not of type {sysName}\");");
@@ -51,6 +51,7 @@ namespace mCASE_ADMIN.DataAccess.mCase
             sb.AppendLine(2.Indent() + "_eventHelper.AddInfoLog($\"{SystemName} has been instantiated for recordInstance value: {recordInsData.RecordInstanceID}\");");
             sb.AppendLine(1.Indent() + "}"); //close constructor
             sb.AppendLine(1.Indent() + "#region Fields");
+            sb.AppendLine(1.Indent() + "public string Label => RecordInsData.Label;");
             sb.AppendLine(1.Indent() + $"public string SystemName => \"{sysName}\";");
             sb.AppendLine(1.Indent() + "private int _dataListId = -1;");
             sb.AppendLine(1.Indent() + "/// <summary>");
@@ -60,9 +61,9 @@ namespace mCASE_ADMIN.DataAccess.mCase
             sb.AppendLine(1.Indent() + "{"); //open Property
             sb.AppendLine(2.Indent() + "get");
             sb.AppendLine(2.Indent() + "{"); //open Getter
-            sb.AppendLine(3.Indent() + "if(_dataListId>0) return _dataListId;");
-            sb.AppendLine(3.Indent() + "var id=_eventHelper.GetDataListID(SystemName);");
-            sb.AppendLine(3.Indent() + "if(id.HasValue&&id.Value>0)_dataListId=id.Value;");
+            sb.AppendLine(3.Indent() + "if(_dataListId > 0) return _dataListId;");
+            sb.AppendLine(3.Indent() + "var id = _eventHelper.GetDataListID(SystemName);");
+            sb.AppendLine(3.Indent() + "if(id.HasValue && id.Value > 0) _dataListId = id.Value;");
             sb.AppendLine(3.Indent() + "return _dataListId;");
             sb.AppendLine(2.Indent() + "}"); //close Getter
             sb.AppendLine(1.Indent() + "}"); //close Property
@@ -77,21 +78,21 @@ namespace mCASE_ADMIN.DataAccess.mCase
         /// <param name="className"></param>
         /// <param name="hasFields"></param>
         /// <returns></returns>
-        public static StringBuilder BuildInfoClass(JObject jObject, string className, bool hasFields)
+        public static StringBuilder BuildInfoClass(JObject jObject, string sysName, bool hasFields)
         {
             var sb = new StringBuilder();
 
             var id = jObject.ParseJson(ListTransferFields.Id.GetDescription());
-            var sysName = jObject.ParseJson(ListTransferFields.SystemName.GetDescription());
+            var className = jObject.ParseNameValue(ListTransferFields.Name.GetDescription());
             var dtNow = DateTime.Now.ToString(Extensions.MCaseDateTimeStorageFormat);
 
             #region Dl Info Class
 
-            sb.AppendLine(0.Indent() + $"/// <summary>  Synchronized data list [{id}][{sysName}] on {dtNow} </summary>");
-            sb.AppendLine(0.Indent() + $"public class {className}Info");
+            sb.AppendLine(0.Indent() + $"/// <summary>  Synchronized data list [{id}][{className}] on {dtNow} </summary>");
+            sb.AppendLine(0.Indent() + $"public class {sysName}Info");
             sb.AppendLine(0.Indent() + "{"); //open class
             sb.AppendLine(1.Indent() + "private AEventHelper _eventHelper;");
-            sb.AppendLine(1.Indent() + $"public {className}Info(AEventHelper eventHelper)");
+            sb.AppendLine(1.Indent() + $"public {sysName}Info(AEventHelper eventHelper)");
             sb.AppendLine(1.Indent() + "{"); //open constructor
             sb.AppendLine(2.Indent() + "_eventHelper = eventHelper;");
             sb.AppendLine(1.Indent() + "}"); //close constructor
@@ -114,8 +115,8 @@ namespace mCASE_ADMIN.DataAccess.mCase
             {
                 #region SQL Query
 
-                var sysNames = $"{className}Static.SystemNamesEnum";
-                var sysNamesMap = $"{className}Static.SystemNamesMap";
+                var sysNames = $"{sysName}Static.SystemNamesEnum";
+                var sysNamesMap = $"{sysName}Static.SystemNamesMap";
 
                 sb.AppendLine(1.Indent() + "/// <summary> Creates a raw sql query filter for the specified property, based off the filter params passed through</summary>");
                 sb.AppendLine(1.Indent() + $"/// <param name=\"fieldSysName\">Use {sysNames} to find the field system name </param>");
@@ -134,8 +135,8 @@ namespace mCASE_ADMIN.DataAccess.mCase
 
                 sb.AppendLine(1.Indent() + "/// <summary> Generate the filtered query, using a list of filtered query items.</summary>");
                 sb.AppendLine(1.Indent() + "/// <param name=\"filters\"> List of filter data objects. Advised to use CreateFilter() method to generate filters</param>");
-                sb.AppendLine(1.Indent() + $"/// <returns>List of {className} objects that match with all filter queries. Query is 'and' operator not by 'or' operator</returns>");
-                sb.AppendLine(1.Indent() + $"public List<{className}> CreateQuery(List<DirectSQLFieldFilterData> filters) => _eventHelper.SearchSingleDataListSQLProcess(DataListId, filters).Select(x => new {className}(x, _eventHelper)).ToList();");
+                sb.AppendLine(1.Indent() + $"/// <returns>List of {sysName} objects that match with all filter queries. Query is 'and' operator not by 'or' operator</returns>");
+                sb.AppendLine(1.Indent() + $"public List<{sysName}> CreateQuery(List<DirectSQLFieldFilterData> filters) => _eventHelper.SearchSingleDataListSQLProcess(DataListId, filters).Select(x => new {sysName}(x, _eventHelper)).ToList();");
 
                 #endregion
             }
@@ -466,6 +467,7 @@ namespace mCASE_ADMIN.DataAccess.mCase
                 case MCaseTypes.DynamicDropDown:
                     var dynamicValues = DynamicDropDownFactory(propertyName, sysName, fieldType, privateName,
                         multiSelect, dynamicData, notAbleToSelectManyValues, required);//does not have default values. Values are RecordInstances (pointers)
+                    //Item 1 = property, Item 2 = Enum
                     return new Tuple<StringBuilder, StringBuilder>(dynamicValues, new StringBuilder());
 
                 default:
@@ -633,6 +635,662 @@ namespace mCASE_ADMIN.DataAccess.mCase
             return sb;
         }
 
+        /// <summary>
+        /// Generates the GetActive....Records() methods. Any child / embedded record will have their own call
+        /// </summary>
+        /// <param name="embedded"></param>
+        /// <returns></returns>
+        public static StringBuilder GetActiveRelatedRecords(HashSet<string> embedded)
+        {
+            var sb = new StringBuilder();
+
+            if (embedded.Any())
+                sb.AppendLine(1.Indent() + "#region Related Records");
+
+            foreach (var value in embedded)
+            {
+                var propertyName = value.GetPropertyNameFromSystemName();
+
+                sb.AppendLine(1.Indent() + $"/// <summary> Gets active related records of type: {propertyName}</summary>");
+                sb.AppendLine(1.Indent() + $"/// <returns>Related records from {propertyName}</returns>");
+                sb.AppendLine(1.Indent() +
+                              $"public List<{propertyName}> GetActive{propertyName}Records() => _eventHelper.GetRelatedRecords(RecordInsData.RecordInstanceID, new {propertyName}Info(_eventHelper).SystemName).Select(x => new {propertyName}(x, _eventHelper)).ToList();"); // property name is added back with enum name appended 
+
+                sb.AppendLine();// add extra space between methods...?
+
+            }
+            if (embedded.Any())
+                sb.AppendLine(1.Indent() + "#endregion Related Records");
+
+            return sb;
+        }
+
+        /// <summary>
+        /// Largest method here generates connections to static files for add, remove, clear if method has enumerated values
+        /// </summary>
+        /// <param name="className"></param>
+        /// <param name="addDefaults"></param>
+        /// <returns></returns>
+        public static StringBuilder AddEnumerableExtensions(string className, bool addDefaults)
+        {
+            var sb = new StringBuilder();
+
+            var entity = $"{className}";
+            var staticProperties = $"{className}Static.PropertiesEnum";
+            var defaultValues = $"{className}Static.DefaultValuesEnum";
+            var propertyMap = $"{className}Static.PropertiesMap";
+            var defaultMap = $"{className}Static.DefaultValuesMap";
+
+            if (addDefaults)
+            {
+                // Map To Enum
+                sb.AppendLine(1.Indent() + "/// <summary>  Maps a list of enums, to the next enum type </summary>");
+                sb.AppendLine(1.Indent() + "/// <typeparam name=\"TEnum\">The enum you are mapping to</typeparam>");
+                sb.AppendLine(1.Indent() + "/// <param name=\"values\">Enum Values to convert</param>");
+                sb.AppendLine(1.Indent() + "/// <returns>Returns the converted list of enums, or default values if not found</returns>");
+                sb.AppendLine(1.Indent() + $"public List<TEnum> MapToEnum<TEnum>(List<{className}Static.DefaultValuesEnum> values) where TEnum : struct => values.Select(x => {defaultMap}[x]).MapTo<TEnum>();");
+
+                //remove by enum predicate 
+                sb.AppendLine(1.Indent() + "/// <summary> Remove all data from enumerable class property that matches predicate </summary>");
+                sb.AppendLine(1.Indent() + "/// <param name=\"propertyEnum\">Class public property name</param>");
+                sb.AppendLine(1.Indent() + "/// <param name=\"predicate\">Default value to remove</param>");
+                sb.AppendLine(1.Indent() + "/// <returns>Amount of values removed. Type errors: -1. null errors: -2</returns>");
+                sb.AppendLine(1.Indent() + $"public int RemoveFrom({staticProperties} propertyEnum, Func<{defaultValues}, bool> predicate) => this.RemoveFrom({propertyMap}[propertyEnum], predicate);");
+            }
+
+            #region Remove by predicate Predicate
+            // remove value by Record instance predicate
+            sb.AppendLine(1.Indent() + "/// <summary>  Remove all data from enumerable class property that matches predicate </summary>");
+            sb.AppendLine(1.Indent() + "/// <param name=\"propertyEnum\">Class public property name</param>");
+            sb.AppendLine(1.Indent() + "/// <param name=\"predicate\">Record instance value to remove</param>");
+            sb.AppendLine(1.Indent() + "/// <returns>Amount of values removed. Type errors: -1. null errors: -2</returns>");
+            sb.AppendLine(1.Indent() + $"public int RemoveFrom({staticProperties} propertyEnum, Func<RecordInstanceData, bool> predicate) => this.RemoveFrom({propertyMap}[propertyEnum], predicate);");
+
+            //remove by string predicate
+            sb.AppendLine(1.Indent() + "/// <summary> Remove all data from enumerable class property that matches predicate </summary>");
+            sb.AppendLine(1.Indent() + "/// <param name=\"propertyEnum\">Class public property name</param>");
+            sb.AppendLine(1.Indent() + "/// <param name=\"predicate\">String value to remove</param>");
+            sb.AppendLine(1.Indent() + "/// <returns>Amount of values removed. Type errors: -1. null errors: -2</returns>");
+            sb.AppendLine(1.Indent() + $"public int RemoveFrom({staticProperties} propertyEnum, Func<string, bool> predicate) => this.RemoveFrom({propertyMap}[propertyEnum], predicate);");
+
+            #endregion
+
+            #region Add To
+
+            // add single
+            sb.AppendLine(1.Indent() + "/// <summary> Add data onto enumerable class property. </summary>");
+            sb.AppendLine(1.Indent() + "/// <param name=\"propertyEnum\">Class public property name</param>");
+            sb.AppendLine(1.Indent() + "/// <param name=\"param\">Value added to Class</param>");
+            sb.AppendLine(1.Indent() +
+                          "/// <returns>Amount of values removed. Type errors: -1. Null errors: -2.</returns>");
+            sb.AppendLine(1.Indent() +
+                          $"public int AddTo({staticProperties} propertyEnum, string param) => this.AddTo({propertyMap}[propertyEnum], param);");
+
+            //add single Record Instance
+            sb.AppendLine(1.Indent() + "/// <summary> Add data onto enumerable class property. </summary>");
+            sb.AppendLine(1.Indent() + "/// <param name=\"propertyEnum\">Class public property name</param>");
+            sb.AppendLine(1.Indent() + "/// <param name=\"param\">Value added to Class</param>");
+            sb.AppendLine(1.Indent() + "/// <returns>Amount of values removed. Type errors: -1. Null errors: -2. RecordInstance not Created: -5.</returns>");
+            sb.AppendLine(1.Indent() + $"public int AddTo({staticProperties} propertyEnum, RecordInstanceData param) => this.AddTo({propertyMap}[propertyEnum], param);");
+
+            if (addDefaults)
+            {
+                //add default value (Enum)
+                sb.AppendLine(1.Indent() + "/// <summary> Add data onto enumerable class property. </summary>");
+                sb.AppendLine(1.Indent() + "/// <param name=\"propertyEnum\">Class public property name</param>");
+                sb.AppendLine(1.Indent() + "/// <param name=\"param\">Value added to Class</param>");
+                sb.AppendLine(1.Indent() + "/// <returns>Amount of values added. Type errors: -1. null errors: -2.</returns>");
+                sb.AppendLine(1.Indent() + $"public int AddTo({staticProperties} propertyEnum, {defaultValues} param) => this.AddTo({propertyMap}[propertyEnum], param);");
+            }
+
+            #endregion
+
+            #region Add Range
+
+            //add range string
+            sb.AppendLine(1.Indent() + "/// <summary> Add data onto enumerable class property. List of string's </summary>");
+            sb.AppendLine(1.Indent() + "/// <param name=\"propertyEnum\">Class public property name</param>");
+            sb.AppendLine(1.Indent() + "/// <param name=\"param\">Value added to Class</param>");
+            sb.AppendLine(1.Indent() + "/// <returns>Amount of values added. Type errors: -1. null errors: -2.</returns>");
+            sb.AppendLine(1.Indent() + $"public int AddRangeTo({staticProperties} propertyEnum, List<string> param) => this.AddRangeTo({propertyMap}[propertyEnum], param);");
+
+            //add range Record Instance
+            sb.AppendLine(1.Indent() + "/// <summary> Add data onto enumerable class property. List of RecordInstanceData's </summary>");
+            sb.AppendLine(1.Indent() + "/// <param name=\"propertyEnum\">Class public property name</param>");
+            sb.AppendLine(1.Indent() + "/// <param name=\"param\">Value added to Class</param>");
+            sb.AppendLine(1.Indent() + "/// <returns>Amount of values added. Type errors: -1. null errors: -2. RecordInstance not Created: -5</returns>");
+            sb.AppendLine(1.Indent() + $"public int AddRangeTo({staticProperties} propertyEnum, List<RecordInstanceData> param) => this.AddRangeTo({propertyMap}[propertyEnum], param);");
+
+
+            if (addDefaults)
+            {
+                //add default value range (Enum)
+                sb.AppendLine(1.Indent() + $"/// <summary>  Add data onto enumerable class property. List of {defaultValues}'s </summary>");
+                sb.AppendLine(1.Indent() + "/// <param name=\"propertyEnum\">Class public property name</param>");
+                sb.AppendLine(1.Indent() + "/// <param name=\"param\">Value added to Class</param>");
+                sb.AppendLine(1.Indent() + "/// <returns>Amount of values added. Type errors: -1. null errors: -2.</returns>");
+                sb.AppendLine(1.Indent() + $"public int AddRangeTo({staticProperties} propertyEnum, List<{defaultValues}> param) => this.AddRangeTo({propertyMap}[propertyEnum], param);");
+
+            }
+
+            #endregion
+            if (addDefaults)
+            {
+                #region Clear With Default Values
+
+                //clear
+                sb.AppendLine(1.Indent() + "/// <summary> Clears all existing values from list. </summary>");
+                sb.AppendLine(1.Indent() + "/// <param name=\"propertyEnum\">Class public property name</param>");
+                sb.AppendLine(1.Indent() + "/// <returns>Cleared list = 0. Type errors: -1. null errors: -2.</returns>");
+                sb.AppendLine(1.Indent() + $"public int Clear({staticProperties} propertyEnum) => this.Clear<{entity}, {defaultValues}>({propertyMap}[propertyEnum]);");
+
+                #endregion
+            }
+            else
+            {
+                #region Clear Without DefaultValues
+
+                //clear
+                sb.AppendLine(1.Indent() + "/// <summary>  Clears all existing values from list. </summary>");
+                sb.AppendLine(1.Indent() + "/// <param name=\"propertyEnum\">Class public property name</param>");
+                sb.AppendLine(1.Indent() + "/// <returns>Cleared list = 0. Type errors: -1. null errors: -2.</returns>");
+                sb.AppendLine(1.Indent() + $"public int Clear({staticProperties} propertyEnum) => this.Clear<{entity}, {staticProperties}>({propertyMap}[propertyEnum]);");
+
+                #endregion
+            }
+
+            return sb;
+        }
+
+        public static StringBuilder AddConstantMethods(bool addDefaults, List<Tuple<string, string, bool, string, string>> requiredFields, HashSet<Tuple<string, string>> fields, string className)
+        {
+            var sb = new StringBuilder();
+            var defaultValues = $"{className}Static.DefaultValuesEnum";
+
+            // Conditionally Required Fields 
+            sb.AppendLine(1.Indent() + "/// <summary>Checks all required fields in Datalist</summary>");
+            sb.AppendLine(1.Indent() + "/// <returns>All required fields that have yet been filled in.</returns>");
+            sb.AppendLine(1.Indent() + "public List<string> RequiredFieldsCheck()");
+            sb.AppendLine(1.Indent() + "{");//open method
+            sb.AppendLine(2.Indent() + "var requiredFields = new List<string>();");
+
+            for (var i = 0; i < requiredFields.Count; i++)
+            {
+                var required = requiredFields[i];
+                var check = AddSaveRecordCheckForRequiredProperty(i, required, fields, defaultValues);
+
+                if (!string.IsNullOrEmpty(check))
+                    sb.AppendLine(2.Indent() + check);
+            }
+            sb.AppendLine(2.Indent() + "if(requiredFields.Count > 0) _eventHelper.AddWarningLog($\"[{SystemName}][{RecordInsData.RecordInstanceID}]: Required fields check returned {requiredFields.Count} mandatory field(s) unfilled\");");
+            sb.AppendLine(2.Indent() + "return requiredFields;");
+            sb.AppendLine(1.Indent() + "}");//close method
+
+            // Try Save record
+            sb.AppendLine(1.Indent() + "/// <summary> Attempts to pass all required fields prior to saving recordInstanceData</summary>");
+            sb.AppendLine(1.Indent() + "/// <returns>A list of all unfilled required fields. Empty list means successfully saved</returns>");
+            sb.AppendLine(1.Indent() + "public List<string> TrySaveRecord()");
+            sb.AppendLine(1.Indent() + "{");//open method
+            sb.AppendLine(2.Indent() + "var requiredFields = RequiredFieldsCheck();");
+            sb.AppendLine(2.Indent() + "if(requiredFields.Count > 0) return requiredFields;");
+            sb.AppendLine(2.Indent() + "var status = SaveRecord(false);");
+            sb.AppendLine(2.Indent() + "if (status == EventStatusCode.Success) return new List<string>();");
+            sb.AppendLine(2.Indent() + "return new List<string>(){ \"Error in saving, check error log for exception\"};");
+            sb.AppendLine(1.Indent() + "}");//close method
+
+            // Save record
+            sb.AppendLine(1.Indent() + "/// <summary> Save RecordInstanceData without requirement checks</summary>");
+            sb.AppendLine(1.Indent() + "/// <returns>EventStatusCode.Success, or Failure if exception thrown. If Exception thrown, it will be logged to error log</returns>");
+            sb.AppendLine(1.Indent() + "public EventStatusCode SaveRecord() => SaveRecord(false);");
+
+            // Delete record
+            sb.AppendLine(1.Indent() + "/// <summary> Attempts to update status field on record instance to soft deleted</summary>");
+            sb.AppendLine(1.Indent() + "/// <returns>EventStatusCode.Success, or Failure if exception thrown. If Exception thrown, it will be logged to error log</returns>");
+            sb.AppendLine(1.Indent() + "public EventStatusCode SoftDelete()");
+            sb.AppendLine(1.Indent() + "{");//open method
+            sb.AppendLine(2.Indent() + "RecordInsData.Status = MCaseEventConstants.RecordStatusDeleted;");
+            sb.AppendLine(2.Indent() + "RecordInsData.FrozenInd = true;");
+            sb.AppendLine(2.Indent() + "return SaveRecord(true);");
+            sb.AppendLine(1.Indent() + "}");//close method
+
+            //logging
+            sb.AppendLine(1.Indent() + "public void LogDebug(string log) => _eventHelper.AddDebugLog($\"[{SystemName}][{RecordInsData.RecordInstanceID}]: {log}\");");
+            sb.AppendLine(1.Indent() + "public void LogInfo(string log) => _eventHelper.AddInfoLog($\"[{SystemName}][{RecordInsData.RecordInstanceID}]: {log}\");");
+            sb.AppendLine(1.Indent() + "public void LogWarning(string log) => _eventHelper.AddWarningLog($\"[{SystemName}][{RecordInsData.RecordInstanceID}]: {log}\");");
+            sb.AppendLine(1.Indent() + "public void LogError(string log) => _eventHelper.AddErrorLog($\"[{SystemName}][{RecordInsData.RecordInstanceID}]: {log}\");");
+
+            sb.AppendLine(1.Indent() + "#region Private");
+
+            // private save record
+            sb.AppendLine(1.Indent() + "/// <summary> Save RecordInstanceData without requirement checks</summary>");
+            sb.AppendLine(1.Indent() + "/// <returns>EventStatusCode</returns>");
+            sb.AppendLine(1.Indent() + "private EventStatusCode SaveRecord(bool delete)");
+            sb.AppendLine(1.Indent() + "{");//open method
+            sb.AppendLine(2.Indent() + "var crud = delete ? \"Deleted\" : \"Saved\";");
+            sb.AppendLine(2.Indent() + "try");
+            sb.AppendLine(2.Indent() + "{");//open try
+            sb.AppendLine(3.Indent() + "_eventHelper.SaveRecord(RecordInsData);");
+            sb.AppendLine(3.Indent() + "_eventHelper.AddInfoLog($\"[Success]-[{SystemName}] {crud} Record: {RecordInsData.RecordInstanceID}\");");
+            sb.AppendLine(3.Indent() + "return EventStatusCode.Success;");
+            sb.AppendLine(2.Indent() + "}");//close try
+            sb.AppendLine(2.Indent() + "catch (Exception ex)");
+            sb.AppendLine(2.Indent() + "{");//open catch
+            sb.AppendLine(3.Indent() + "_eventHelper.AddErrorLog($\"[Failed]-[{SystemName}] {crud} Record: {RecordInsData.RecordInstanceID}\\n=============================================\\n{ex}\\n=============================================\\n\");");
+            sb.AppendLine(3.Indent() + "return EventStatusCode.Failure;");
+            sb.AppendLine(2.Indent() + "}");//close catch
+            sb.AppendLine(1.Indent() + "}");//close method
+
+            if (addDefaults)
+            {
+                //add MultiSelectValue
+                sb.AppendLine(1.Indent() + $"private List<{defaultValues}> GetMultiSelectValue(string sysName)");
+                sb.AppendLine(1.Indent() + "{");//open method
+                sb.AppendLine(2.Indent() + "var storedValue = RecordInsData.GetMultiSelectFieldValue(sysName);");
+                sb.AppendLine(2.Indent() + $"return !storedValue.Any() ? new List<{defaultValues}>() : storedValue.Select(x => x.TryGetValue<{defaultValues}>()).ToList();");
+                sb.AppendLine(1.Indent() + "}");//close method
+
+                //Set Default values
+                sb.AppendLine(1.Indent() + $"private List<{defaultValues}> SetDefaultList(List<{defaultValues}> value, bool invalidValues)");
+                sb.AppendLine(1.Indent() + "{");//open method
+                sb.AppendLine(2.Indent() + $"if (value == null || !value.Any()) return new List<{defaultValues}>();");
+                sb.AppendLine(2.Indent() + $"if (value == new List<{defaultValues}>() " + "{ " + defaultValues + ".Multiselectfalse }) return value;");
+                sb.AppendLine(2.Indent() + $"return invalidValues ? new List<{defaultValues}>()" + "{ " + defaultValues + ".Invalidselection } : value;");
+                sb.AppendLine(1.Indent() + "}");//close method
+            }
+
+            sb.AppendLine(1.Indent() + "#endregion Private");
+
+            return sb;
+        }
+
+        /// <summary>
+        /// [0] field type [1] system name [2] conditionally mandatory [3] Mandated by field [4] mandated by value
+        /// </summary>
+        /// <param name="currentIter"></param>
+        /// <param name="required"></param>
+        /// <param name="fields"></param>
+        /// <param name="defaultEnum"></param>
+        /// <returns></returns>
+        private static string AddSaveRecordCheckForRequiredProperty(int currentIter, Tuple<string, string, bool, string, string> required, HashSet<Tuple<string, string>> fields, string defaultEnum)
+        {
+            var type = required.Item1.GetEnumValue<MCaseTypes>();
+            var privateName = "_" + required.Item2.GetPropertyNameFromSystemName().ToLower();
+            var propertyName = required.Item2.GetPropertyNameFromSystemName();
+
+            if (required.Item3)//field is conditionally mandatory
+            {
+                var mandatedByField = required.Item4;
+                var mandatedByValue = required.Item5;
+                var dependentField = fields.FirstOrDefault(x => string.Equals(x.Item2.GetPropertyNameFromSystemName(), mandatedByField, StringComparison.OrdinalIgnoreCase));
+
+                if (dependentField != null)
+                {
+                    if (string.Equals("Mandated If Field Has Value", mandatedByValue, StringComparison.OrdinalIgnoreCase))
+                    {
+                        var notEmptyCheck = AddNotEmptyConditionalCheck(dependentField, privateName, propertyName, type);
+
+                        return notEmptyCheck;
+                    }
+
+                    //field is the conditional field
+                    var conditionalResult = AddConditionallyMandatoryCheck(currentIter, dependentField, mandatedByValue, privateName, propertyName, type, defaultEnum);
+
+                    return conditionalResult;
+                }
+                //what do we do here?
+                Console.WriteLine();
+
+            }
+
+            return CanSaveValidationHelper(type, privateName, propertyName);
+        }
+
+        private static string AddNotEmptyConditionalCheck(Tuple<string, string> dependentField, string privateName, string propertyName, MCaseTypes type)
+        {
+            var sb = new StringBuilder();
+
+            var dependentType = dependentField.Item1.GetEnumValue<MCaseTypes>();
+            var dependentValue = "_" + dependentField.Item2.GetPropertyNameFromSystemName().ToLower();
+            var helperComment =
+                $"// {propertyName} is a conditionally mandatory field. Dependent on: {dependentField.Item2}, when her values are not empty.";
+
+            switch (dependentType)
+            {
+                //case mCaseTypes.EmbeddedList: Processed after loop completion
+                case MCaseTypes.CascadingDropDown:
+                case MCaseTypes.DropDownList:
+                case MCaseTypes.DynamicDropDown:
+                case MCaseTypes.CascadingDynamicDropDown:
+                    sb.AppendLine($"if({dependentValue} != null && {dependentValue}.Count > 0) ");
+                    sb.AppendLine(2.Indent() + "{");
+                    sb.AppendLine(3.Indent() + helperComment);
+                    sb.AppendLine(3.Indent() + CanSaveValidationHelper(type, privateName, propertyName));
+                    sb.AppendLine(2.Indent() + "}");
+                    break;
+                case MCaseTypes.String:
+                case MCaseTypes.LongString:
+                case MCaseTypes.EmailAddress:
+                case MCaseTypes.Phone:
+                case MCaseTypes.URL:
+                case MCaseTypes.Number:
+                case MCaseTypes.Money:
+                case MCaseTypes.Time:
+                case MCaseTypes.Boolean:
+                case MCaseTypes.ReadonlyField:
+                case MCaseTypes.User:
+                case MCaseTypes.Address:
+                case MCaseTypes.Attachment:
+                    sb.AppendLine($"if(string.IsNullOrEmpty({dependentValue}))");
+                    sb.AppendLine(2.Indent() + "{");
+                    sb.AppendLine(3.Indent() + helperComment);
+                    sb.AppendLine(3.Indent() + CanSaveValidationHelper(type, privateName, propertyName));
+                    sb.AppendLine(2.Indent() + "}");
+                    return sb.ToString();
+                case MCaseTypes.Date:
+                case MCaseTypes.DateTime:
+                    sb.AppendLine($"if({dependentValue} == null)");
+                    sb.AppendLine(2.Indent() + "{");
+                    sb.AppendLine(3.Indent() + helperComment);
+                    sb.AppendLine(3.Indent() + CanSaveValidationHelper(type, privateName, propertyName));
+                    sb.AppendLine(2.Indent() + "}");
+                    return sb.ToString();
+                case MCaseTypes.Section: //need in ce's?
+                case MCaseTypes.Narrative: //need in ce's?
+                case MCaseTypes.Header: //need in ce's?
+                case MCaseTypes.UserRoleSecurityRestrict: //not required in CE's
+                case MCaseTypes.DynamicCalculatedField: //not required in CE's
+                case MCaseTypes.CalculatedField: // not required in CE's 
+                case MCaseTypes.UniqueIdentifier: //not required in CE's
+                case MCaseTypes.EmbeddedDocument: // blob?
+                case MCaseTypes.HiddenField: //not required in CE's
+                case MCaseTypes.LineBreak: //not required in CE's
+                case MCaseTypes.Position0: //not required in CE's
+                case MCaseTypes.Score1: //not required in CE's
+                case MCaseTypes.Score2: //not required in CE's
+                case MCaseTypes.Score3: //not required in CE's
+                case MCaseTypes.Score4: //not required in CE's
+                case MCaseTypes.Score5: //not required in CE's
+                case MCaseTypes.Score6: //not required in CE's
+                default:
+                    return string.Empty;
+            }
+
+            return sb.ToString();
+        }
+
+        private static string CanSaveValidationHelper(MCaseTypes type, string privateName, string propertyName)
+        {
+            switch (type)
+            {
+                //case mCaseTypes.EmbeddedList: Processed after loop completion
+                case MCaseTypes.CascadingDropDown:
+                case MCaseTypes.DropDownList:
+                case MCaseTypes.DynamicDropDown:
+                case MCaseTypes.CascadingDynamicDropDown:
+                    return $"if({privateName} != null && {privateName}.Count == 0) requiredFields.Add(\"{propertyName}\");";
+                case MCaseTypes.String:
+                case MCaseTypes.LongString:
+                case MCaseTypes.EmailAddress:
+                case MCaseTypes.Phone:
+                case MCaseTypes.URL:
+                case MCaseTypes.Number:
+                case MCaseTypes.Money:
+                case MCaseTypes.Time:
+                case MCaseTypes.Boolean:
+                case MCaseTypes.ReadonlyField:
+                case MCaseTypes.User:
+                case MCaseTypes.Address:
+                case MCaseTypes.Attachment:
+                    return $"if(string.IsNullOrEmpty({privateName})) requiredFields.Add(\"{propertyName}\");";
+                case MCaseTypes.Date:
+                case MCaseTypes.DateTime:
+                    return $"if({privateName} == null) requiredFields.Add(\"{propertyName}\");";
+                case MCaseTypes.Section: //need in ce's?
+                case MCaseTypes.Narrative: //need in ce's?
+                case MCaseTypes.Header: //need in ce's?
+                case MCaseTypes.UserRoleSecurityRestrict: //not required in CE's
+                case MCaseTypes.DynamicCalculatedField: //not required in CE's
+                case MCaseTypes.CalculatedField: // not required in CE's 
+                case MCaseTypes.UniqueIdentifier: //not required in CE's
+                case MCaseTypes.EmbeddedDocument: // blob?
+                case MCaseTypes.HiddenField: //not required in CE's
+                case MCaseTypes.LineBreak: //not required in CE's
+                case MCaseTypes.Position0: //not required in CE's
+                case MCaseTypes.Score1: //not required in CE's
+                case MCaseTypes.Score2: //not required in CE's
+                case MCaseTypes.Score3: //not required in CE's
+                case MCaseTypes.Score4: //not required in CE's
+                case MCaseTypes.Score5: //not required in CE's
+                case MCaseTypes.Score6: //not required in CE's
+                default:
+                    return string.Empty;
+            }
+        }
+
+        private static string AddConditionallyMandatoryCheck(int currentIteration, Tuple<string, string> dependentField, string mandatedByValue, string privateName, string propertyName, MCaseTypes mandatoryType, string defaultValue)
+
+        {
+            var sb = new StringBuilder();
+            var type = dependentField.Item1.GetEnumValue<MCaseTypes>();
+            var dependentOnField = "_" + dependentField.Item2.GetPropertyNameFromSystemName().ToLower();
+            var demandsValues = string.Join(",", mandatedByValue.Split(new[] { "~*~" }, StringSplitOptions.None).Where(x => !string.IsNullOrEmpty(x)).Select(x => $"{defaultValue}.{x.GetPropertyNameFromSystemName()}"));
+            var helperComment =
+                $"// {propertyName} is a conditionally mandatory field. Dependent on: {dependentField.Item2}, when her values are any of the following: {demandsValues}";
+            switch (type)
+            {
+                //case mCaseTypes.EmbeddedList: Processed after loop completion
+                case MCaseTypes.CascadingDropDown:
+                case MCaseTypes.DropDownList:
+                    var valuesList = $"new List<{defaultValue}> () " + "{ " + demandsValues + "}";
+
+                    sb.AppendLine($"if({dependentOnField} != null && {dependentOnField}");
+                    sb.AppendLine(3.Indent() + $".Intersect({valuesList})");
+                    sb.AppendLine(3.Indent() + ".Any())");
+                    sb.AppendLine(2.Indent() + "{");
+                    sb.AppendLine(3.Indent() + helperComment);
+                    sb.AppendLine(3.Indent() + CanSaveValidationHelper(mandatoryType, privateName, propertyName));
+                    sb.AppendLine(2.Indent() + "}");
+                    return sb.ToString();
+                case MCaseTypes.DynamicDropDown:
+                case MCaseTypes.CascadingDynamicDropDown:
+                    sb.AppendLine($"if({dependentOnField} != null && {dependentOnField}");
+                    sb.AppendLine(3.Indent() + ".Any())");
+                    sb.AppendLine(2.Indent() + "{");
+                    sb.AppendLine(3.Indent() + helperComment);
+                    sb.AppendLine(3.Indent() + CanSaveValidationHelper(mandatoryType, privateName, propertyName));
+                    sb.AppendLine(2.Indent() + "}");
+                    return sb.ToString();
+                case MCaseTypes.String:
+                case MCaseTypes.LongString:
+                case MCaseTypes.EmailAddress:
+                case MCaseTypes.Phone:
+                case MCaseTypes.URL:
+                case MCaseTypes.Money:
+                case MCaseTypes.Time:
+                case MCaseTypes.Boolean:
+                case MCaseTypes.ReadonlyField:
+                case MCaseTypes.User:
+                case MCaseTypes.Address:
+                case MCaseTypes.Attachment:
+                    var stringDemandsValues = string.Join(",", mandatedByValue
+                        .Split(new[] { "~*~" }, StringSplitOptions.None)
+                        .Where(x => !string.IsNullOrEmpty(x))
+                        .Select(x => $"\"{x}\""));
+
+                    helperComment =
+                        $"// {propertyName} is a conditionally mandatory field. Dependent on: {dependentField.Item2}, when her values are any of the following: {stringDemandsValues}";
+
+                    var stringValuesList = "new List<string> () " + "{ " + stringDemandsValues + "}";
+
+                    sb.AppendLine($"if(!string.IsNullOrEmpty({dependentOnField}) && {stringValuesList}.Contains({dependentOnField}, StringComparer.OrdinalIgnoreCase))");
+                    sb.AppendLine(2.Indent() + "{");
+                    sb.AppendLine(3.Indent() + helperComment);
+                    sb.AppendLine(3.Indent() + CanSaveValidationHelper(mandatoryType, privateName, propertyName));
+                    sb.AppendLine(2.Indent() + "}");
+                    return sb.ToString();
+                case MCaseTypes.Number:
+
+                    var values = mandatedByValue.Split(new[] { "~*~" }, StringSplitOptions.None);
+                    helperComment =
+                        $"// {propertyName} is a conditionally mandatory field. Dependent on: {dependentField.Item2}, when her value is greater than {values.First()} and less than {values.Last()}";
+                    var localLow = $"lowValue_{currentIteration}";
+                    var localHigh = $"highValue_{currentIteration}";
+                    var currentVal = $"dependentOnField_{currentIteration}";
+
+                    sb.AppendLine($"if (BigInteger.TryParse(\"{values.First()}\", out var {localLow}) && BigInteger.TryParse(\"{values.Last()}\", out var {localHigh}) && BigInteger.TryParse({dependentOnField}, out var {currentVal}))");
+                    sb.AppendLine(2.Indent() + "{");//open if
+                    sb.AppendLine(3.Indent() + $"if ({localLow} <= {currentVal} && {currentVal} <= {localHigh})");
+                    sb.AppendLine(3.Indent() + "{");//open embedded if
+                    sb.AppendLine(4.Indent() + helperComment);
+                    sb.AppendLine(4.Indent() + CanSaveValidationHelper(mandatoryType, privateName, propertyName));
+                    sb.AppendLine(3.Indent() + "}");//close embedded if
+                    sb.AppendLine(2.Indent() + "}");//close if
+
+                    return sb.ToString();
+                case MCaseTypes.Date:
+                case MCaseTypes.DateTime:
+                    return string.Empty;//TODO 
+                case MCaseTypes.Section: //need in ce's?
+                case MCaseTypes.Narrative: //need in ce's?
+                case MCaseTypes.Header: //need in ce's?
+                case MCaseTypes.UserRoleSecurityRestrict: //not required in CE's
+                case MCaseTypes.DynamicCalculatedField: //not required in CE's
+                case MCaseTypes.CalculatedField: // not required in CE's 
+                case MCaseTypes.UniqueIdentifier: //not required in CE's
+                case MCaseTypes.EmbeddedDocument: // blob?
+                case MCaseTypes.HiddenField: //not required in CE's
+                case MCaseTypes.LineBreak: //not required in CE's
+                case MCaseTypes.Position0: //not required in CE's
+                case MCaseTypes.Score1: //not required in CE's
+                case MCaseTypes.Score2: //not required in CE's
+                case MCaseTypes.Score3: //not required in CE's
+                case MCaseTypes.Score4: //not required in CE's
+                case MCaseTypes.Score5: //not required in CE's
+                case MCaseTypes.Score6: //not required in CE's
+                default:
+                    return string.Empty;
+            }
+        }
+
+        public static StringBuilder GenerateEnums(List<string> fieldSet, string className, bool titleCase)
+        {
+            var sb = new StringBuilder();
+
+            var distinct = fieldSet.Distinct().OrderBy(x => x).ToList();//order enums by name
+
+            sb.AppendLine(BuildEnums(distinct, className).ToString());
+
+            sb.AppendLine(BuildEnumMapper(distinct, className, titleCase).ToString());
+
+            return sb;
+        }
+
+        private static StringBuilder BuildEnums(List<string> fieldSet, string className)
+        {
+            var sb = new StringBuilder();
+
+            var distinctEnums = new List<string>();
+
+            if (fieldSet.Count == 0)
+                return sb;
+
+            sb.Append(1.Indent() + $"public enum {className}Enum" + "{ Invalidselection,"); //open
+
+            for (var i = 0; i < fieldSet.Count; i++)
+            {
+                var field = fieldSet[i];
+
+                if (field.Contains("\""))
+                {
+                    field = field.Replace("\"", "\\\"");
+                }
+
+                var enumName = field.GetPropertyNameFromSystemName();
+
+                if (distinctEnums.Contains(enumName))
+                {
+                    sb.Append(enumName + $"_{i}_,"); //generate enum duplicate
+                }
+                else
+                {
+                    sb.Append(enumName + ","); //generate enum 
+                    distinctEnums.Add(enumName);
+                }
+            }
+
+            sb.Append("}"); //close enum
+
+            return sb;
+        }
+
+        private static StringBuilder BuildEnumMapper(List<string> fieldSet, string className, bool titleCase)
+        {
+            var sb = new StringBuilder();
+
+            var distinctEnums = new List<string>();
+
+            if (fieldSet.Count == 0)
+                return sb;
+
+            var staticClass = $"{className}Enum";
+
+            sb.Append(1.Indent() + $"public static Dictionary<{staticClass}, string> {className}Map => new Dictionary<{staticClass}, string>()" + "{ {" + $"{staticClass}.Invalidselection, \"#~Invalid Selection~#\"" + "},"); //open
+
+            for (var i = 0; i < fieldSet.Count; i++)
+            {
+                var field = fieldSet[i];
+
+                if (field.Contains("\""))
+                {
+                    field = field.Replace("\"", "\\\"");
+                }
+
+                var value = titleCase ? $"\"{field.GetPropertyNameFromSystemName()}\"" : $"\"{field}\""; //get value
+
+                var enumName = field.GetPropertyNameFromSystemName();
+
+                if (distinctEnums.Contains(enumName))
+                {
+                    distinctEnums.Add(enumName);
+                    enumName += $"_{i}_";
+                }
+                var key = enumName;
+
+                sb.Append("{" + $"{staticClass}.{key}, {value}" + "},");
+            }
+
+            sb.Append("};"); //close dict
+
+            return sb;
+        }
+
+        public static StringBuilder GenerateRelationships(JToken? relationships)
+        {
+            var sb = new StringBuilder();
+
+            if (relationships == null || !relationships.Any())
+                return sb;
+
+            var parentRelationships =
+                relationships.ParseChildren(ListTransferFields.ParentSystemName.GetDescription());
+
+            if (parentRelationships.Any())
+            {
+                var distinctParentRelationships = parentRelationships.Distinct();
+                sb.Append(GenerateEnums(distinctParentRelationships.ToList(), "ParentRelationships", false));
+            }
+
+            var childRelationships =
+                relationships.ParseChildren(ListTransferFields.ChildSystemName.GetDescription());
+
+            if (!childRelationships.Any()) return sb;
+
+            var distinctChildRelationships = childRelationships.Distinct();
+            sb.Append(GenerateEnums(distinctChildRelationships.ToList(), "ChildRelationships", false));
+
+            return sb;
+        }
+
         #endregion
         #region Static File Extensions
 
@@ -643,13 +1301,13 @@ namespace mCASE_ADMIN.DataAccess.mCase
         /// <param name="namespace_"></param>
         /// <param name="staticUsings"></param>
         /// <returns></returns>
-        public static string GenerateStaticFile(string namespace_, string staticUsings)
+        public static string GenerateStaticFile(string nameSpace, string staticUsings)
         {
             var sb = new StringBuilder();
 
             sb.AppendLine( //TODO continue to add usings, as more and more validations are made
                 staticUsings);
-            sb.AppendLine($"namespace {namespace_}"); //TODO: project specific namespace
+            sb.AppendLine($"namespace {nameSpace}"); //TODO: project specific namespace
             sb.AppendLine("{"); //Open class
             sb.AppendLine(0.Indent() + "/// <summary> Much to learn, this static extension still has. Powerful tool it can be. But remember, foresee the consequences of your code you must. With caution, use this extension you should. </summary>"); //static class
             sb.AppendLine(0.Indent() + "public static class FactoryExtensions"); //static class
@@ -671,7 +1329,7 @@ namespace mCASE_ADMIN.DataAccess.mCase
         {
             var sb = new StringBuilder();
 
-            sb.AppendLine(1.Indent() + "/// <summary> If string is not null or empty, this method returns an accurate boolean from a string based off of MCaseEventConstants.TrueValues && MCaseEventConstants.FalseValues</summary>"); //static class
+            sb.AppendLine(1.Indent() + "/// <summary> If string is not null or empty, this method returns an accurate boolean from a string based off of MCaseEventConstants.TrueValues and MCaseEventConstants.FalseValues</summary>"); //static class
             sb.AppendLine(1.Indent() + "public static bool? ToBoolean(this string value)");
             sb.AppendLine(1.Indent() + "{");//open method
             sb.AppendLine(2.Indent() + "if (string.IsNullOrEmpty(value)) return null;");
@@ -1073,654 +1731,5 @@ namespace mCASE_ADMIN.DataAccess.mCase
         }
 
         #endregion
-
-        /// <summary>
-        /// Generates the GetActive....Records() methods. Any child / embedded record will have their own call
-        /// </summary>
-        /// <param name="embedded"></param>
-        /// <returns></returns>
-        public static StringBuilder GetActiveRelatedRecords(HashSet<string> embedded)
-        {
-            var sb = new StringBuilder();
-
-            if(embedded.Any())
-                sb.AppendLine(1.Indent() + "#region Related Records");
-            foreach (var value in embedded)
-            {
-                var propertyName = value.GetPropertyNameFromSystemName();
-
-                sb.AppendLine(1.Indent() + $"/// <summary> Gets active related records of type: {propertyName}</summary>");
-                sb.AppendLine(1.Indent() + $"/// <returns>Related children from {propertyName}</returns>");
-                sb.AppendLine(1.Indent() +
-                              $"public List<{propertyName}> GetActive{propertyName}Records() => _eventHelper.GetRelatedRecords(RecordInsData.RecordInstanceID, new {propertyName}Info(_eventHelper).SystemName).Select(x => new {propertyName}(x, _eventHelper)).ToList();"); // property name is added back with enum name appended 
-
-            }
-            if (embedded.Any())
-                sb.AppendLine(1.Indent() + "#endregion Related Records");
-            
-            return sb;
-        }
-
-        /// <summary>
-        /// Largest method here generates connections to static files for add, remove, clear if method has enumerated values
-        /// </summary>
-        /// <param name="className"></param>
-        /// <param name="addDefaults"></param>
-        /// <param name="requiredFields"></param>
-        /// <param name="fields"></param>
-        /// <returns></returns>
-        public static StringBuilder AddEnumerableExtensions(string className, bool addDefaults, List<Tuple<string, string, bool, string, string>> requiredFields, HashSet<Tuple<string, string>> fields)
-        {
-            var sb = new StringBuilder();
-
-            var entity = $"{className}";
-            var staticProperties = $"{className}Static.PropertiesEnum";
-            var defaultValues = $"{className}Static.DefaultValuesEnum";
-            var propertyMap = $"{className}Static.PropertiesMap";
-            var defaultMap = $"{className}Static.DefaultValuesMap";
-            
-            if (addDefaults)
-            {
-                // Map To Enum
-                sb.AppendLine(1.Indent() + "/// <summary>  Maps a list of enums, to the next enum type </summary>");
-                sb.AppendLine(1.Indent() + "/// <typeparam name=\"TEnum\">The enum you are mapping to</typeparam>");
-                sb.AppendLine(1.Indent() + "/// <param name=\"values\">Enum Values to convert</param>");
-                sb.AppendLine(1.Indent() + "/// <returns>Returns the converted list of enums, or default values if not found</returns>");
-                sb.AppendLine(1.Indent() + $"public List<TEnum> MapToEnum<TEnum>(List<{className}Static.DefaultValuesEnum> values) where TEnum : struct => values.Select(x => {defaultMap}[x]).MapTo<TEnum>();");
-
-                //remove by enum predicate 
-                sb.AppendLine(1.Indent() + "/// <summary> Remove all data from enumerable class property that matches predicate </summary>");
-                sb.AppendLine(1.Indent() + "/// <param name=\"propertyEnum\">Class public property name</param>");
-                sb.AppendLine(1.Indent() + "/// <param name=\"predicate\">Default value to remove</param>");
-                sb.AppendLine(1.Indent() + "/// <returns>Amount of values removed. Type errors: -1. null errors: -2</returns>");
-                sb.AppendLine(1.Indent() + $"public int RemoveFrom({staticProperties} propertyEnum, Func<{defaultValues}, bool> predicate) => this.RemoveFrom({propertyMap}[propertyEnum], predicate);");
-            }
-
-            #region Remove by predicate Predicate
-            // remove value by Record instance predicate
-            sb.AppendLine(1.Indent() + "/// <summary>  Remove all data from enumerable class property that matches predicate </summary>");
-            sb.AppendLine(1.Indent() + "/// <param name=\"propertyEnum\">Class public property name</param>");
-            sb.AppendLine(1.Indent() + "/// <param name=\"predicate\">Record instance value to remove</param>");
-            sb.AppendLine(1.Indent() + "/// <returns>Amount of values removed. Type errors: -1. null errors: -2</returns>");
-            sb.AppendLine(1.Indent() + $"public int RemoveFrom({staticProperties} propertyEnum, Func<RecordInstanceData, bool> predicate) => this.RemoveFrom({propertyMap}[propertyEnum], predicate);");
-
-            //remove by string predicate
-            sb.AppendLine(1.Indent() + "/// <summary> Remove all data from enumerable class property that matches predicate </summary>");
-            sb.AppendLine(1.Indent() + "/// <param name=\"propertyEnum\">Class public property name</param>");
-            sb.AppendLine(1.Indent() + "/// <param name=\"predicate\">String value to remove</param>");
-            sb.AppendLine(1.Indent() + "/// <returns>Amount of values removed. Type errors: -1. null errors: -2</returns>");
-            sb.AppendLine(1.Indent() + $"public int RemoveFrom({staticProperties} propertyEnum, Func<string, bool> predicate) => this.RemoveFrom({propertyMap}[propertyEnum], predicate);");
-
-            #endregion
-
-            #region Add To
-
-            // add single
-            sb.AppendLine(1.Indent() + "/// <summary> Add data onto enumerable class property. </summary>");
-            sb.AppendLine(1.Indent() + "/// <param name=\"propertyEnum\">Class public property name</param>");
-            sb.AppendLine(1.Indent() + "/// <param name=\"param\">Value added to Class</param>");
-            sb.AppendLine(1.Indent() +
-                          "/// <returns>Amount of values removed. Type errors: -1. Null errors: -2.</returns>");
-            sb.AppendLine(1.Indent() +
-                          $"public int AddTo({staticProperties} propertyEnum, string param) => this.AddTo({propertyMap}[propertyEnum], param);");
-
-            //add single Record Instance
-            sb.AppendLine(1.Indent() + "/// <summary> Add data onto enumerable class property. </summary>");
-            sb.AppendLine(1.Indent() + "/// <param name=\"propertyEnum\">Class public property name</param>");
-            sb.AppendLine(1.Indent() + "/// <param name=\"param\">Value added to Class</param>");
-            sb.AppendLine(1.Indent() + "/// <returns>Amount of values removed. Type errors: -1. Null errors: -2. RecordInstance not Created: -5.</returns>");
-            sb.AppendLine(1.Indent() + $"public int AddTo({staticProperties} propertyEnum, RecordInstanceData param) => this.AddTo({propertyMap}[propertyEnum], param);");
-
-            if (addDefaults)
-            {
-                //add default value (Enum)
-                sb.AppendLine(1.Indent() + "/// <summary> Add data onto enumerable class property. </summary>");
-                sb.AppendLine(1.Indent() + "/// <param name=\"propertyEnum\">Class public property name</param>");
-                sb.AppendLine(1.Indent() + "/// <param name=\"param\">Value added to Class</param>");
-                sb.AppendLine(1.Indent() + "/// <returns>Amount of values added. Type errors: -1. null errors: -2.</returns>");
-                sb.AppendLine(1.Indent() + $"public int AddTo({staticProperties} propertyEnum, {defaultValues} param) => this.AddTo({propertyMap}[propertyEnum], param);");
-            }
-
-            #endregion
-
-            #region Add Range
-
-            //add range string
-            sb.AppendLine(1.Indent() + "/// <summary> Add data onto enumerable class property. List of string's </summary>");
-            sb.AppendLine(1.Indent() + "/// <param name=\"propertyEnum\">Class public property name</param>");
-            sb.AppendLine(1.Indent() + "/// <param name=\"param\">Value added to Class</param>");
-            sb.AppendLine(1.Indent() + "/// <returns>Amount of values added. Type errors: -1. null errors: -2.</returns>");
-            sb.AppendLine(1.Indent() + $"public int AddRangeTo({staticProperties} propertyEnum, List<string> param) => this.AddRangeTo({propertyMap}[propertyEnum], param);");
-
-            //add range Record Instance
-            sb.AppendLine(1.Indent() + "/// <summary> Add data onto enumerable class property. List of RecordInstanceData's </summary>");
-            sb.AppendLine(1.Indent() + "/// <param name=\"propertyEnum\">Class public property name</param>");
-            sb.AppendLine(1.Indent() + "/// <param name=\"param\">Value added to Class</param>");
-            sb.AppendLine(1.Indent() + "/// <returns>Amount of values added. Type errors: -1. null errors: -2. RecordInstance not Created: -5</returns>");
-            sb.AppendLine(1.Indent() + $"public int AddRangeTo({staticProperties} propertyEnum, List<RecordInstanceData> param) => this.AddRangeTo({propertyMap}[propertyEnum], param);");
-
-
-            if (addDefaults)
-            {
-                //add default value range (Enum)
-                sb.AppendLine(1.Indent() + $"/// <summary>  Add data onto enumerable class property. List of {defaultValues}'s </summary>");
-                sb.AppendLine(1.Indent() + "/// <param name=\"propertyEnum\">Class public property name</param>");
-                sb.AppendLine(1.Indent() + "/// <param name=\"param\">Value added to Class</param>");
-                sb.AppendLine(1.Indent() + "/// <returns>Amount of values added. Type errors: -1. null errors: -2.</returns>");
-                sb.AppendLine(1.Indent() + $"public int AddRangeTo({staticProperties} propertyEnum, List<{defaultValues}> param) => this.AddRangeTo({propertyMap}[propertyEnum], param);");
-
-            }
-
-            #endregion
-            if (addDefaults)
-            {
-                #region Clear With Default Values
-
-                //clear
-                sb.AppendLine(1.Indent() + "/// <summary> Clears all existing values from list. </summary>");
-                sb.AppendLine(1.Indent() + "/// <param name=\"propertyEnum\">Class public property name</param>");
-                sb.AppendLine(1.Indent() + "/// <returns>Cleared list = 0. Type errors: -1. null errors: -2.</returns>");
-                sb.AppendLine(1.Indent() + $"public int Clear({staticProperties} propertyEnum) => this.Clear<{entity}, {defaultValues}>({propertyMap}[propertyEnum]);");
-
-                #endregion
-            }
-            else
-            {
-                #region Clear Without DefaultValues
-
-                //clear
-                sb.AppendLine(1.Indent() + "/// <summary>  Clears all existing values from list. </summary>");
-                sb.AppendLine(1.Indent() + "/// <param name=\"propertyEnum\">Class public property name</param>");
-                sb.AppendLine(1.Indent() + "/// <returns>Cleared list = 0. Type errors: -1. null errors: -2.</returns>");
-                sb.AppendLine(1.Indent() + $"public int Clear({staticProperties} propertyEnum) => this.Clear<{entity}, {staticProperties}>({propertyMap}[propertyEnum]);");
-
-                #endregion
-            }
-
-            return sb;
-        }
-
-        public static StringBuilder AddConstantMethods(bool addDefaults, List<Tuple<string, string, bool, string, string>> requiredFields, HashSet<Tuple<string, string>> fields, string className)
-        {
-            var sb = new StringBuilder();
-            var defaultValues = $"{className}Static.DefaultValuesEnum";
-            
-            // Can save record
-            sb.AppendLine(1.Indent() + "/// <summary>Checks all required fields in Datalist</summary>");
-            sb.AppendLine(1.Indent() + "/// <returns>All required fields that have yet been filled in.</returns>");
-            sb.AppendLine(1.Indent() + "public List<string> RequiredFieldsCheck()");
-            sb.AppendLine(1.Indent() + "{");//open method
-            sb.AppendLine(2.Indent() + "var requiredFields = new List<string>();");
-
-            for(var i = 0; i < requiredFields.Count; i++)
-            {
-                var required = requiredFields[i];
-                var check = AddSaveRecordCheckForRequiredProperty(i, required, fields, defaultValues);
-
-                if (!string.IsNullOrEmpty(check))
-                    sb.AppendLine(2.Indent() + check);
-            }
-            sb.AppendLine(2.Indent() + "if(requiredFields.Count > 0) _eventHelper.AddWarningLog($\"[{SystemName}][{RecordInsData.RecordInstanceID}]: Required fields check returned {requiredFields.Count} mandatory field(s) unfilled\");");
-            sb.AppendLine(2.Indent() + "return requiredFields;");
-            sb.AppendLine(1.Indent() + "}");//close method
-
-
-
-            // Try Save record
-            sb.AppendLine(1.Indent() + "/// <summary> Attempts to pass all required fields prior to saving recordInstanceData</summary>");
-            sb.AppendLine(1.Indent() + "/// <returns>A list of all unfilled required fields. Empty list means successfully saved</returns>");
-            sb.AppendLine(1.Indent() + "public List<string> TrySaveRecord()");
-            sb.AppendLine(1.Indent() + "{");//open method
-            sb.AppendLine(2.Indent() + "var requiredFields = RequiredFieldsCheck();");
-            sb.AppendLine(2.Indent() + "if(requiredFields.Count > 0) return requiredFields;");
-            sb.AppendLine(2.Indent() + "var status = SaveRecord(false);");
-            sb.AppendLine(2.Indent() + "if (status == EventStatusCode.Success) return new List<string>();");
-            sb.AppendLine(2.Indent() + "return new List<string>(){ \"Error in saving, check error log for exception\"};");
-            sb.AppendLine(1.Indent() + "}");//close method
-
-            // Save record
-            sb.AppendLine(1.Indent() + "/// <summary> Save RecordInstanceData without requirement checks</summary>");
-            sb.AppendLine(1.Indent() + "/// <returns>EventStatusCode.Success, or Failure if exception thrown. If Exception thrown, it will be logged to error log</returns>");
-            sb.AppendLine(1.Indent() + "public EventStatusCode SaveRecord() => SaveRecord(false);");
-
-            // Delete record
-            sb.AppendLine(1.Indent() + "/// <summary> Attempts to update status field on record instance to soft deleted</summary>");
-            sb.AppendLine(1.Indent() + "/// <returns>EventStatusCode.Success, or Failure if exception thrown. If Exception thrown, it will be logged to error log</returns>");
-            sb.AppendLine(1.Indent() + "public EventStatusCode SoftDelete()");
-            sb.AppendLine(1.Indent() + "{");//open method
-            sb.AppendLine(2.Indent() + "RecordInsData.Status = MCaseEventConstants.RecordStatusDeleted;");
-            sb.AppendLine(2.Indent() + "RecordInsData.FrozenInd = true;");
-            sb.AppendLine(2.Indent() + "return SaveRecord(true);");
-            sb.AppendLine(1.Indent() + "}");//close method
-
-            
-
-            sb.AppendLine(1.Indent() + "public void LogDebug(string log) => _eventHelper.AddDebugLog($\"[{SystemName}][{RecordInsData.RecordInstanceID}]: {log}\");");
-            sb.AppendLine(1.Indent() + "public void LogInfo(string log) => _eventHelper.AddInfoLog($\"[{SystemName}][{RecordInsData.RecordInstanceID}]: {log}\");");
-            sb.AppendLine(1.Indent() + "public void LogWarning(string log) => _eventHelper.AddWarningLog($\"[{SystemName}][{RecordInsData.RecordInstanceID}]: {log}\");");
-            sb.AppendLine(1.Indent() + "public void LogError(string log) => _eventHelper.AddErrorLog($\"[{SystemName}][{RecordInsData.RecordInstanceID}]: {log}\");");
-
-            sb.AppendLine(1.Indent() + "#region Private");
-
-            // private save record
-            sb.AppendLine(1.Indent() + "/// <summary> Save RecordInstanceData without requirement checks</summary>");
-            sb.AppendLine(1.Indent() + "/// <returns>EventStatusCode</returns>");
-            sb.AppendLine(1.Indent() + "private EventStatusCode SaveRecord(bool delete)");
-            sb.AppendLine(1.Indent() + "{");//open method
-            sb.AppendLine(2.Indent() + "var crud = delete ? \"Deleted\" : \"Saved\";");
-            sb.AppendLine(2.Indent() + "try");
-            sb.AppendLine(2.Indent() + "{");//open try
-            sb.AppendLine(3.Indent() + "_eventHelper.SaveRecord(RecordInsData);");
-            sb.AppendLine(3.Indent() + "_eventHelper.AddInfoLog($\"[Success]-[{SystemName}] {crud} Record: {RecordInsData.RecordInstanceID}\");");
-            sb.AppendLine(3.Indent() + "return EventStatusCode.Success;");
-            sb.AppendLine(2.Indent() + "}");//close try
-            sb.AppendLine(2.Indent() + "catch (Exception ex)");
-            sb.AppendLine(2.Indent() + "{");//open catch
-            sb.AppendLine(3.Indent() + "_eventHelper.AddErrorLog($\"[Failed]-[{SystemName}] {crud} Record: {RecordInsData.RecordInstanceID}\\n=============================================\\n{ex}\\n=============================================\\n\");");
-            sb.AppendLine(3.Indent() + "return EventStatusCode.Failure;");
-            sb.AppendLine(2.Indent() + "}");//close catch
-            sb.AppendLine(1.Indent() + "}");//close method
-
-            if (addDefaults)
-            {
-                //add MultiSelectValue
-                sb.AppendLine(1.Indent() + $"private List<{defaultValues}> GetMultiSelectValue(string sysName)");
-                sb.AppendLine(1.Indent() + "{");//open method
-                sb.AppendLine(2.Indent() + "var storedValue = RecordInsData.GetMultiSelectFieldValue(sysName);");
-                sb.AppendLine(2.Indent() + $"return !storedValue.Any() ? new List<{defaultValues}>() : storedValue.Select(x => x.TryGetValue<{defaultValues}>()).ToList();");
-                sb.AppendLine(1.Indent() + "}");//close method
-
-                //Set Default values
-                sb.AppendLine(1.Indent() + $"private List<{defaultValues}> SetDefaultList(List<{defaultValues}> value, bool invalidValues)");
-                sb.AppendLine(1.Indent() + "{");//open method
-                sb.AppendLine(2.Indent() + $"if (value == null || !value.Any()) return new List<{defaultValues}>();");
-                sb.AppendLine(2.Indent() + $"if (value == new List<{defaultValues}>() " + "{ " + defaultValues + ".Multiselectfalse }) return value;");
-                sb.AppendLine(2.Indent() + $"return invalidValues ? new List<{defaultValues}>()" + "{ " + defaultValues + ".Invalidselection } : value;");
-                sb.AppendLine(1.Indent() + "}");//close method
-            }
-
-            sb.AppendLine(1.Indent() + "#endregion Private");
-
-            return sb;
-        }
-
-        /// <summary>
-        /// [0] field type [1] system name [2] conditionally mandatory [3] Mandated by field [4] mandated by value
-        /// </summary>
-        /// <param name="required"></param>
-        /// <returns></returns>
-        private static string AddSaveRecordCheckForRequiredProperty(int currentIter, Tuple<string, string, bool, string, string> required, HashSet<Tuple<string, string>> fields, string defaultEnum)
-        {
-            var type = required.Item1.GetEnumValue<MCaseTypes>();
-            var privateName = "_" + required.Item2.GetPropertyNameFromSystemName().ToLower();
-            var propertyName = required.Item2.GetPropertyNameFromSystemName();
-            
-            if (required.Item3)//field is conditionally mandatory
-            {
-                var mandatedByField = required.Item4;
-                var mandatedByValue = required.Item5;
-                var dependentField = fields.FirstOrDefault(x => string.Equals(x.Item2.GetPropertyNameFromSystemName(), mandatedByField, StringComparison.OrdinalIgnoreCase));
-
-                if (dependentField != null)
-                {
-                    if (string.Equals("Mandated If Field Has Value", mandatedByValue, StringComparison.OrdinalIgnoreCase))
-                    {
-                        var notEmptyCheck = AddNotEmptyConditionalCheck(dependentField, privateName, propertyName, type);
-
-                        return notEmptyCheck;
-                    }
-
-                    //field is the conditional field
-                    var conditionalResult = AddConditionallyMandatoryCheck(currentIter, dependentField, mandatedByValue, privateName, propertyName, type, defaultEnum);
-
-                    return conditionalResult;
-                }
-                //what do we do here?
-                Console.WriteLine();
-
-            }
-
-            return CanSaveValidationHelper(type, privateName, propertyName);
-        }
-
-        private static string AddNotEmptyConditionalCheck(Tuple<string, string> dependentField, string privateName, string propertyName, MCaseTypes type)
-        {
-            var sb = new StringBuilder();
-
-            var dependentType = dependentField.Item1.GetEnumValue<MCaseTypes>();
-            var dependentValue = "_" + dependentField.Item2.GetPropertyNameFromSystemName().ToLower();
-            var helperComment =
-                $"// {propertyName} is a conditionally mandatory field. Dependent on: {dependentField.Item2}, when her values are not empty.";
-
-            switch (dependentType)
-            {
-                //case mCaseTypes.EmbeddedList: Processed after loop completion
-                case MCaseTypes.CascadingDropDown:
-                case MCaseTypes.DropDownList:
-                case MCaseTypes.DynamicDropDown:
-                case MCaseTypes.CascadingDynamicDropDown:
-                    sb.AppendLine($"if({dependentValue} != null && {dependentValue}.Count > 0) ");
-                    sb.AppendLine(2.Indent() + "{");
-                    sb.AppendLine(3.Indent() + helperComment);
-                    sb.AppendLine(3.Indent() + CanSaveValidationHelper(type, privateName, propertyName));
-                    sb.AppendLine(2.Indent() + "}");
-                    break;
-                case MCaseTypes.String:
-                case MCaseTypes.LongString:
-                case MCaseTypes.EmailAddress:
-                case MCaseTypes.Phone:
-                case MCaseTypes.URL:
-                case MCaseTypes.Number:
-                case MCaseTypes.Money:
-                case MCaseTypes.Time:
-                case MCaseTypes.Boolean:
-                case MCaseTypes.ReadonlyField:
-                case MCaseTypes.User:
-                case MCaseTypes.Address:
-                case MCaseTypes.Attachment:
-                    sb.AppendLine($"if(string.IsNullOrEmpty({dependentValue}))");
-                    sb.AppendLine(2.Indent() + "{");
-                    sb.AppendLine(3.Indent() + helperComment);
-                    sb.AppendLine(3.Indent() + CanSaveValidationHelper(type, privateName, propertyName));
-                    sb.AppendLine(2.Indent() + "}");
-                    return sb.ToString();
-                case MCaseTypes.Date:
-                case MCaseTypes.DateTime:
-                    sb.AppendLine($"if({dependentValue} == null)");
-                    sb.AppendLine(2.Indent() + "{");
-                    sb.AppendLine(3.Indent() + helperComment);
-                    sb.AppendLine(3.Indent() + CanSaveValidationHelper(type, privateName, propertyName));
-                    sb.AppendLine(2.Indent() + "}");
-                    return sb.ToString();
-                case MCaseTypes.Section: //need in ce's?
-                case MCaseTypes.Narrative: //need in ce's?
-                case MCaseTypes.Header: //need in ce's?
-                case MCaseTypes.UserRoleSecurityRestrict: //not required in CE's
-                case MCaseTypes.DynamicCalculatedField: //not required in CE's
-                case MCaseTypes.CalculatedField: // not required in CE's 
-                case MCaseTypes.UniqueIdentifier: //not required in CE's
-                case MCaseTypes.EmbeddedDocument: // blob?
-                case MCaseTypes.HiddenField: //not required in CE's
-                case MCaseTypes.LineBreak: //not required in CE's
-                case MCaseTypes.Position0: //not required in CE's
-                case MCaseTypes.Score1: //not required in CE's
-                case MCaseTypes.Score2: //not required in CE's
-                case MCaseTypes.Score3: //not required in CE's
-                case MCaseTypes.Score4: //not required in CE's
-                case MCaseTypes.Score5: //not required in CE's
-                case MCaseTypes.Score6: //not required in CE's
-                default:
-                    return string.Empty;
-            }
-
-            return sb.ToString();
-        }
-
-        private static string CanSaveValidationHelper(MCaseTypes type, string privateName, string propertyName)
-        {
-            switch (type)
-            {
-                //case mCaseTypes.EmbeddedList: Processed after loop completion
-                case MCaseTypes.CascadingDropDown:
-                case MCaseTypes.DropDownList:
-                case MCaseTypes.DynamicDropDown:
-                case MCaseTypes.CascadingDynamicDropDown:
-                    return $"if({privateName} != null && {privateName}.Count == 0) requiredFields.Add(\"{propertyName}\");";
-                case MCaseTypes.String:
-                case MCaseTypes.LongString:
-                case MCaseTypes.EmailAddress:
-                case MCaseTypes.Phone:
-                case MCaseTypes.URL:
-                case MCaseTypes.Number:
-                case MCaseTypes.Money:
-                case MCaseTypes.Time:
-                case MCaseTypes.Boolean:
-                case MCaseTypes.ReadonlyField:
-                case MCaseTypes.User:
-                case MCaseTypes.Address:
-                case MCaseTypes.Attachment:
-                    return $"if(string.IsNullOrEmpty({privateName})) requiredFields.Add(\"{propertyName}\");";
-                case MCaseTypes.Date:
-                case MCaseTypes.DateTime:
-                    return $"if({privateName} == null) requiredFields.Add(\"{propertyName}\");";
-                case MCaseTypes.Section: //need in ce's?
-                case MCaseTypes.Narrative: //need in ce's?
-                case MCaseTypes.Header: //need in ce's?
-                case MCaseTypes.UserRoleSecurityRestrict: //not required in CE's
-                case MCaseTypes.DynamicCalculatedField: //not required in CE's
-                case MCaseTypes.CalculatedField: // not required in CE's 
-                case MCaseTypes.UniqueIdentifier: //not required in CE's
-                case MCaseTypes.EmbeddedDocument: // blob?
-                case MCaseTypes.HiddenField: //not required in CE's
-                case MCaseTypes.LineBreak: //not required in CE's
-                case MCaseTypes.Position0: //not required in CE's
-                case MCaseTypes.Score1: //not required in CE's
-                case MCaseTypes.Score2: //not required in CE's
-                case MCaseTypes.Score3: //not required in CE's
-                case MCaseTypes.Score4: //not required in CE's
-                case MCaseTypes.Score5: //not required in CE's
-                case MCaseTypes.Score6: //not required in CE's
-                default:
-                    return string.Empty;
-            }
-        }
-
-        private static string AddConditionallyMandatoryCheck(int currentIteration, Tuple<string, string> dependentField, string mandatedByValue, string privateName, string propertyName, MCaseTypes mandatoryType , string defaultValue)
-
-        {
-            var sb = new StringBuilder();
-            var type = dependentField.Item1.GetEnumValue<MCaseTypes>();
-            var dependentOnField = "_" +dependentField.Item2.GetPropertyNameFromSystemName().ToLower();
-            var demandsValues = string.Join(",", mandatedByValue.Split(new[] { "~*~" }, StringSplitOptions.None).Where(x => !string.IsNullOrEmpty(x)).Select(x => $"{defaultValue}.{x.GetPropertyNameFromSystemName()}"));
-            var helperComment =
-                $"// {propertyName} is a conditionally mandatory field. Dependent on: {dependentField.Item2}, when her values are any of the following: {demandsValues}";
-            switch (type)
-            {
-                //case mCaseTypes.EmbeddedList: Processed after loop completion
-                case MCaseTypes.CascadingDropDown:
-                case MCaseTypes.DropDownList:
-                    var valuesList = $"new List<{defaultValue}> () " + "{ " + demandsValues + "}";
-
-                    sb.AppendLine($"if({dependentOnField} != null && {dependentOnField}");
-                    sb.AppendLine(3.Indent() + $".Intersect({valuesList})");
-                    sb.AppendLine(3.Indent() + ".Any())");
-                    sb.AppendLine(2.Indent() + "{");
-                    sb.AppendLine(3.Indent() + helperComment);
-                    sb.AppendLine(3.Indent() + CanSaveValidationHelper(mandatoryType, privateName, propertyName));
-                    sb.AppendLine(2.Indent() + "}");
-                    return sb.ToString();
-                case MCaseTypes.DynamicDropDown:
-                case MCaseTypes.CascadingDynamicDropDown:
-                    sb.AppendLine($"if({dependentOnField} != null && {dependentOnField}");
-                    sb.AppendLine(3.Indent() + ".Any())");
-                    sb.AppendLine(2.Indent() + "{");
-                    sb.AppendLine(3.Indent() + helperComment);
-                    sb.AppendLine(3.Indent() + CanSaveValidationHelper(mandatoryType, privateName, propertyName));
-                    sb.AppendLine(2.Indent() + "}");
-                    return sb.ToString();
-                case MCaseTypes.String:
-                case MCaseTypes.LongString:
-                case MCaseTypes.EmailAddress:
-                case MCaseTypes.Phone:
-                case MCaseTypes.URL:
-                case MCaseTypes.Money:
-                case MCaseTypes.Time:
-                case MCaseTypes.Boolean:
-                case MCaseTypes.ReadonlyField:
-                case MCaseTypes.User:
-                case MCaseTypes.Address:
-                case MCaseTypes.Attachment:
-                    var stringDemandsValues = string.Join(",", mandatedByValue.Split(new[] { "~*~" }, StringSplitOptions.None).Where(x => !string.IsNullOrEmpty(x)).Select(x => $"\"{x}\""));
-                    var stringValuesList = "new List<string> () " + "{ " + stringDemandsValues + "}";
-
-                    sb.AppendLine($"if(!string.IsNullOrEmpty({dependentOnField}) && {stringValuesList}.Contains({dependentOnField}, StringComparer.OrdinalIgnoreCase))");
-                    sb.AppendLine(2.Indent() + "{");
-                    sb.AppendLine(3.Indent() + helperComment);
-                    sb.AppendLine(3.Indent() + CanSaveValidationHelper(mandatoryType, privateName, propertyName));
-                    sb.AppendLine(2.Indent() + "}");
-                    return sb.ToString();
-                case MCaseTypes.Date:
-                case MCaseTypes.DateTime:
-                    return string.Empty;//TODO 
-                case MCaseTypes.Number:
-                    
-                    var values = mandatedByValue.Split(new[] { "~*~" }, StringSplitOptions.None);
-                    helperComment =
-                        $"// {propertyName} is a conditionally mandatory field. Dependent on: {dependentField.Item2}, when her value is greater than {values.First()} and less than {values.Last()}";
-                    var localLow = $"lowValue_{currentIteration}";
-                    var localHigh = $"highValue_{currentIteration}";
-                    var currentVal = $"dependentOnField_{currentIteration}";
-                    sb.AppendLine($"if (BigInteger.TryParse(\"{values.First()}\", out var {localLow}) && BigInteger.TryParse(\"{values.Last()}\", out var {localHigh}) && BigInteger.TryParse({dependentOnField}, out var {currentVal}))");
-                    sb.AppendLine(2.Indent() + "{");//open if
-                    sb.AppendLine(3.Indent() + $"if ({localLow} <= {currentVal} && {currentVal} <= {localHigh})");
-                    sb.AppendLine(3.Indent() + "{");//open embedded if
-                    sb.AppendLine(4.Indent() + helperComment);
-                    sb.AppendLine(4.Indent() + CanSaveValidationHelper(mandatoryType, privateName, propertyName));
-                    sb.AppendLine(3.Indent() + "}");//close embedded if
-                    sb.AppendLine(2.Indent() + "}");//close if
-
-                    return sb.ToString();
-                case MCaseTypes.Section: //need in ce's?
-                case MCaseTypes.Narrative: //need in ce's?
-                case MCaseTypes.Header: //need in ce's?
-                case MCaseTypes.UserRoleSecurityRestrict: //not required in CE's
-                case MCaseTypes.DynamicCalculatedField: //not required in CE's
-                case MCaseTypes.CalculatedField: // not required in CE's 
-                case MCaseTypes.UniqueIdentifier: //not required in CE's
-                case MCaseTypes.EmbeddedDocument: // blob?
-                case MCaseTypes.HiddenField: //not required in CE's
-                case MCaseTypes.LineBreak: //not required in CE's
-                case MCaseTypes.Position0: //not required in CE's
-                case MCaseTypes.Score1: //not required in CE's
-                case MCaseTypes.Score2: //not required in CE's
-                case MCaseTypes.Score3: //not required in CE's
-                case MCaseTypes.Score4: //not required in CE's
-                case MCaseTypes.Score5: //not required in CE's
-                case MCaseTypes.Score6: //not required in CE's
-                default:
-                    return string.Empty;
-            }
-        }
-
-        public static StringBuilder GenerateEnums(List<string> fieldSet, string className, bool titleCase)
-        {
-            var sb = new StringBuilder();
-
-            var distinct = fieldSet.Distinct().OrderBy(x => x).ToList();//order enums by name
-
-            sb.Append(BuildEnums(distinct, className));
-
-            sb.AppendLine();
-
-            sb.Append(BuildEnumMapper(distinct, className, titleCase));
-
-            return sb;
-        }
-
-        private static StringBuilder BuildEnums(List<string> fieldSet, string className)
-        {
-            var sb = new StringBuilder();
-
-            var distinctEnums = new List<string>();
-
-            if (fieldSet.Count == 0)
-                return sb;
-
-            sb.Append(1.Indent() + $"public enum {className}Enum" + "{ Invalidselection,"); //open
-
-            for (var i = 0; i < fieldSet.Count; i++)
-            {
-                var field = fieldSet[i];
-
-                if (field.Contains("\""))
-                {
-                    field = field.Replace("\"", "\\\"");
-                }
-
-                var enumName = field.GetPropertyNameFromSystemName();
-
-                if (distinctEnums.Contains(enumName))
-                {
-                    sb.Append(enumName + $"_{i}_,"); //generate enum duplicate
-                }
-                else
-                {
-                    sb.Append(enumName + ","); //generate enum 
-                    distinctEnums.Add(enumName);
-                }
-            }
-
-            sb.Append("}"); //close enum
-
-            return sb;
-        }
-
-        private static StringBuilder BuildEnumMapper(List<string> fieldSet, string className, bool titleCase)
-        {
-            var sb = new StringBuilder();
-
-            var distinctEnums = new List<string>();
-
-            if (fieldSet.Count == 0)
-                return sb;
-
-            var staticClass = $"{className}Enum";
-
-            sb.Append(1.Indent() + $"public static Dictionary<{staticClass}, string> {className}Map => new Dictionary<{staticClass}, string>()" + "{ {" + $"{staticClass}.Invalidselection, \"#~Invalid Selection~#\"" + "},"); //open
-
-            for (var i = 0; i < fieldSet.Count; i++)
-            {
-                var field = fieldSet[i];
-
-                if (field.Contains("\""))
-                {
-                    field = field.Replace("\"", "\\\"");
-                }
-
-                var value = titleCase ? $"\"{field.GetPropertyNameFromSystemName()}\"" : $"\"{field}\""; //get value
-
-                var enumName = field.GetPropertyNameFromSystemName();
-
-                if (distinctEnums.Contains(enumName))
-                {
-                    distinctEnums.Add(enumName);
-                    enumName += $"_{i}_";
-                }
-                var key = enumName;
-
-                sb.Append("{" + $"{staticClass}.{key}, {value}" + "},");
-            }
-
-            sb.Append("};"); //close dict
-
-            return sb;
-        }
-
-        public static StringBuilder GenerateRelationships(JToken relationships)
-        {
-            var sb = new StringBuilder();
-
-            if (relationships == null || !relationships.Any())
-                return sb;
-
-            var parentRelationships =
-                relationships.ParseChildren(ListTransferFields.ParentSystemName.GetDescription());
-
-            if (parentRelationships.Any())
-            {
-                var distinctParentRelationships = parentRelationships.Distinct();
-                sb.AppendLine(GenerateEnums(distinctParentRelationships.ToList(), "ParentRelationships", false).ToString());
-            }
-
-            var childRelationships =
-                relationships.ParseChildren(ListTransferFields.ChildSystemName.GetDescription());
-
-            if (!childRelationships.Any()) return sb;
-
-            var distinctChildRelationships = childRelationships.Distinct();
-            sb.AppendLine(GenerateEnums(distinctChildRelationships.ToList(), "ChildRelationships", false).ToString());
-
-            return sb;
-        }
     }
 }

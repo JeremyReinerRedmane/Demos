@@ -36,6 +36,21 @@ namespace mCASE_ADMIN.DataAccess.mCase.Static
                 : fieldValue.GetPropertyNameFromSystemName();
         }
 
+        public static string ParseNameValue(this JToken token, string property)
+        {
+            var fieldValue = token[property]?.Parent?.FirstOrDefault()?.First;
+
+            if(fieldValue == null) return string.Empty;
+
+            var valueToken = fieldValue[ListTransferFields.Value.GetDescription()];
+
+            var value = valueToken?.Parent?.FirstOrDefault()?.Value<string>();
+
+            return string.IsNullOrEmpty(value)
+                ? string.Empty
+                : value;
+        }
+
         public static Dictionary<string, string> GetFieldOptions(this JToken token)
         {
             var fieldOptions = token[ListTransferFields.FieldOptions.GetDescription()]?.Parent?.FirstOrDefault()?.Value<string>();

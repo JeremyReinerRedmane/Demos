@@ -214,7 +214,7 @@ namespace mCASE_ADMIN.DataAccess.mCase
         /// required for bat script pipeline app. 
         /// </summary>
         /// <returns></returns>
-        public async Task<List<int>> DataAccess()
+        public List<int> SqlDataAccess()
         {
             var ids = new List<int>();
             try
@@ -226,7 +226,7 @@ namespace mCASE_ADMIN.DataAccess.mCase
                     // Execute the query and process results
                     var command = new SqlCommand(_sqlCommand, connection);
 
-                    using (var reader = await command.ExecuteReaderAsync())
+                    using (var reader = command.ExecuteReader())
                     {
                         while (reader.Read())
                         {
@@ -284,7 +284,7 @@ namespace mCASE_ADMIN.DataAccess.mCase
             }
         }
 
-        public List<int> DirectDataAccess()
+        public List<int> CsvDataAccess()
         {
             if (string.IsNullOrEmpty(_csvData)) return new List<int>();
 
@@ -370,13 +370,12 @@ namespace mCASE_ADMIN.DataAccess.mCase
 
             var requiresEnumeration = GenerateFields(className, fields, fieldSet, requiredFields, requiresEnumerationValues, enumerableFieldSet, embeddedRelatedFields, sb);
 
-            sb.AppendLine(1.Indent() + "#endregion Fields");
+            sb.AppendLine(1.Indent() + "#endregion Fields"); // region is opens in class initializer
 
-            sb.AppendLine(1.Indent() + "#region Methods");//enumerable methods
+            sb.AppendLine(1.Indent() + "#region Methods");
 
             var childRelationships =
                 relationships?.ParseChildren(ListTransferFields.ChildSystemName.GetDescription());
-
 
             if (embeddedRelatedFields.Count > 0 || childRelationships != null && childRelationships.Any())
             {// add child relationships to embedded relationships list.
@@ -399,11 +398,12 @@ namespace mCASE_ADMIN.DataAccess.mCase
                 }
 
                 sb.Append(Factory.GetActiveRelatedRecords(embeddedRelatedFields)); // 3: Add class methods
+
                 embeddedRelatedFields.Clear(); // Dispose: no longer required
             }
 
             if (requiresEnumeration)
-                sb.Append(Factory.AddEnumerableExtensions(className, _stringBuilders.Any(), requiredFields, fieldSet)); // 3: Add class methods
+                sb.Append(Factory.AddEnumerableExtensions(className, _stringBuilders.Any())); // 3: Add class methods
             else
             {
                 Console.WriteLine();
@@ -420,12 +420,12 @@ namespace mCASE_ADMIN.DataAccess.mCase
 
             sb.AppendLine(0.Indent() + "{");//open static class
 
-            if (enumerableFieldSet.Any())//generate our property values
+            if (enumerableFieldSet.Any())//generate our property values only for enumerated properties
             {
-                sb.AppendLine(Factory.GenerateEnums(enumerableFieldSet.ToList(), "Properties", true).ToString());// All class property names
+                sb.Append(Factory.GenerateEnums(enumerableFieldSet.ToList(), "Properties", true));// needs true because enums are propertyNames.
             }
 
-            sb.AppendLine(Factory.GenerateEnums(fieldSet.Select(x => x.Item2).ToList(), "SystemNames", false).ToString());// All class property names
+            sb.Append(Factory.GenerateEnums(fieldSet.Select(x => x.Item2).ToList(), "SystemNames", false));// needs false because system names cannot be cleaned. It is required their completed string value
 
             var allDefaultValues = new List<string>() { "Multi Select: False", "True", "False" }; // Boolean Values
 
@@ -446,13 +446,13 @@ namespace mCASE_ADMIN.DataAccess.mCase
             var relationshipEnums = Factory.GenerateRelationships(relationships);
 
             if (!string.IsNullOrEmpty(relationshipEnums.ToString()))
-                sb.Append(relationshipEnums.ToString());
+                sb.Append(relationshipEnums);
 
             if (allDefaultValues.Count > 3)
             {
                 var distinctData = allDefaultValues.Distinct();
-
-                sb.AppendLine(Factory.GenerateEnums(distinctData.ToList(), "DefaultValues", false).ToString()); //enum adds Enum to name at end
+                
+                sb.Append(Factory.GenerateEnums(distinctData.ToList(), "DefaultValues", false)); //enum adds Enum to name at end
             }
 
             sb.AppendLine(0.Indent() + "}"); //close static class
@@ -577,10 +577,9 @@ namespace mCASE_ADMIN.DataAccess.mCase
                 value = "Mandated If Field Has Value";
             }
 
-            if (!string.IsNullOrEmpty(field))
-                field = field.GetPropertyNameFromSystemName();
-            else
-                field = string.Empty;
+            field = !string.IsNullOrEmpty(field) 
+                ? field.GetPropertyNameFromSystemName() 
+                : string.Empty;
 
             return new Tuple<bool, string, string>(string.Equals(conditional, "yes", StringComparison.OrdinalIgnoreCase), field, value);
         }
