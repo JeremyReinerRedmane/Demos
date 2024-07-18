@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
 using System.Text;
+using System.Text.Json.Nodes;
 using mCASE_ADMIN.DataAccess.mCase.Static;
 using Newtonsoft.Json.Linq;
 using Extensions = mCASE_ADMIN.DataAccess.mCase.Static.Extensions;
@@ -31,6 +32,7 @@ namespace mCASE_ADMIN.DataAccess.mCase
 
             var id = jObject.ParseJson(ListTransferFields.Id.GetDescription());
             var className = jObject.ParseNameValue(ListTransferFields.Name.GetDescription());
+            var classSystemName = jObject.ParseJson(ListTransferFields.SystemName.GetDescription());
             var dtNow = DateTime.Now.ToString(Extensions.MCaseDateTimeStorageFormat);
 
             sb.AppendLine(mainUsings);
@@ -52,7 +54,7 @@ namespace mCASE_ADMIN.DataAccess.mCase
             sb.AppendLine(1.Indent() + "}"); //close constructor
             sb.AppendLine(1.Indent() + "#region Fields");
             sb.AppendLine(1.Indent() + "public string Label => RecordInsData.Label;");
-            sb.AppendLine(1.Indent() + $"public string SystemName => \"{sysName}\";");
+            sb.AppendLine(1.Indent() + $"public string SystemName => \"{classSystemName}\";");
             sb.AppendLine(1.Indent() + "private int _dataListId = -1;");
             sb.AppendLine(1.Indent() + "/// <summary>");
             sb.AppendLine(1.Indent() + "/// Data list identifier is -1 if not found");
@@ -84,6 +86,7 @@ namespace mCASE_ADMIN.DataAccess.mCase
 
             var id = jObject.ParseJson(ListTransferFields.Id.GetDescription());
             var className = jObject.ParseNameValue(ListTransferFields.Name.GetDescription());
+            var classSystemName = jObject.ParseJson(ListTransferFields.SystemName.GetDescription());
             var dtNow = DateTime.Now.ToString(Extensions.MCaseDateTimeStorageFormat);
 
             #region Dl Info Class
@@ -96,7 +99,7 @@ namespace mCASE_ADMIN.DataAccess.mCase
             sb.AppendLine(1.Indent() + "{"); //open constructor
             sb.AppendLine(2.Indent() + "_eventHelper = eventHelper;");
             sb.AppendLine(1.Indent() + "}"); //close constructor
-            sb.AppendLine(1.Indent() + $"public string SystemName => \"{sysName}\";");
+            sb.AppendLine(1.Indent() + $"public string SystemName => \"{classSystemName}\";");
             sb.AppendLine(1.Indent() + "private int _dataListId = -1;");
             sb.AppendLine(1.Indent() + "/// <summary> Data list identifier is -1 if not found </summary>");
             sb.AppendLine(1.Indent() + "public int DataListId");
