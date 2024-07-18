@@ -16,7 +16,8 @@ namespace mCASE_ADMIN.DataAccess.mCase
 {
     public class SyncDlConfigs
     {
-        private readonly string _csvData = string.Empty;
+        private List<int> _data = new List<int>();
+        private readonly bool _createStaticfile = false;
         private readonly string _connectionString;
         private readonly string _sqlCommand;
         private readonly string _outputDirectory;
@@ -77,14 +78,18 @@ namespace mCASE_ADMIN.DataAccess.mCase
 
                 _staticUsings = commandLineArgs[9];
                 Console.WriteLine("static usings: " + _namespace);
+
+                _createStaticfile = true;
+
+                SqlDataAccess();
             }
 
             if (commandLineArgs.Length == 9)
             {
                 Console.WriteLine("System operation: CSV Data. Setting Parameters");
                 // [0] bin dir containing dll and exe files
-                _csvData = commandLineArgs[1];
-                Console.WriteLine("CSV data:" + _csvData);
+                CsvDataAccess(commandLineArgs[1]);
+                Console.WriteLine("CSV data:" + _data);
 
                 _credentials = commandLineArgs[2];
                 Console.WriteLine("Credentials: " + _credentials);
@@ -116,14 +121,16 @@ namespace mCASE_ADMIN.DataAccess.mCase
 
                 _staticUsings = commandLineArgs[8];
                 Console.WriteLine("static usings: " + _namespace);
+
+                _createStaticfile = false;
             }
 
             Console.WriteLine("All parameters have been completed. Moving to next step");
         }
 
-        public void RemoteSync(List<int> sqlResult)
+        public void RemoteSync()
         {
-            if (!sqlResult.Any()) return;
+            if (!_data.Any()) return;
 
             var byteArray = Encoding.ASCII.GetBytes(_credentials);
 
@@ -135,7 +142,7 @@ namespace mCASE_ADMIN.DataAccess.mCase
 
             client.DefaultRequestHeaders.Authorization = authorizationHeader;
 
-            if (string.IsNullOrEmpty(_csvData))
+            if (_createStaticfile)
             {
                 var staticFileData = Factory.GenerateStaticFile(_namespace, _staticUsings);
 
@@ -144,7 +151,7 @@ namespace mCASE_ADMIN.DataAccess.mCase
                 File.WriteAllText(staticPath, staticFileData);
             }
 
-            foreach (var id in sqlResult)
+            foreach (var id in _data)
             {
                 var url = _mCaseUrl + id;
 
@@ -181,12 +188,13 @@ namespace mCASE_ADMIN.DataAccess.mCase
             // completed all dls in temp location, move to live location and delete temp.
             try
             {
+                DeleteAllFiles(_outputDirectory);
                 MoveFilesFromTempToFactoryDir();
             }
             catch
             {
                 if (Directory.Exists(_tempOutputDirectory))
-                    DeleteTempDir();
+                    DeleteDir(_tempOutputDirectory);
             }
         }
 
@@ -212,14 +220,14 @@ namespace mCASE_ADMIN.DataAccess.mCase
             files = Directory.GetFiles(_tempOutputDirectory);
 
             if (files.Length == 0)
-                DeleteTempDir();
+                DeleteDir(_tempOutputDirectory);
         }
 
         /// <summary>
         /// required for bat script pipeline app. 
         /// </summary>
         /// <returns></returns>
-        public List<int> SqlDataAccess()
+        public void SqlDataAccess()
         {
             var ids = new List<int>();
             try
@@ -248,7 +256,8 @@ namespace mCASE_ADMIN.DataAccess.mCase
                     }
 
                     Console.WriteLine($"Processing {ids.Count} Data lists");
-                    return ids.OrderBy(x => x).ToList();
+                    
+                    _data = ids.OrderBy(x => x).ToList();
                 }
             }
             catch (Exception ex)
@@ -258,19 +267,36 @@ namespace mCASE_ADMIN.DataAccess.mCase
                 var path = Path.Combine(_exceptionDirectory, $"Sql Exception {DateTime.Now.ToString(Extensions.TimeFormat)}.cs");
                 File.WriteAllText(path, ex.ToString());
                 Console.ForegroundColor = ConsoleColor.DarkGray;
-                return new List<int>();
+                _data = new List<int>();
             }
         }
 
-        private void DeleteTempDir()
+        private void DeleteAllFiles(string dirPath)
         {
-            var dir = new DirectoryInfo(_tempOutputDirectory);
+            var dir = new DirectoryInfo(dirPath);
 
             var files = dir.GetFiles();
 
             if (files.Length == 0)
             {
-                Directory.Delete(_tempOutputDirectory);
+                Directory.Delete(dirPath);
+                return;
+            }
+
+            foreach (var file in files)
+            {
+                file.Delete();
+            }
+        }
+        private void DeleteDir(string dirPath)
+        {
+            var dir = new DirectoryInfo(dirPath);
+
+            var files = dir.GetFiles();
+
+            if (files.Length == 0)
+            {
+                Directory.Delete(dirPath);
                 return;
             }
 
@@ -282,27 +308,25 @@ namespace mCASE_ADMIN.DataAccess.mCase
             files = dir.GetFiles();
 
             if(files.Length == 0) 
-                Directory.Delete(_tempOutputDirectory);
+                Directory.Delete(dirPath);
             else
             {
                 Console.WriteLine($"[{files.Length}] files remain and Temp dir could not be deleted. {_tempOutputDirectory}");
             }
         }
 
-        public List<int> CsvDataAccess()
+        public void CsvDataAccess(string rawData)
         {
-            if (string.IsNullOrEmpty(_csvData)) return new List<int>();
+            if (string.IsNullOrEmpty(rawData))
+                _data = new List<int>();
 
-            var data = _csvData.Split(',').ToList();
+            var data = rawData.Split(',').ToList();
 
-            var nums = new List<int>();
             foreach (var d in data)
             {
                 if (int.TryParse(d, out var num))
-                    nums.Add(num);
+                    _data.Add(num);
             }
-
-            return nums;
         }
 
         /// <summary>
