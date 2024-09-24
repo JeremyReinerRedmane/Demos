@@ -23,8 +23,6 @@ public class InvokeEvent
 
         test.MyEvent += async (sender, e) => await FirstRaisedEvent("1st", e);
 
-        test.MyEvent += async (sender, e) => await SecondRaisedMethod("2nd", e);
-
         "Invoking events".Print();
 
         test.Raise(EventArgs.Empty);
